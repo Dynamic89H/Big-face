@@ -54,17 +54,8 @@ export default function ChatsPage() {
     }
     const t = window.setTimeout(async () => {
       try {
-        const { entries } = await usersApi.leaderboard(50);
-        setCandidates(
-          entries
-            .map((e) => e.user)
-            .filter(
-              (u) =>
-                u.id !== user?.id &&
-                (u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)),
-            )
-            .slice(0, 8),
-        );
+        const { users } = await usersApi.search(q);
+        setCandidates(users.slice(0, 8));
       } catch {
         setCandidates([]);
       }

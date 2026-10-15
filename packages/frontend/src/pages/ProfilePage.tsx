@@ -151,6 +151,20 @@ export default function ProfilePage() {
             </div>
           )}
           {actionError && <div className="form-error" style={{ marginTop: '0.8rem' }}>{actionError}</div>}
+
+          {(() => {
+            const cfg = (profile.avatarConfig ?? {}) as Record<string, unknown>;
+            const t = cfg.profileTrack as { title?: string; artist?: string; genre?: string; url?: string } | undefined;
+            if (!t?.url) return null;
+            return (
+              <div className="card" style={{ marginTop: '1rem', borderColor: 'var(--gold)' }}>
+                <div className="form-note">🎧 PROFILE TRACK</div>
+                <div style={{ fontWeight: 800, margin: '0.3rem 0' }}>{t.title}</div>
+                <div className="form-note" style={{ marginBottom: '0.6rem' }}>{t.artist} · {(t.genre ?? '').toUpperCase()}</div>
+                <audio controls src={t.url} style={{ width: '100%' }} />
+              </div>
+            );
+          })()}
         </div>
       </div>
 

@@ -89,6 +89,7 @@ export const authApi = {
 // --- Users ---
 export const usersApi = {
   get: (id: string) => get<{ user: User; stats: UserStats }>(`/users/${id}`),
+  search: (q: string) => get<{ users: User[] }>(`/users/search?q=${encodeURIComponent(q)}`),
   updateMe: (input: { displayName?: string; bio?: string; profileColor?: string; gender?: string; avatarConfig?: unknown }) =>
     patch<{ user: User }>('/users/me', input),
   leaderboard: (limit = 50) => get<{ entries: LeaderboardEntry[] }>(`/users/leaderboard?limit=${limit}`),
@@ -206,6 +207,8 @@ export type ReportTargetType = 'user' | 'message' | 'media';
 export const reportsApi = {
   report: (input: { targetType: ReportTargetType; targetId: string; reason: string }) =>
     post<void>('/reports', input),
+  safety: (input: { subject: string; reason: string; details?: string }) =>
+    post<{ reportId: string }>('/reports/safety', input),
 };
 
 // --- Video ---

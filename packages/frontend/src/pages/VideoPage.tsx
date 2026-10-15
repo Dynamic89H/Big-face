@@ -29,7 +29,20 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 ];
 
 const ICE_SERVERS: RTCConfiguration = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    // Free TURN fallback so calls connect behind symmetric NATs.
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+  ],
 };
 
 function StreamVideo({ stream, label, filter, mirrored }: { stream: MediaStream | null; label: string; filter: string; mirrored?: boolean }) {

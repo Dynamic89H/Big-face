@@ -43,6 +43,16 @@ router.get('/hall-of-fame', auth_1.requireAuth, (0, util_1.asyncHandler)(async (
 router.get('/legendary', auth_1.requireAuth, (0, util_1.asyncHandler)(async (_req, res) => {
     res.json(await (0, legendary_1.getLatestLegendary)());
 }));
+router.get('/search', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
+    const q = (req.query.q ?? '').trim();
+    if (q.length < 2)
+        return res.json({ users: [] });
+    const like = `%${q}%`;
+    const { rows } = await db_1.pool.query(`SELECT * FROM users
+       WHERE id != $2 AND (username ILIKE $1 OR display_name ILIKE $1)
+       ORDER BY xp DESC LIMIT 10`, [like, req.user.id]);
+    res.json({ users: rows.map(util_1.toUser) });
+}));
 router.get('/:id', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
     const { rows } = await db_1.pool.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
     if (!rows.length)

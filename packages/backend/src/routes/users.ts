@@ -68,6 +68,23 @@ router.get(
 );
 
 router.get(
+  '/search',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const q = ((req.query.q as string) ?? '').trim();
+    if (q.length < 2) return res.json({ users: [] });
+    const like = `%${q}%`;
+    const { rows } = await pool.query(
+      `SELECT * FROM users
+       WHERE id != $2 AND (username ILIKE $1 OR display_name ILIKE $1)
+       ORDER BY xp DESC LIMIT 10`,
+      [like, req.user!.id]
+    );
+    res.json({ users: rows.map(toUser) });
+  })
+);
+
+router.get(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {

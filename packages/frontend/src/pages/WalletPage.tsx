@@ -133,13 +133,8 @@ export default function WalletPage() {
     }
     const t = window.setTimeout(async () => {
       try {
-        const { entries } = await usersApi.leaderboard(50);
-        setGiftCandidates(
-          entries
-            .map((e) => e.user)
-            .filter((u) => u.id !== user?.id && (u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)))
-            .slice(0, 6),
-        );
+        const { users } = await usersApi.search(q);
+        setGiftCandidates(users.slice(0, 6));
       } catch {
         setGiftCandidates([]);
       }

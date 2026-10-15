@@ -11,6 +11,19 @@ const createReportSchema = zod_1.z.object({
     targetId: zod_1.z.string().uuid(),
     reason: zod_1.z.string().min(1).max(1000),
 });
+const safetyReportSchema = zod_1.z.object({
+    subject: zod_1.z.string().min(1).max(120),
+    reason: zod_1.z.enum(['bullying', 'sexual', 'violence', 'spam', 'other']),
+    details: zod_1.z.string().max(500).default(''),
+});
+// General safety concern (no specific target) — stored as a report with a nil target.
+router.post('/safety', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
+    const body = safetyReportSchema.parse(req.body);
+    const reason = `[safety:${body.reason}] ${body.subject}${body.details ? ` — ${body.details}` : ''}`.slice(0, 1000);
+    const { rows } = await db_1.pool.query(`INSERT INTO reports (reporter_id, target_type, target_id, reason)
+       VALUES ($1, 'user', '00000000-0000-0000-0000-000000000000', $2) RETURNING id`, [req.user.id, reason]);
+    res.status(201).json({ reportId: String(rows[0].id) });
+}));
 router.post('/', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
     const body = createReportSchema.parse(req.body);
     const { rows } = await db_1.pool.query(`INSERT INTO reports (reporter_id, target_type, target_id, reason)
