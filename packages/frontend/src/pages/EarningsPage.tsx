@@ -1,12 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { earningsApi, ApiError } from '../api/client';
 import type { EarningsSummary } from '../types';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 // 100 tokens = $1.00, minimum payout $10.
 const TOKENS_PER_DOLLAR = 100;
 const MIN_PAYOUT_USD = 10;
 
 export default function EarningsPage() {
+  usePageTitle('Earnings');
   const [summary, setSummary] = useState<EarningsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

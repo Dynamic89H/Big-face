@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { reportsApi, ApiError } from '../api/client';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const REASONS = [
   { key: 'bullying', label: 'Bullying or harassment' },
@@ -10,6 +11,7 @@ const REASONS = [
 ];
 
 export default function SafetyPage() {
+  usePageTitle('Safety Center');
   const [open, setOpen] = useState(false);
   const [subject, setSubject] = useState('');
   const [reason, setReason] = useState('bullying');

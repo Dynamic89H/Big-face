@@ -5,6 +5,7 @@ import type { Gift, ThroneInfo, User } from '../types';
 import { timeAgo, xpForLevel } from '../types';
 import { GIFT_EMOJI } from '../components/GiftDialog';
 import GiftDialog from '../components/GiftDialog';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 // CSS throne class per tier (mirrors the contract's tier names).
 function throneClass(tier: string): string {
@@ -17,6 +18,7 @@ function throneClass(tier: string): string {
 }
 
 export default function ThroneRoomPage() {
+  usePageTitle('Throne Room');
   const { user } = useAuth();
   const [info, setInfo] = useState<ThroneInfo | null>(null);
   const [king, setKing] = useState<User | null>(null);

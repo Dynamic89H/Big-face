@@ -4,8 +4,10 @@ import { mediaApi, uploadsApi, usersApi, ApiError } from '../api/client';
 import type { MediaPost, User } from '../types';
 import { timeAgo } from '../types';
 import Avatar from '../components/Avatar';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function HallOfFamePage() {
+  usePageTitle('Hall of Fame');
   const [posts, setPosts] = useState<MediaPost[]>([]);
   const [spotlight, setSpotlight] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);

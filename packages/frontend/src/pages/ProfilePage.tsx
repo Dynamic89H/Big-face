@@ -7,8 +7,10 @@ import { timeAgo } from '../types';
 import Avatar from '../components/Avatar';
 import GiftDialog from '../components/GiftDialog';
 import ReportDialog from '../components/ReportDialog';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function ProfilePage() {
+  usePageTitle('Profile');
   const { id } = useParams<{ id: string }>();
   const { user: me } = useAuth();
 

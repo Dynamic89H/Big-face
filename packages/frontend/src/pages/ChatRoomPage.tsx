@@ -11,6 +11,7 @@ import {
   type ReadUpdatePayload,
   type TypingUpdatePayload,
 } from '../api/socket';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { useAuth } from '../auth/AuthContext';
 import type { Attachment, Message, Room, User } from '../types';
 import { formatDay, formatTime } from '../types';
@@ -21,6 +22,7 @@ import ReportDialog from '../components/ReportDialog';
 const PAGE_SIZE = 50;
 
 export default function ChatRoomPage() {
+  usePageTitle('Chat');
   const { id: roomId } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();

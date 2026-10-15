@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { usersApi, uploadsApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface ProfileTrack {
   title: string;
@@ -16,6 +17,7 @@ function getTrack(user: any): ProfileTrack | null {
 }
 
 export default function DJBoothPage() {
+  usePageTitle('DJ Booth');
   const { user, refreshUser } = useAuth();
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');

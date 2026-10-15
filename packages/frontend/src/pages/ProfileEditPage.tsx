@@ -4,10 +4,12 @@ import { usersApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { PROFILE_PRESETS } from '../types';
 import Avatar from '../components/Avatar';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const GENDERS = ['female', 'male', 'nonbinary', 'other'];
 
 export default function ProfileEditPage() {
+  usePageTitle('Edit Profile');
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
 

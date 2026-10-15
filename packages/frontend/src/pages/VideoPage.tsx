@@ -10,6 +10,7 @@ import {
   type VideoPeerLeftPayload,
   type VideoSignalPayload,
 } from '../api/socket';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { useAuth } from '../auth/AuthContext';
 import type { RoomSummary } from '../types';
 
@@ -59,6 +60,7 @@ function StreamVideo({ stream, label, filter, mirrored }: { stream: MediaStream 
 }
 
 export default function VideoPage() {
+  usePageTitle('Video');
   const { user } = useAuth();
   const location = useLocation() as { state?: { roomId?: string; roomName?: string } };
 

@@ -7,6 +7,7 @@ import type { GiftCatalogItem, Transaction, User } from '../types';
 import { TOKEN_PACKS, timeAgo, type TokenPack } from '../types';
 import Avatar from '../components/Avatar';
 import GiftDialog, { GIFT_EMOJI } from '../components/GiftDialog';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
 const stripePromise = STRIPE_KEY ? loadStripe(STRIPE_KEY) : null;
@@ -90,6 +91,7 @@ function CheckoutForm({ pack, onDone, onClose }: { pack: TokenPack; onDone: () =
 }
 
 export default function WalletPage() {
+  usePageTitle('Wallet');
   const { user } = useAuth();
   const [balance, setBalance] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);

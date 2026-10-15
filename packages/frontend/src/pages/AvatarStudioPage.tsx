@@ -7,8 +7,10 @@ import { RARITY_COLORS } from '../types';
 import CharacterAvatar from '../components/CharacterAvatar';
 import Avatar3D from '../components/Avatar3D';
 import RPMCreator from '../components/RPMCreator';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function AvatarStudioPage() {
+  usePageTitle('Avatar Studio');
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

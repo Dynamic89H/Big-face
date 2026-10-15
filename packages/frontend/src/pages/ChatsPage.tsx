@@ -5,10 +5,12 @@ import { useAuth } from '../auth/AuthContext';
 import type { RoomSummary, User } from '../types';
 import { timeAgo } from '../types';
 import Avatar from '../components/Avatar';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 // Room list with "New room" and "New DM" flows. User lookup for DMs searches
 // the leaderboard (the contract has no username-search endpoint).
 export default function ChatsPage() {
+  usePageTitle('Chats');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<RoomSummary[]>([]);

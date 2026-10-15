@@ -4,6 +4,7 @@ import { usersApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { LeaderboardEntry, User } from '../types';
 import Avatar from '../components/Avatar';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -33,6 +34,7 @@ function RoyalCard({ title, crown, person }: { title: string; crown: string; per
 }
 
 export default function LeaderboardPage() {
+  usePageTitle('Leaderboard');
   const { user } = useAuth();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [king, setKing] = useState<User | null>(null);
