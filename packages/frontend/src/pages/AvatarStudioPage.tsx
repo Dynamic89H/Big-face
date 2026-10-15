@@ -6,6 +6,7 @@ import type { AvatarItem } from '../types';
 import { RARITY_COLORS } from '../types';
 import CharacterAvatar from '../components/CharacterAvatar';
 import ItemVisual from '../components/ItemVisual';
+import HeroAvatar3D from '../components/HeroAvatar3D';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 // Character lineup — realistic 3D game-style base characters users pick from.
@@ -34,6 +35,7 @@ export default function AvatarStudioPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [view3D, setView3D] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
   const [facePhotoUrl, setFacePhotoUrl] = useState<string | null>(null);
   const [characterId, setCharacterId] = useState<string>('male-street');
@@ -242,6 +244,23 @@ export default function AvatarStudioPage() {
 
           <div className="card preview-stage">
             <h3 style={{ margin: 0 }}>Your character</h3>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', margin: '0.6rem 0' }}>
+              <button
+                className={`btn btn-sm ${view3D ? '' : 'btn-ghost'}`}
+                onClick={() => setView3D(true)}
+              >
+                🎮 3D Hero
+              </button>
+              <button
+                className={`btn btn-sm ${!view3D ? '' : 'btn-ghost'}`}
+                onClick={() => setView3D(false)}
+              >
+                🖼️ Classic
+              </button>
+            </div>
+            {view3D ? (
+              <HeroAvatar3D width={240} height={320} />
+            ) : (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
               <div style={{ position: 'relative' }}>
                 <img
@@ -257,6 +276,7 @@ export default function AvatarStudioPage() {
                 <div id="flex-burst" className="flex-burst" />
               </div>
             </div>
+            )}
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '0.6rem' }}>
               <button
                 className="btn"
