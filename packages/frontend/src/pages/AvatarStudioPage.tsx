@@ -241,15 +241,47 @@ export default function AvatarStudioPage() {
           <div className="card preview-stage">
             <h3 style={{ margin: 0 }}>Your character</h3>
             <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
-              <img
-                src={character.img}
-                alt={character.name}
-                style={{
-                  width: 240, height: 240, objectFit: 'cover', objectPosition: 'top',
-                  borderRadius: 16, border: `2px solid ${user?.profileColor || '#0066FF'}`,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              <div style={{ position: 'relative' }}>
+                <img
+                  id="flex-character"
+                  src={character.img}
+                  alt={character.name}
+                  style={{
+                    width: 240, height: 240, objectFit: 'cover', objectPosition: 'top',
+                    borderRadius: 16, border: `2px solid ${user?.profileColor || '#0066FF'}`,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                  }}
+                />
+                <div id="flex-burst" className="flex-burst" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '0.6rem' }}>
+              <button
+                className="btn"
+                onClick={() => {
+                  const img = document.getElementById('flex-character');
+                  const burst = document.getElementById('flex-burst');
+                  if (!img || !burst) return;
+                  img.classList.remove('flexing');
+                  void (img as HTMLElement).offsetWidth; // restart animation
+                  img.classList.add('flexing');
+                  burst.innerHTML = '';
+                  const sparkles = ['✨', '💎', '⭐', '💫', '✨', '💎'];
+                  sparkles.forEach((s, i) => {
+                    const span = document.createElement('span');
+                    span.className = 'flex-sparkle';
+                    span.textContent = s;
+                    span.style.left = `${15 + i * 14}%`;
+                    span.style.fontSize = `${1.2 + Math.random()}rem`;
+                    span.style.animationDelay = `${i * 0.08}s`;
+                    burst.appendChild(span);
+                  });
+                  setTimeout(() => { burst.innerHTML = ''; }, 1600);
                 }}
-              />
+                style={{ fontWeight: 800 }}
+              >
+                💎 Flex
+              </button>
             </div>
             <p className="form-note" style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
               {character.name}

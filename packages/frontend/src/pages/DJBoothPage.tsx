@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { usersApi, uploadsApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -8,6 +8,14 @@ interface ProfileTrack {
   artist: string;
   genre: string;
   url: string;
+}
+
+interface WeeklyTrack {
+  title: string;
+  artist: string;
+  genre: string;
+  url: string;
+  setBy: string | null;
 }
 
 function getTrack(user: any): ProfileTrack | null {
@@ -26,9 +34,28 @@ export default function DJBoothPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [weeklyTrack, setWeeklyTrack] = useState<WeeklyTrack | null>(null);
+  const [isRoyalty, setIsRoyalty] = useState(false);
+  const [settingWeekly, setSettingWeekly] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const track = getTrack(user);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [{ track: wt }, legendary] = await Promise.all([
+          usersApi.weeklyTrack(),
+          usersApi.legendary(),
+        ]);
+        setWeeklyTrack(wt);
+        const me = user?.id;
+        setIsRoyalty(!!me && (legendary.king?.id === me || legendary.queen?.id === me));
+      } catch {
+        /* non-fatal */
+      }
+    })();
+  }, [user?.id]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -58,6 +85,21 @@ export default function DJBoothPage() {
     }
   };
 
+  const setAsWeeklyTrack = async () => {
+    if (!track) return;
+    setSettingWeekly(true);
+    setError(null);
+    try {
+      await usersApi.setWeeklyTrack({ title: track.title, artist: track.artist, genre: track.genre, url: track.url });
+      setWeeklyTrack({ ...track, setBy: user?.displayName ?? null });
+      setNotice('👑 Your track is now the Top Track of the Week for the whole app!');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Could not set weekly track.');
+    } finally {
+      setSettingWeekly(false);
+    }
+  };
+
   const remove = async () => {
     const cfg = { ...((user?.avatarConfig ?? {}) as Record<string, unknown>) };
     delete cfg.profileTrack;
@@ -73,15 +115,31 @@ export default function DJBoothPage() {
         <p className="page-sub">Your profile. Your sound. Upload a rap or R&B track — visitors play it from your page.</p>
       </div>
 
+      {weeklyTrack && (
+        <div className="card" style={{ marginBottom: '1.4rem', borderColor: 'var(--gold)', background: 'linear-gradient(135deg, rgba(201,162,39,0.08), transparent)' }}>
+          <div className="form-note">👑 TOP TRACK OF THE WEEK{weeklyTrack.setBy ? ` — picked by ${weeklyTrack.setBy}` : ''}</div>
+          <h3 style={{ margin: '0.4rem 0' }}>{weeklyTrack.title}</h3>
+          <p className="form-note" style={{ margin: '0 0 0.8rem' }}>{weeklyTrack.artist} · {weeklyTrack.genre.toUpperCase()}</p>
+          <audio controls src={weeklyTrack.url} style={{ width: '100%' }} />
+        </div>
+      )}
+
       {track && (
         <div className="card" style={{ marginBottom: '1.4rem', borderColor: 'var(--gold)' }}>
           <div className="form-note">NOW PLAYING ON YOUR PROFILE</div>
           <h3 style={{ margin: '0.4rem 0' }}>{track.title}</h3>
           <p className="form-note" style={{ margin: '0 0 0.8rem' }}>{track.artist} · {track.genre.toUpperCase()}</p>
           <audio controls src={track.url} style={{ width: '100%' }} />
-          <button className="btn btn-ghost btn-sm" style={{ marginTop: '0.8rem' }} onClick={remove}>
-            Remove track
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem', flexWrap: 'wrap' }}>
+            <button className="btn btn-ghost btn-sm" onClick={remove}>
+              Remove track
+            </button>
+            {isRoyalty && (
+              <button className="btn btn-sm" onClick={setAsWeeklyTrack} disabled={settingWeekly} style={{ fontWeight: 800 }}>
+                {settingWeekly ? 'Setting…' : '👑 Make it Top Track of the Week'}
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -96,6 +96,9 @@ export const usersApi = {
   colorOfWeek: () => get<{ user: User | null; weekStart: string }>('/users/color-of-week'),
   hallOfFame: (limit = 20) => get<{ posts: MediaPost[] }>(`/users/hall-of-fame?limit=${limit}`),
   legendary: () => get<{ king: User | null; queen: User | null; weekStart: string }>('/users/legendary'),
+  weeklyTrack: () => get<{ track: { title: string; artist: string; genre: string; url: string; setBy: string | null; weekStart: string } | null }>('/users/weekly-track'),
+  setWeeklyTrack: (input: { title: string; artist: string; genre: string; url: string }) =>
+    post<{ ok: boolean }>('/users/weekly-track', input),
   like: (id: string) => post<{ liked: boolean }>(`/users/${id}/like`),
   unlike: (id: string) => del<{ liked: boolean }>(`/users/${id}/like`),
   block: (id: string) => post<void>(`/users/${id}/block`),

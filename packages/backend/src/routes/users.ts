@@ -67,6 +67,57 @@ router.get(
   })
 );
 
+// Top Track of the Week — anyone can read; only King/Queen can set.
+router.get(
+  '/weekly-track',
+  requireAuth,
+  asyncHandler(async (_req, res) => {
+    const { rows } = await pool.query(
+      `SELECT wt.*, u.display_name AS set_by_name
+       FROM weekly_tracks wt
+       LEFT JOIN users u ON u.id = wt.set_by_user_id
+       ORDER BY week_start DESC LIMIT 1`
+    );
+    if (!rows.length) return res.json({ track: null });
+    const t = rows[0];
+    res.json({
+      track: {
+        title: t.title, artist: t.artist, genre: t.genre, url: t.url,
+        setBy: t.set_by_name, weekStart: t.week_start,
+      },
+    });
+  })
+);
+
+router.post(
+  '/weekly-track',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { title, artist, genre, url } = req.body ?? {};
+    if (!title || !artist || !url) {
+      res.status(400).json({ error: 'Title, artist, and audio URL are required.' });
+      return;
+    }
+    // Only the current Face King or Queen may set the weekly track.
+    const leg = await getLatestLegendary();
+    const me = req.user!.id;
+    if (leg.king?.id !== me && leg.queen?.id !== me) {
+      res.status(403).json({ error: 'Only the Face King or Face Queen can set the weekly track.' });
+      return;
+    }
+    const week = new Date().toISOString().slice(0, 10);
+    await pool.query(
+      `INSERT INTO weekly_tracks (week_start, set_by_user_id, title, artist, genre, url)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (week_start) DO UPDATE SET
+         set_by_user_id = EXCLUDED.set_by_user_id, title = EXCLUDED.title,
+         artist = EXCLUDED.artist, genre = EXCLUDED.genre, url = EXCLUDED.url`,
+      [week, me, String(title).slice(0, 80), String(artist).slice(0, 80), String(genre || 'rap').slice(0, 20), String(url)]
+    );
+    res.json({ ok: true });
+  })
+);
+
 router.get(
   '/search',
   requireAuth,

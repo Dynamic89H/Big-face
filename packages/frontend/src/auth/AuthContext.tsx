@@ -20,8 +20,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    const { user } = await authApi.me();
-    setUser(user);
+    const { user: fresh } = await authApi.me();
+    setUser((prev) => {
+      if (prev && fresh.level > prev.level) {
+        // Level up! Celebrate with a fanfare.
+        import('../utils/chime').then((m) => m.playLevelUp()).catch(() => undefined);
+      }
+      return fresh;
+    });
   }, []);
 
   // On boot, if a token is stored, restore the session and open the socket.

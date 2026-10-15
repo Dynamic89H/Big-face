@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { giftsApi, walletApi, ApiError, type Gift } from '../api/client';
 import type { GiftCatalogItem } from '../types';
+import { playGiftSound } from '../utils/chime';
 
 // Display emoji per gift catalog key (catalog keys come from the contract).
 export const GIFT_EMOJI: Record<string, string> = {
@@ -54,6 +55,7 @@ export default function GiftDialog({ receiverId, receiverName, onClose, onSent }
         message: message.trim() || undefined,
       });
       setDone(true);
+      playGiftSound();
       onSent?.(gift);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not send the gift. Please try again.');

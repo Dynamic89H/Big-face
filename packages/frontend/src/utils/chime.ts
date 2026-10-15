@@ -19,32 +19,46 @@ function getCtx(): AudioContext | null {
 // C5 E5 G5 C6 — a sparkling major arpeggio
 const NOTES = [523.25, 659.25, 783.99, 1046.5];
 
+function tone(ac: AudioContext, freq: number, startAt: number, dur: number, vol: number, type: OscillatorType = 'sine'): void {
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, startAt);
+  gain.gain.linearRampToValueAtTime(vol, startAt + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, startAt + dur);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(startAt);
+  osc.stop(startAt + dur + 0.1);
+}
+
 export function playRoyalChime(): void {
   const ac = getCtx();
   if (!ac) return;
   const now = ac.currentTime;
   NOTES.forEach((freq, i) => {
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    // Shimmer: add a quiet octave-up harmonic
-    const shimmer = ac.createOscillator();
-    const shimmerGain = ac.createGain();
-    shimmer.type = 'sine';
-    shimmer.frequency.value = freq * 2;
-    shimmerGain.gain.value = 0.15;
-
     const t = now + i * 0.12;
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.35, t + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-
-    osc.connect(gain).connect(ac.destination);
-    shimmer.connect(shimmerGain).connect(ac.destination);
-    osc.start(t);
-    shimmer.start(t);
-    osc.stop(t + 1.3);
-    shimmer.stop(t + 1.3);
+    tone(ac, freq, t, 1.2, 0.35);
+    tone(ac, freq * 2, t, 0.8, 0.05); // shimmer harmonic
   });
+}
+
+// Level-up fanfare — triumphant ascending run.
+export function playLevelUp(): void {
+  const ac = getCtx();
+  if (!ac) return;
+  const now = ac.currentTime;
+  [392, 523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {
+    tone(ac, f, now + i * 0.09, 0.7, 0.3, 'triangle');
+  });
+}
+
+// Gift received — bright cha-ching.
+export function playGiftSound(): void {
+  const ac = getCtx();
+  if (!ac) return;
+  const now = ac.currentTime;
+  tone(ac, 880, now, 0.4, 0.3, 'sine');
+  tone(ac, 1318.5, now + 0.08, 0.6, 0.3, 'sine');
+  tone(ac, 1760, now + 0.16, 0.8, 0.15, 'sine');
 }
