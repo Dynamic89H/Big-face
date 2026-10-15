@@ -35,4 +35,44 @@ router.post('/payout', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, 
     const result = await (0, stripe_1.createPayout)(req.user.id, amountCents);
     res.status(201).json({ payout: result.payout });
 }));
+// Payout history — full transparency, every payout with its status.
+router.get('/payouts', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
+    const { rows } = await db_1.pool.query(`SELECT id, amount_cents, status, stripe_transfer_id, created_at
+       FROM payouts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`, [req.user.id]);
+    res.json({
+        payouts: rows.map((r) => ({
+            id: String(r.id),
+            amountCents: Number(r.amount_cents),
+            status: r.status,
+            createdAt: new Date(r.created_at).toISOString(),
+        })),
+    });
+}));
+const autoPayoutSchema = zod_1.z.object({
+    enabled: zod_1.z.boolean(),
+    thresholdCents: zod_1.z.number().int().min(1000).max(1000000).optional(), // min $10
+});
+// Auto-payout settings: money hits the account automatically when the threshold is reached.
+router.post('/auto-payout', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
+    const { enabled, thresholdCents } = autoPayoutSchema.parse(req.body);
+    const { rows: u } = await db_1.pool.query('SELECT stripe_connect_account_id FROM users WHERE id = $1', [req.user.id]);
+    if (enabled && !u[0]?.stripe_connect_account_id) {
+        throw new util_1.HttpError(400, 'Connect a payout account first before enabling auto-payout');
+    }
+    await db_1.pool.query(`UPDATE users SET auto_payout_enabled = $1,
+        auto_payout_threshold_cents = COALESCE($2, auto_payout_threshold_cents)
+       WHERE id = $3`, [enabled, thresholdCents ?? null, req.user.id]);
+    const { rows } = await db_1.pool.query('SELECT auto_payout_enabled, auto_payout_threshold_cents FROM users WHERE id = $1', [req.user.id]);
+    res.json({
+        autoPayoutEnabled: rows[0].auto_payout_enabled,
+        autoPayoutThresholdCents: Number(rows[0].auto_payout_threshold_cents),
+    });
+}));
+router.get('/auto-payout', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
+    const { rows } = await db_1.pool.query('SELECT auto_payout_enabled, auto_payout_threshold_cents FROM users WHERE id = $1', [req.user.id]);
+    res.json({
+        autoPayoutEnabled: rows[0]?.auto_payout_enabled ?? false,
+        autoPayoutThresholdCents: Number(rows[0]?.auto_payout_threshold_cents ?? 5000),
+    });
+}));
 exports.default = router;

@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const zod_1 = require("zod");
@@ -9,6 +42,35 @@ const legendary_1 = require("../services/legendary");
 const paypal_1 = require("../services/paypal");
 const sockets_1 = require("../sockets");
 const router = (0, express_1.Router)();
+// Auto-payout processor — service-key auth (for cron), registered BEFORE the
+// admin middleware below. Processes every user with auto-payout enabled whose
+// token balance meets their threshold. Failures are logged, tokens stay put.
+router.post('/process-auto-payouts', (0, util_1.asyncHandler)(async (req, res) => {
+    const apiKey = req.header('x-admin-key');
+    const expected = process.env.ADMIN_API_KEY;
+    if (!expected || apiKey !== expected) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+    }
+    const { createPayout } = await Promise.resolve().then(() => __importStar(require('../services/stripe')));
+    const { rows: users } = await db_1.pool.query(`SELECT id, token_balance, auto_payout_threshold_cents
+       FROM users
+       WHERE auto_payout_enabled = true
+         AND stripe_connect_account_id IS NOT NULL
+         AND token_balance >= auto_payout_threshold_cents`);
+    const results = [];
+    for (const u of users) {
+        const amountCents = Math.min(Number(u.token_balance), Number(u.auto_payout_threshold_cents));
+        try {
+            await createPayout(String(u.id), amountCents);
+            results.push({ userId: String(u.id), ok: true });
+        }
+        catch (e) {
+            results.push({ userId: String(u.id), ok: false, note: e?.message ?? 'unknown' });
+        }
+    }
+    res.json({ processed: results.length, results });
+}));
 router.use(auth_1.requireAuth, auth_1.requireAdmin);
 const crownWeekSchema = zod_1.z.object({
     weekStart: zod_1.z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'weekStart must be YYYY-MM-DD'),

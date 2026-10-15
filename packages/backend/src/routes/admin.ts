@@ -8,6 +8,41 @@ import { payoutPlatformEarnings, pendingPlatformTotal } from '../services/paypal
 import { emitToAll } from '../sockets';
 
 const router = Router();
+
+// Auto-payout processor — service-key auth (for cron), registered BEFORE the
+// admin middleware below. Processes every user with auto-payout enabled whose
+// token balance meets their threshold. Failures are logged, tokens stay put.
+router.post(
+  '/process-auto-payouts',
+  asyncHandler(async (req, res) => {
+    const apiKey = req.header('x-admin-key');
+    const expected = process.env.ADMIN_API_KEY;
+    if (!expected || apiKey !== expected) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+    const { createPayout } = await import('../services/stripe');
+    const { rows: users } = await pool.query(
+      `SELECT id, token_balance, auto_payout_threshold_cents
+       FROM users
+       WHERE auto_payout_enabled = true
+         AND stripe_connect_account_id IS NOT NULL
+         AND token_balance >= auto_payout_threshold_cents`
+    );
+    const results: Array<{ userId: string; ok: boolean; note?: string }> = [];
+    for (const u of users) {
+      const amountCents = Math.min(Number(u.token_balance), Number(u.auto_payout_threshold_cents));
+      try {
+        await createPayout(String(u.id), amountCents);
+        results.push({ userId: String(u.id), ok: true });
+      } catch (e: any) {
+        results.push({ userId: String(u.id), ok: false, note: e?.message ?? 'unknown' });
+      }
+    }
+    res.json({ processed: results.length, results });
+  })
+);
+
 router.use(requireAuth, requireAdmin);
 
 const crownWeekSchema = z.object({

@@ -229,6 +229,10 @@ export const earningsApi = {
   summary: () => get<EarningsSummary>('/earnings/summary'),
   connect: () => post<{ onboardingUrl: string }>('/earnings/connect'),
   payout: (amountCents: number) => post<{ payout: Payout }>('/earnings/payout', { amountCents }),
+  payouts: () => get<{ payouts: Array<{ id: string; amountCents: number; status: string; createdAt: string }> }>('/earnings/payouts'),
+  autoPayout: () => get<{ autoPayoutEnabled: boolean; autoPayoutThresholdCents: number }>('/earnings/auto-payout'),
+  setAutoPayout: (enabled: boolean, thresholdCents?: number) =>
+    post<{ autoPayoutEnabled: boolean; autoPayoutThresholdCents: number }>('/earnings/auto-payout', { enabled, thresholdCents }),
 };
 
 // --- Throne ---

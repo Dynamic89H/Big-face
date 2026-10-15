@@ -21,11 +21,25 @@ export default function EarningsPage() {
   const [payoutError, setPayoutError] = useState<string | null>(null);
   const [payoutDone, setPayoutDone] = useState(false);
 
+  const [payouts, setPayouts] = useState<Array<{ id: string; amountCents: number; status: string; createdAt: string }>>([]);
+  const [autoEnabled, setAutoEnabled] = useState(false);
+  const [autoThreshold, setAutoThreshold] = useState('50');
+  const [autoBusy, setAutoBusy] = useState(false);
+  const [autoMsg, setAutoMsg] = useState<string | null>(null);
+
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      setSummary(await earningsApi.summary());
+      const [s, p, a] = await Promise.all([
+        earningsApi.summary(),
+        earningsApi.payouts().catch(() => ({ payouts: [] })),
+        earningsApi.autoPayout().catch(() => ({ autoPayoutEnabled: false, autoPayoutThresholdCents: 5000 })),
+      ]);
+      setSummary(s);
+      setPayouts(p.payouts);
+      setAutoEnabled(a.autoPayoutEnabled);
+      setAutoThreshold(String(a.autoPayoutThresholdCents / 100));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not load your earnings.');
     } finally {
@@ -71,6 +85,40 @@ export default function EarningsPage() {
     } finally {
       setPayoutBusy(false);
     }
+  };
+
+  const toggleAutoPayout = async () => {
+    setAutoBusy(true);
+    setAutoMsg(null);
+    try {
+      const thresholdCents = Math.round(parseFloat(autoThreshold || '50') * 100);
+      const r = await earningsApi.setAutoPayout(!autoEnabled, thresholdCents);
+      setAutoEnabled(r.autoPayoutEnabled);
+      setAutoMsg(r.autoPayoutEnabled
+        ? `✅ Auto-payout ON — money hits your account automatically every time you reach $${(r.autoPayoutThresholdCents / 100).toFixed(0)}.`
+        : 'Auto-payout turned off.');
+    } catch (err) {
+      setAutoMsg(err instanceof ApiError ? `⚠️ ${err.message}` : 'Could not update auto-payout.');
+    } finally {
+      setAutoBusy(false);
+    }
+  };
+
+  const statusBadge = (status: string) => {
+    const styles: Record<string, { bg: string; label: string }> = {
+      paid: { bg: 'var(--green)', label: '✅ Paid' },
+      pending: { bg: 'var(--gold)', label: '⏳ Processing' },
+      failed: { bg: 'var(--coral)', label: '❌ Failed — tokens refunded' },
+    };
+    const s = styles[status] ?? { bg: 'var(--text-dim)', label: status };
+    return (
+      <span style={{
+        background: s.bg, color: '#fff', fontWeight: 700, fontSize: '0.75rem',
+        padding: '0.2rem 0.6rem', borderRadius: 20, whiteSpace: 'nowrap',
+      }}>
+        {s.label}
+      </span>
+    );
   };
 
   return (
@@ -162,6 +210,66 @@ export default function EarningsPage() {
                 Big Face takes a 30% platform fee — you receive 70% of your payout amount.
               </p>
             </div>
+          </div>
+
+          {/* Auto-payout — money hits the account automatically */}
+          <div className="card" style={{ marginTop: '1.2rem', borderColor: autoEnabled ? 'var(--green)' : undefined }}>
+            <h3>⚡ Auto-payout</h3>
+            <p className="form-note">
+              Turn this on and your earnings hit your account <strong>automatically</strong> every
+              time you reach your threshold. No requests, no waiting, no excuses.
+            </p>
+            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.6rem' }}>
+              <label htmlFor="auto-threshold" className="form-note">Cash out at $</label>
+              <input
+                id="auto-threshold"
+                className="input"
+                type="number"
+                min={10}
+                step="5"
+                value={autoThreshold}
+                onChange={(e) => setAutoThreshold(e.target.value)}
+                disabled={autoEnabled}
+                style={{ width: 90 }}
+              />
+              <button className="btn" onClick={toggleAutoPayout} disabled={autoBusy}>
+                {autoBusy ? 'Saving…' : autoEnabled ? 'Turn OFF auto-payout' : 'Turn ON auto-payout'}
+              </button>
+            </div>
+            {autoMsg && <p className="form-note" style={{ marginTop: '0.6rem' }}>{autoMsg}</p>}
+          </div>
+
+          {/* Payout history — full transparency */}
+          <div className="card" style={{ marginTop: '1.2rem' }}>
+            <h3>📜 Payout history</h3>
+            {payouts.length === 0 ? (
+              <p className="form-note">No payouts yet. Your history will appear here with live status.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.6rem' }}>
+                {payouts.map((p) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '0.6rem 0.8rem', background: 'var(--surface)',
+                      borderRadius: 8, gap: '0.6rem', flexWrap: 'wrap',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 800 }}>${(p.amountCents / 100).toFixed(2)}</div>
+                      <div className="form-note" style={{ fontSize: '0.75rem' }}>
+                        {new Date(p.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                    </div>
+                    {statusBadge(p.status)}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="form-note" style={{ marginTop: '0.8rem', marginBottom: 0 }}>
+              💚 Every payout is tracked. If one ever fails, your tokens are refunded automatically —
+              you never lose money silently.
+            </p>
           </div>
         </>
       )}
