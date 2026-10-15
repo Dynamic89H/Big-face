@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreatorEngine, { DEFAULT_CONFIG, type CharacterConfig } from '../components/CreatorEngine';
+import MetaPersonCreator from '../components/MetaPersonCreator';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { usersApi } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
@@ -23,6 +24,21 @@ export default function CharacterStudioPage() {
   const [config, setConfig] = useState<CharacterConfig>(DEFAULT_CONFIG);
   const [saving, setSaving] = useState(false);
   const [section, setSection] = useState<'face' | 'hair' | 'body' | 'style'>('face');
+  const [engine, setEngine] = useState<'custom' | 'pro'>('custom');
+
+  const handleProAvatar = async (url: string, gender: string) => {
+    setSaving(true);
+    try {
+      await usersApi.updateMe({ avatarConfig: { proAvatarUrl: url, gender } });
+      await refreshUser();
+      celebrate('🎉 Pro Avatar Created!', true);
+      setTimeout(() => navigate('/avatar-studio'), 1500);
+    } catch {
+      /* ignore */
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const update = (patch: Partial<CharacterConfig>) => setConfig((c) => ({ ...c, ...patch }));
 
@@ -82,6 +98,37 @@ export default function CharacterStudioPage() {
         Build YOUR character from scratch. Every change updates in real-time 3D.
       </p>
 
+      {/* Engine selector */}
+      <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', marginBottom: '1rem' }}>
+        <button
+          className={`btn ${engine === 'custom' ? '' : 'btn-ghost'}`}
+          onClick={() => setEngine('custom')}
+          style={{ flex: 1, maxWidth: 220 }}
+        >
+          🛠️ Big Face Engine
+          <div style={{ fontSize: '0.75rem', fontWeight: 400, opacity: 0.8 }}>Build from scratch</div>
+        </button>
+        <button
+          className={`btn ${engine === 'pro' ? '' : 'btn-ghost'}`}
+          onClick={() => setEngine('pro')}
+          style={{ flex: 1, maxWidth: 220 }}
+        >
+          📸 Pro Engine
+          <div style={{ fontSize: '0.75rem', fontWeight: 400, opacity: 0.8 }}>Selfie → 3D avatar</div>
+        </button>
+      </div>
+
+      {engine === 'pro' ? (
+        <div className="card">
+          <h3 style={{ textAlign: 'center' }}>📸 Pro Avatar Engine</h3>
+          <p className="form-note" style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            Upload a selfie and get a realistic 3D avatar that looks like YOU in about a minute.
+            Powered by Avatar SDK — the industry standard.
+          </p>
+          <MetaPersonCreator onAvatarExported={handleProAvatar} height={600} />
+        </div>
+      ) : (
+      <>
       <div className="card" style={{ textAlign: 'center', marginBottom: '1rem', padding: '1rem' }}>
         {/* Gender selector */}
         <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', marginBottom: '1rem' }}>
@@ -235,6 +282,8 @@ export default function CharacterStudioPage() {
       <button className="btn btn-block" style={{ marginTop: '1.2rem', fontSize: '1.1rem', padding: '0.9rem' }} onClick={save} disabled={saving}>
         {saving ? 'Creating…' : '✨ Create My Character'}
       </button>
+      </>
+      )}
     </div>
   );
 }
