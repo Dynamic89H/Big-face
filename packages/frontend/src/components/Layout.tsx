@@ -9,6 +9,7 @@ import Avatar, { facePhotoOf } from './Avatar';
 import { GIFT_EMOJI } from './GiftDialog';
 import WhatIsBigFace from './WhatIsBigFace';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { celebrate } from './Celebration';
 
 interface Toast {
   id: number;
@@ -76,6 +77,9 @@ export default function Layout() {
     const onRankUp = (p: RankUpPayload) => {
       const who = p.userId === user?.id ? 'You' : 'Someone';
       pushToast(`🎉 ${who} ranked up!`, `${who === 'You' ? 'You are' : 'They are'} now Level ${p.level} — ${p.tier}.`);
+      if (p.userId === user?.id) {
+        celebrate(`🎉 LEVEL ${p.level}!`, true);
+      }
     };
     const onGift = (p: GiftReceivedPayload) => {
       const emoji = GIFT_EMOJI[p.gift.giftKey] ?? '🎁';

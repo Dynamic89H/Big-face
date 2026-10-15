@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { gambleApi, ApiError } from '../api/client';
+import { celebrate } from '../components/Celebration';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -132,6 +133,9 @@ export default function GamblePage() {
       setTimeout(() => {
         setRolling(false);
         setResult(r);
+        if (r.winnerId === user?.id) {
+          celebrate(`🏆 YOU WON ${r.winnerPayout.toLocaleString()} TOKENS!`, true);
+        }
         load();
       }, 1500);
     } catch (e) {

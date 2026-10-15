@@ -136,18 +136,38 @@ h1:not(.wordmark) {
 .main { flex: 1; min-width: 0; padding: 1.6rem; max-width: 1180px; margin: 0 auto; width: 100%; position: relative; }
 .page-head { margin-bottom: 1.4rem; }
 
-/* Page glow accent — subtle top light bar */
+/* ---------- Page transitions — entertainment feel ---------- */
 .page {
   position: relative;
+  animation: page-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.page::before {
-  content: '';
-  position: absolute;
-  top: -1.6rem; left: 10%; right: 10%;
-  height: 120px;
-  background: radial-gradient(ellipse 60% 100% at 50% 0%, rgba(0, 240, 255, 0.08), transparent 70%);
-  pointer-events: none;
-  z-index: -1;
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Staggered card entrances */
+.card {
+  animation: card-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Live pulse for "live" indicators */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.92); }
+}
+.live-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #ff3b3b;
+  animation: live-pulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(255, 59, 59, 0.8);
+  margin-right: 6px;
 }
 
 /* Bottom nav (mobile) */

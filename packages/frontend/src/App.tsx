@@ -50,11 +50,13 @@ function PublicOnly({ children }: { children: ReactNode }) {
 }
 
 import EngineCanvas from './components/EngineCanvas';
+import Celebration from './components/Celebration';
 
 export default function App() {
   return (
     <BrowserRouter>
       <EngineCanvas />
+      <Celebration />
       <LangProvider>
       <AuthProvider>
         <Routes>
