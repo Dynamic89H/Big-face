@@ -181,14 +181,20 @@ export const RARITY_COLORS: Record<AvatarItem['rarity'], string> = {
 };
 
 export const PROFILE_PRESETS = [
-  '#0066FF',
-  '#FF5C5C',
-  '#22c55e',
-  '#a855f7',
-  '#f59e0b',
-  '#ec4899',
-  '#14b8a6',
-  '#f2f4f8',
+  // Blues
+  '#0066FF', '#3b82f6', '#0ea5e9', '#06b6d4',
+  // Reds & Corals
+  '#FF5C5C', '#ef4444', '#f97316', '#fb7185',
+  // Greens
+  '#22c55e', '#10b981', '#84cc16', '#14b8a6',
+  // Purples & Pinks
+  '#a855f7', '#8b5cf6', '#ec4899', '#d946ef',
+  // Golds & Oranges
+  '#f59e0b', '#eab308', '#d4af37', '#b45309',
+  // Neutrals & Dark
+  '#f2f4f8', '#9ca3af', '#374151', '#111827',
+  // Bold & Neon
+  '#00ff88', '#ff00aa', '#ccff00', '#7c3aed',
 ];
 
 export function initialsOf(name: string): string {
