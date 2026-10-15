@@ -6,7 +6,7 @@ import type { RoomSummary, User } from '../types';
 import { timeAgo } from '../types';
 import Avatar, { facePhotoOf } from '../components/Avatar';
 import { usePageTitle } from '../hooks/usePageTitle';
-import GameLobby from '../components/GameLobby';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 // Room list with "New room" and "New DM" flows. User lookup for DMs searches
 // the leaderboard (the contract has no username-search endpoint).
@@ -110,7 +110,6 @@ export default function ChatsPage() {
 
   return (
     <div>
-      <GameLobby width={1200} height={420} characterCount={6} />
       <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginTop: '1.5rem' }}>
         <div>
           <h1 className="page-title">Chats</h1>

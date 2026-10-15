@@ -290,20 +290,35 @@ export default function AvatarStudioPage() {
             <p className="form-note" style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
               {character.name}
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '0.8rem' }}>
+            {/* All 9 character models — browse and select */}
+            <h4 style={{ textAlign: 'center', margin: '1rem 0 0.6rem' }}>Your Character Models</h4>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: '0.8rem', marginBottom: '1rem',
+            }}>
               {CHARACTERS.map((c) => (
-                <button
+                <div
                   key={c.id}
                   onClick={() => selectCharacter(c.id)}
-                  title={c.name}
                   style={{
-                    width: 56, height: 56, borderRadius: 12, overflow: 'hidden', padding: 0,
+                    cursor: 'pointer', borderRadius: 16, overflow: 'hidden',
                     border: c.id === characterId ? `3px solid ${user?.profileColor || '#0066FF'}` : '2px solid var(--border)',
-                    cursor: 'pointer', opacity: c.id === characterId ? 1 : 0.65,
+                    opacity: c.id === characterId ? 1 : 0.75,
+                    transition: 'transform 0.2s, opacity 0.2s',
+                    transform: c.id === characterId ? 'scale(1.03)' : 'scale(1)',
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = c.id === characterId ? 'scale(1.03)' : 'scale(1)'; }}
                 >
-                  <img src={c.img} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
-                </button>
+                  <LivingCharacter img={c.img} name={c.name} width={160} height={200} />
+                  <div style={{
+                    textAlign: 'center', padding: '0.4rem', fontWeight: 700, fontSize: '0.8rem',
+                    background: c.id === characterId ? user?.profileColor || '#0066FF' : 'rgba(0,0,0,0.6)',
+                    color: '#fff',
+                  }}>
+                    {c.id === characterId ? '✓ ' : ''}{c.name}
+                  </div>
+                </div>
               ))}
             </div>
             <input
