@@ -67,18 +67,24 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     mount.appendChild(renderer.domElement);
 
-    // Studio lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-    const key = new THREE.DirectionalLight(0xfff5e6, 1.5);
-    key.position.set(3, 5, 4);
+    // Studio lighting — soft and flattering (not harsh)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const key = new THREE.DirectionalLight(0xfff5e6, 1.2);
+    key.position.set(2.5, 4, 3.5);
     key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.radius = 4; // Soft shadows
     scene.add(key);
-    const fill = new THREE.DirectionalLight(0xcce6ff, 0.4);
-    fill.position.set(-3, 2, 3);
+    const fill = new THREE.DirectionalLight(0xe8f0ff, 0.5);
+    fill.position.set(-3, 1.5, 2.5);
     scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xffd700, 0.3);
-    rim.position.set(0, 4, -4);
+    const rim = new THREE.DirectionalLight(0xffd700, 0.25);
+    rim.position.set(0, 3, -4);
     scene.add(rim);
+    // Subtle front light to keep face readable
+    const front = new THREE.DirectionalLight(0xffffff, 0.3);
+    front.position.set(0, 1.5, 5);
+    scene.add(front);
 
     const character = new THREE.Group();
     scene.add(character);
@@ -93,10 +99,14 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
         character.remove(child);
       }
 
-      const skin = new THREE.MeshStandardMaterial({ color: new THREE.Color(cfg.skinTone), roughness: 0.55 });
-      const hairMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(cfg.hairColor), roughness: 0.7 });
-      const eyeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(cfg.eyeColor), roughness: 0.2 });
-      const lipMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(cfg.lipColor), roughness: 0.5 });
+      // Skin with subtle sheen for a natural look (not flat, not plastic)
+      const skin = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(cfg.skinTone),
+        roughness: 0.45, metalness: 0.0,
+      });
+      const hairMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(cfg.hairColor), roughness: 0.55 });
+      const eyeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(cfg.eyeColor), roughness: 0.15 });
+      const lipMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(cfg.lipColor), roughness: 0.35 });
 
       const isFemale = cfg.gender === 'female';
 
