@@ -6,6 +6,8 @@ import type { AvatarItem } from '../types';
 import { RARITY_COLORS } from '../types';
 import CharacterAvatar from '../components/CharacterAvatar';
 import ModelAvatar from '../components/ModelAvatar';
+import Avatar3D from '../components/Avatar3D';
+import RPMCreator from '../components/RPMCreator';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function AvatarStudioPage() {
@@ -23,6 +25,8 @@ export default function AvatarStudioPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [facePhotoUrl, setFacePhotoUrl] = useState<string | null>(null);
+  const [avatar3dUrl, setAvatar3dUrl] = useState<string | null>(null);
+  const [showRPM, setShowRPM] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -42,10 +46,24 @@ export default function AvatarStudioPage() {
       // Restore saved face photo and 3D avatar from avatar config.
       const cfg = (user?.avatarConfig ?? {}) as Record<string, unknown>;
       if (typeof cfg.facePhotoUrl === 'string') setFacePhotoUrl(cfg.facePhotoUrl);
+      if (typeof cfg.avatar3dUrl === 'string') setAvatar3dUrl(cfg.avatar3dUrl);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not load the studio.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveAvatar3d = async (url: string) => {
+    setShowRPM(false);
+    setActionError(null);
+    try {
+      const cfg = { ...((user?.avatarConfig ?? {}) as Record<string, unknown>), avatar3dUrl: url };
+      await usersApi.updateMe({ avatarConfig: cfg });
+      setAvatar3dUrl(url);
+      refreshUser().catch(() => undefined);
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : 'Could not save your 3D avatar.');
     }
   };
 
@@ -210,12 +228,43 @@ export default function AvatarStudioPage() {
 
           <div className="card preview-stage">
             <h3 style={{ margin: 0 }}>Your character</h3>
-            <ModelAvatar
-              equipped={equipped}
-              facePhotoUrl={facePhotoUrl}
-              profileColor={user?.profileColor}
-              size={240}
-            />
+            {avatar3dUrl ? (
+              <div>
+                <Avatar3D avatarUrl={avatar3dUrl} size={240} />
+                <button
+                  className="btn btn-ghost btn-block"
+                  style={{ marginTop: '0.5rem' }}
+                  onClick={() => setShowRPM(true)}
+                >
+                  🔄 Make a new realistic avatar
+                </button>
+              </div>
+            ) : (
+              <div>
+                <ModelAvatar
+                  equipped={equipped}
+                  facePhotoUrl={facePhotoUrl}
+                  profileColor={user?.profileColor}
+                  size={240}
+                />
+                <button
+                  className="btn btn-block"
+                  style={{ marginTop: '0.5rem', background: 'linear-gradient(135deg, #7c3aed, #0066FF)' }}
+                  onClick={() => setShowRPM(true)}
+                >
+                  ✨ Create my realistic 3D avatar
+                </button>
+                <p className="form-note" style={{ textAlign: 'center' }}>
+                  Build a lifelike 3D you — face, body, style.
+                </p>
+              </div>
+            )}
+            {showRPM && (
+              <RPMCreator
+                onAvatarExported={saveAvatar3d}
+                onClose={() => setShowRPM(false)}
+              />
+            )}
             <input
               ref={fileRef}
               type="file"
