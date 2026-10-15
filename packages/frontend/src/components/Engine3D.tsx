@@ -148,6 +148,156 @@ export default function Engine3D({ slot, style, width = 200, height = 200 }: Eng
         group.add(brim);
         break;
       }
+      case 'top': {
+        // 3D hoodie/jacket — torso + sleeves + hood
+        const mat = fabricMat;
+        const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.9, 16), mat);
+        torso.position.y = 0;
+        group.add(torso);
+        // Sleeves
+        [-1, 1].forEach((side) => {
+          const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.7, 12), mat);
+          sleeve.position.set(side * 0.55, 0.1, 0);
+          sleeve.rotation.z = side * 0.25;
+          group.add(sleeve);
+        });
+        // Hood
+        const hood = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.12, 12, 24), mat);
+        hood.position.set(0, 0.55, -0.05);
+        group.add(hood);
+        // Pocket
+        const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 0.06), mat);
+        pocket.position.set(0, -0.25, 0.42);
+        group.add(pocket);
+        // Drawstrings
+        [-1, 1].forEach((side) => {
+          const str = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.25, 8),
+            new THREE.MeshStandardMaterial({ color: 0xdddddd }));
+          str.position.set(side * 0.12, 0.35, 0.42);
+          group.add(str);
+        });
+        break;
+      }
+      case 'bottom': {
+        // 3D pants — waist + two legs
+        const mat = fabricMat;
+        const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.44, 0.25, 16), mat);
+        waist.position.y = 0.5;
+        group.add(waist);
+        [-1, 1].forEach((side) => {
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.9, 12), mat);
+          leg.position.set(side * 0.2, -0.05, 0);
+          group.add(leg);
+          // Cuff
+          const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.08, 12),
+            new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.7) }));
+          cuff.position.set(side * 0.2, -0.48, 0);
+          group.add(cuff);
+        });
+        break;
+      }
+      case 'shoes': {
+        // Realistic 3D sneaker — sole, upper, laces, swoosh-like accent
+        const upperMat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(color), roughness: 0.6, metalness: 0.15,
+        });
+        const soleMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.4 });
+        const accentMat = new THREE.MeshStandardMaterial({
+          color: (style.brand as string) === 'jordan' ? 0xc1121f : 0x222222, roughness: 0.5,
+        });
+
+        // Sole
+        const sole = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.14, 1.0), soleMat);
+        sole.position.y = -0.35;
+        // Round the sole with a slightly larger midsole
+        const midsole = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 1.0, 16), soleMat);
+        midsole.rotation.x = Math.PI / 2;
+        midsole.position.y = -0.35;
+        midsole.scale.set(1, 1, 0.35);
+        group.add(sole);
+
+        // Upper — toe box (sphere squashed)
+        const toeBox = new THREE.Mesh(new THREE.SphereGeometry(0.28, 20, 16), upperMat);
+        toeBox.scale.set(0.75, 0.55, 1.1);
+        toeBox.position.set(0, -0.18, 0.28);
+        group.add(toeBox);
+
+        // Heel counter
+        const heel = new THREE.Mesh(new THREE.SphereGeometry(0.26, 20, 16), upperMat);
+        heel.scale.set(0.8, 0.9, 0.8);
+        heel.position.set(0, -0.1, -0.3);
+        group.add(heel);
+
+        // Ankle collar
+        const collar = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.09, 12, 20), upperMat);
+        collar.position.set(0, 0.12, -0.28);
+        collar.rotation.x = 0.3;
+        group.add(collar);
+
+        // Tongue
+        const tongue = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.08), upperMat);
+        tongue.position.set(0, 0.05, 0.02);
+        tongue.rotation.x = -0.25;
+        group.add(tongue);
+
+        // Laces — 4 cross bars
+        for (let i = 0; i < 4; i++) {
+          const lace = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 8),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }));
+          lace.rotation.z = Math.PI / 2;
+          lace.position.set(0, -0.02 + i * 0.07, 0.12 - i * 0.035);
+          lace.rotation.x = -0.2;
+          group.add(lace);
+        }
+
+        // Side accent stripe
+        [-1, 1].forEach((side) => {
+          const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.12, 0.5), accentMat);
+          stripe.position.set(side * 0.2, -0.15, 0);
+          stripe.rotation.y = side * 0.1;
+          group.add(stripe);
+        });
+
+        if (style.shimmer) {
+          const glow = new THREE.PointLight(0xffd700, 8, 3);
+          glow.position.set(0, 0.3, 0.5);
+          group.add(glow);
+        }
+        break;
+      }
+      case 'hair': {
+        // 3D hair — volume based on length
+        const hairMat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(color), roughness: 0.7, metalness: 0.05,
+        });
+        const length = (style.length as string) || 'medium';
+        const hairBall = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 18), hairMat);
+        hairBall.scale.set(1, 0.85, 1);
+        hairBall.position.y = 0.25;
+        group.add(hairBall);
+        if (length === 'long') {
+          [-1, 1].forEach((side) => {
+            const lock = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.06, 0.7, 10), hairMat);
+            lock.position.set(side * 0.32, -0.15, 0.05);
+            lock.rotation.z = side * 0.12;
+            group.add(lock);
+          });
+          const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.15), hairMat);
+          back.position.set(0, -0.1, -0.3);
+          group.add(back);
+        } else if (length === 'medium') {
+          const sides = new THREE.Mesh(new THREE.SphereGeometry(0.4, 20, 14), hairMat);
+          sides.scale.set(1.05, 0.7, 1.02);
+          sides.position.y = 0.1;
+          group.add(sides);
+        }
+        // Shine
+        const shine = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10),
+          new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 }));
+        shine.position.set(-0.15, 0.45, 0.3);
+        group.add(shine);
+        break;
+      }
       default: {
         // Generic gem for unknown slots
         const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.4), diamondMat);

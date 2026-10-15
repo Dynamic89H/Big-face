@@ -7,8 +7,8 @@ interface ItemVisualProps {
   size?: number;
 }
 
-// Slots that render in full 3D.
-const ENGINE_3D_SLOTS = ['chain', 'ring', 'watch', 'earring', 'grill', 'hat'];
+// Slots that render in full 3D — the complete engine lineup.
+const ENGINE_3D_SLOTS = ['chain', 'ring', 'watch', 'earring', 'grill', 'hat', 'top', 'bottom', 'shoes', 'hair'];
 
 // Maps item slot + style to realistic product images.
 function imageFor(slot: string, style: Record<string, unknown>, name: string): string | null {
