@@ -11,6 +11,10 @@ import { usePageTitle } from '../hooks/usePageTitle';
 const CHARACTERS = [
   { id: 'male-street', name: 'Street King', img: '/avatar-realistic-default.webp' },
   { id: 'female-street', name: 'Street Queen', img: '/avatar-female-street.webp' },
+  { id: 'female-natural', name: 'Natural Beauty', img: '/avatar-female-natural.webp' },
+  { id: 'female-bob', name: 'Boss Bob', img: '/avatar-female-bob.webp' },
+  { id: 'female-locs', name: 'Goddess Locs', img: '/avatar-female-locs.webp' },
+  { id: 'female-pixie', name: 'Pixie Fresh', img: '/avatar-female-pixie.webp' },
   { id: 'male-fresh', name: 'Sharp Suit', img: '/avatar-male-fresh.webp' },
   { id: 'female-glam', name: 'Red Carpet', img: '/avatar-female-glam.webp' },
   { id: 'male-sporty', name: 'Ball Player', img: '/avatar-male-sporty.webp' },
