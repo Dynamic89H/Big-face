@@ -141,6 +141,7 @@ export default function EarningsPage() {
                 {validUsd && (
                   <p className="form-note">
                     ≈ <strong>{tokensNeeded} tokens</strong> will be converted at 100 tokens = $1.00.
+                    You'll receive <strong>${(usdNum * 0.7).toFixed(2)}</strong> after the 30% platform fee.
                     {!affordable && <span style={{ color: 'var(--coral)' }}> You only have {summary.tokenBalance} tokens.</span>}
                   </p>
                 )}
@@ -156,6 +157,7 @@ export default function EarningsPage() {
               </form>
               <p className="form-note" style={{ marginTop: '0.8rem', marginBottom: 0 }}>
                 Payout history and status are available in your connected payout dashboard.
+                Big Face takes a 30% platform fee — you receive 70% of your payout amount.
               </p>
             </div>
           </div>
