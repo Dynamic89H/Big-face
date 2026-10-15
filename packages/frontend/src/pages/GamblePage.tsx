@@ -125,8 +125,8 @@ export default function GamblePage() {
 
   const join = async (gameId: string, bet: number) => {
     // Everyone needs an avatar to play.
-    if (!user?.characterId) {
-      setMsg('🎭 You need an avatar to play! Pick your character in the Avatar Studio first.');
+    if (!user?.avatarConfig) {
+      setMsg('🎭 You need an avatar to play! Set up your character in the Avatar Studio first.');
       return;
     }
     if (!confirm(`Match the ${bet.toLocaleString()} token bet and roll?`)) return;
