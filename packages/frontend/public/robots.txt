@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://big-face-frontend-production.up.railway.app/sitemap.xml
