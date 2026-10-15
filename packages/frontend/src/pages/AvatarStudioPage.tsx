@@ -7,6 +7,7 @@ import { RARITY_COLORS } from '../types';
 import CharacterAvatar from '../components/CharacterAvatar';
 import ItemVisual from '../components/ItemVisual';
 import HeroAvatar3D from '../components/HeroAvatar3D';
+import RealisticAvatar3D from '../components/RealisticAvatar3D';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 // Character lineup — realistic 3D game-style base characters users pick from.
@@ -259,7 +260,13 @@ export default function AvatarStudioPage() {
               </button>
             </div>
             {view3D ? (
-              <HeroAvatar3D width={240} height={320} />
+              <RealisticAvatar3D
+                width={260}
+                height={420}
+                characterImg={character.img}
+                characterName={character.name}
+                equipped={equipped}
+              />
             ) : (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
               <div style={{ position: 'relative' }}>
