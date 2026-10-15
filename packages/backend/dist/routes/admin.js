@@ -6,6 +6,7 @@ const db_1 = require("../db");
 const util_1 = require("../util");
 const auth_1 = require("../middleware/auth");
 const legendary_1 = require("../services/legendary");
+const paypal_1 = require("../services/paypal");
 const sockets_1 = require("../sockets");
 const router = (0, express_1.Router)();
 router.use(auth_1.requireAuth, auth_1.requireAdmin);
@@ -78,3 +79,15 @@ router.get('/reports', (0, util_1.asyncHandler)(async (req, res) => {
     });
 }));
 exports.default = router;
+// ---- Platform revenue share ----
+router.get('/platform-earnings', (0, util_1.asyncHandler)(async (req, res) => {
+    const pending = await (0, paypal_1.pendingPlatformTotal)();
+    const { rows } = await db_1.pool.query(`SELECT COALESCE(SUM(platform_cents), 0)::int AS lifetime FROM platform_earnings`);
+    res.json({ pendingCents: pending, lifetimeCents: Number(rows[0].lifetime) });
+}));
+router.post('/platform-payout', (0, util_1.asyncHandler)(async (req, res) => {
+    const result = await (0, paypal_1.payoutPlatformEarnings)();
+    if (!result.ok)
+        return res.status(400).json({ error: result.note });
+    res.json({ batchId: result.batchId, totalCents: result.totalCents });
+}));

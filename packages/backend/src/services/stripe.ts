@@ -249,11 +249,19 @@ export async function createPayout(userId: string, amountCents: number): Promise
     const connectAccountId = userRes.rows[0].stripe_connect_account_id as string | null;
 
     await addTokens(userId, -tokensNeeded, 'payout', { client: db });
+    // 30% platform fee — creator gets 70%.
+    const platformCents = Math.round((amountCents * 30) / 100);
+    const creatorCents = amountCents - platformCents;
     const inserted = await db.query(
       `INSERT INTO payouts (user_id, amount_cents, status) VALUES ($1, $2, 'pending') RETURNING *`,
-      [userId, amountCents]
+      [userId, creatorCents]
     );
     payoutRow = inserted.rows[0];
+    await db.query(
+      `INSERT INTO platform_earnings (payout_id, user_id, gross_cents, platform_cents, creator_cents)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [payoutRow.id, userId, amountCents, platformCents, creatorCents]
+    );
     await db.query('COMMIT');
 
     const shape = () => ({
@@ -282,10 +290,10 @@ export async function createPayout(userId: string, amountCents: number): Promise
       // TODO(prod): use a real destination (bank/debit) with proper currency handling,
       // idempotency keys, and transfer grouping for reconciliation.
       const transfer = await client.transfers.create({
-        amount: amountCents,
+        amount: creatorCents,
         currency: 'usd',
         destination: connectAccountId,
-        metadata: { userId, payoutId: String(payoutRow.id) },
+        metadata: { userId, payoutId: String(payoutRow.id), platformFeeCents: String(platformCents) },
       });
       await pool.query(`UPDATE payouts SET status = 'paid', stripe_transfer_id = $1 WHERE id = $2`, [
         transfer.id,

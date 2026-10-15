@@ -4,6 +4,7 @@ import { pool } from '../db';
 import { asyncHandler, toUser, HttpError } from '../util';
 import { requireAuth, requireAdmin } from '../middleware/auth';
 import { getColorOfWeek } from '../services/legendary';
+import { payoutPlatformEarnings, pendingPlatformTotal } from '../services/paypal';
 import { emitToAll } from '../sockets';
 
 const router = Router();
@@ -99,3 +100,25 @@ router.get(
 );
 
 export default router;
+
+// ---- Platform revenue share ----
+
+router.get(
+  '/platform-earnings',
+  asyncHandler(async (req, res) => {
+    const pending = await pendingPlatformTotal();
+    const { rows } = await pool.query(
+      `SELECT COALESCE(SUM(platform_cents), 0)::int AS lifetime FROM platform_earnings`
+    );
+    res.json({ pendingCents: pending, lifetimeCents: Number(rows[0].lifetime) });
+  })
+);
+
+router.post(
+  '/platform-payout',
+  asyncHandler(async (req, res) => {
+    const result = await payoutPlatformEarnings();
+    if (!result.ok) return res.status(400).json({ error: result.note });
+    res.json({ batchId: result.batchId, totalCents: result.totalCents });
+  })
+);
