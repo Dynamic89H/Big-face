@@ -198,21 +198,52 @@ export default function HeroAvatar3D({
 
     scene.add(hero);
 
-    // Heroic idle animation — breathing + subtle power stance sway
+    // Heroic idle animation — REAL breathing like a game engine character.
+    // Layered waves + natural variation so it never looks mechanical.
     let raf = 0;
     const clock = new THREE.Clock();
+    let breathPhase = 0;
     const animate = () => {
       raf = requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
-      // Breathing
-      torsoGroup.scale.y = 1 + Math.sin(t * 1.5) * 0.015;
-      torsoGroup.position.y = 1.15 + Math.sin(t * 1.5) * 0.01;
-      // Head steady, looking forward
-      headGroup.rotation.y = Math.sin(t * 0.4) * 0.08;
-      // Slow heroic rotation
-      hero.rotation.y += 0.004;
-      // Cape-like energy shimmer on glow
-      (glowDisc.material as THREE.MeshBasicMaterial).opacity = 0.12 + Math.sin(t * 2) * 0.05;
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const t = clock.elapsedTime;
+
+      // --- ORGANIC BREATH: primary + secondary wave + micro tremor ---
+      breathPhase += dt * 1.7;
+      const primary = Math.sin(breathPhase);
+      const secondary = Math.sin(breathPhase * 2.3 + 0.7) * 0.18;
+      const micro = Math.sin(t * 7.3) * 0.02;
+      const breath = Math.max(0, Math.min(1, (primary + secondary + micro + 1.18) / 2.36));
+
+      // Chest: BIG visible expansion — you can SEE the breath
+      torsoGroup.scale.set(1 + breath * 0.09, 1 + breath * 0.13, 1 + breath * 0.1);
+      torsoGroup.position.y = 1.15 + breath * 0.09;
+      torsoGroup.rotation.x = -0.06 - breath * 0.05; // chest opens wide on inhale
+
+      // Shoulders: clear lift and roll on every breath
+      hero.children.forEach((child) => {
+        if (child instanceof THREE.Group && child.position.y > 1.3 && child.position.y < 1.5) {
+          const side = child.position.x > 0 ? 1 : -1;
+          child.position.y = 1.38 + breath * 0.07;
+          child.rotation.z = side * (-0.35 - breath * 0.08);
+        }
+      });
+
+      // Head: rises visibly, chin lifts on inhale
+      headGroup.position.y = 1.95 + breath * 0.06;
+      headGroup.rotation.x = -0.12 + breath * 0.08;
+      headGroup.rotation.y = Math.sin(t * 0.35) * 0.06;
+
+      // Whole body: subtle weight shift — alive, grounded
+      hero.position.y = Math.sin(breathPhase * 0.5) * 0.008;
+      hero.rotation.z = Math.sin(t * 0.3) * 0.008;
+
+      // Slow heroic rotation when not interacting
+      if (autoRotate) hero.rotation.y += 0.003;
+
+      // Gold glow breathes with the hero
+      (glowDisc.material as THREE.MeshBasicMaterial).opacity = 0.08 + breath * 0.1;
+
       renderer.render(scene, camera);
     };
     animate();
