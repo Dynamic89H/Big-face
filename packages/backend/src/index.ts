@@ -94,13 +94,11 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 async function boot(): Promise<void> {
   fs.mkdirSync(config.uploadDir, { recursive: true });
 
-  // Migrations normally run via `npm run migrate`. AUTO_MIGRATE=true is a
-  // convenience for deploys where no separate migrate step runs.
-  if (process.env.AUTO_MIGRATE === 'true') {
-    console.log('[boot] AUTO_MIGRATE=true — running migrations');
-    const { runMigrations } = await import('./migrate');
-    await runMigrations();
-  }
+  // Migrations are idempotent (tracked in schema_migrations) — always run on boot
+  // so deploys never miss a schema change.
+  console.log('[boot] running migrations');
+  const { runMigrations } = await import('./migrate');
+  await runMigrations();
 
   const server: HttpServer = createServer(app);
   initSockets(server);
