@@ -1,10 +1,11 @@
-export type Lang = 'en' | 'es' | 'fr' | 'pt';
+export type Lang = 'en' | 'es' | 'fr' | 'pt' | 'sw';
 
 export const LANGS: { code: Lang; label: string; flag: string }[] = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
   { code: 'es', label: 'Español', flag: '🇪🇸' },
   { code: 'fr', label: 'Français', flag: '🇫🇷' },
   { code: 'pt', label: 'Português', flag: '🇧🇷' },
+  { code: 'sw', label: 'Kiswahili', flag: '🇰🇪' },
 ];
 
 const en = {
@@ -55,5 +56,17 @@ const pt: typeof en = {
   earnings_title: 'Ganhos', common_loading: 'Carregando…', common_send: 'Enviar',
 };
 
-export const STRINGS: Record<Lang, typeof en> = { en, es, fr, pt };
+const sw: typeof en = {
+  nav_home: 'Nyumbani', nav_chat: 'Mazungumzo', nav_video: 'Video', nav_friends: 'Marafiki',
+  nav_lifestyle: 'Mtindo wa maisha', nav_battles: 'Mapambano', nav_crews: 'Vikundi', nav_artists: 'Wasanii',
+  nav_earnings: 'Mapato', nav_profile: 'Wasifu', nav_leaderboard: 'Viongozi',
+  nav_hall: 'Ukumbi wa umaarufu', nav_studio: 'Studio ya avatar', nav_throne: 'Chumba cha kiti',
+  nav_fame: 'Kifuatiliaji cha umaarufu', nav_dj: 'Kibanda cha DJ', nav_safety: 'Usalama', nav_wallet: 'Pochi',
+  battles_title: 'Mapambano ya zawadi', battles_go_live: 'Moja kwa moja', battles_join: 'Jiunge',
+  crews_title: 'Vikundi', crews_join: 'Jiunge', crews_found: 'Anzisha kikundi',
+  artists_title: 'Wasanii mashuhuri', artists_tip: 'Mpe tipu',
+  earnings_title: 'Mapato', common_loading: 'Inapakia…', common_send: 'Tuma',
+};
+
+export const STRINGS: Record<Lang, typeof en> = { en, es, fr, pt, sw };
 export type StringKey = keyof typeof en;

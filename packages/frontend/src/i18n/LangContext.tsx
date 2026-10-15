@@ -17,7 +17,7 @@ function detect(): Lang {
     const saved = localStorage.getItem('bigface-lang') as Lang | null;
     if (saved && LANGS.some((l) => l.code === saved)) return saved;
     const nav = navigator.language.slice(0, 2);
-    if (nav === 'es' || nav === 'fr' || nav === 'pt') return nav;
+    if (nav === 'es' || nav === 'fr' || nav === 'pt' || nav === 'sw') return nav as Lang;
   } catch {
     /* ignore */
   }
