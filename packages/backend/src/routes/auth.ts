@@ -15,6 +15,7 @@ const signupSchema = z.object({
   password: z.string().min(6).max(128),
   displayName: z.string().min(1).max(60),
   gender: z.enum(['male', 'female', 'other']).default('other'),
+  referralCode: z.string().max(16).optional(),
 });
 
 /** Every new user lands in the public Welcome Lounge so chat is never empty. */
@@ -50,12 +51,41 @@ router.post(
     if (taken.rows.length) throw new HttpError(409, 'Username or email already taken');
 
     const passwordHash = await bcrypt.hash(body.password, 10);
+    const myReferralCode = Math.random().toString(36).substring(2, 10).toUpperCase();
     const { rows } = await pool.query(
-      `INSERT INTO users (username, email, password_hash, display_name, gender)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [body.username, body.email, passwordHash, body.displayName, body.gender]
+      `INSERT INTO users (username, email, password_hash, display_name, gender, referral_code)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [body.username, body.email, passwordHash, body.displayName, body.gender, myReferralCode]
     );
     const user = rows[0];
+
+    // Referral: if they signed up with someone's code, link them and reward both.
+    if (body.referralCode) {
+      try {
+        const { rows: ref } = await pool.query(
+          'SELECT id FROM users WHERE referral_code = $1 LIMIT 1',
+          [body.referralCode.toUpperCase()]
+        );
+        if (ref.length && ref[0].id !== user.id) {
+          await pool.query(
+            'INSERT INTO referrals (referrer_id, referred_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [ref[0].id, user.id]
+          );
+          // Both sides get rewarded.
+          const { awardXp } = await import('../services/xp');
+          await awardXp(ref[0].id, 50, 'referral_bonus').catch(() => undefined);
+          await awardXp(user.id, 25, 'referral_welcome').catch(() => undefined);
+          // Bonus tokens for the referrer.
+          await pool.query(
+            `INSERT INTO wallet_transactions (user_id, kind, amount, reason)
+             VALUES ($1, 'credit', 100, 'referral_bonus')`,
+            [ref[0].id]
+          ).catch(() => undefined);
+        }
+      } catch {
+        /* referral is best-effort */
+      }
+    }
     await ensureWelcomeLounge(user.id);
     await awardDailyLoginXp(user.id); // first login counts as today's login
     // Starter wardrobe: grant all free level-1 items so new users can dress up immediately.

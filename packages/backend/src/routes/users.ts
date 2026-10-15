@@ -67,6 +67,31 @@ router.get(
   })
 );
 
+// Referral: my code + stats.
+router.get(
+  '/referral',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const me = req.user!.id;
+    const { rows: u } = await pool.query('SELECT referral_code FROM users WHERE id = $1', [me]);
+    const { rows: refs } = await pool.query(
+      `SELECT u.display_name, u.username, r.created_at FROM referrals r
+       JOIN users u ON u.id = r.referred_id
+       WHERE r.referrer_id = $1 ORDER BY r.created_at DESC`,
+      [me]
+    );
+    res.json({
+      code: u[0]?.referral_code ?? null,
+      count: refs.length,
+      referred: refs.map((r) => ({
+        displayName: r.display_name,
+        username: r.username,
+        joinedAt: r.created_at,
+      })),
+    });
+  })
+);
+
 // Top Track of the Week — anyone can read; only King/Queen can set.
 router.get(
   '/weekly-track',

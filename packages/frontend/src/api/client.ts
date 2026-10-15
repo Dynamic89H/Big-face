@@ -77,6 +77,7 @@ export interface SignupInput {
   password: string;
   displayName: string;
   gender: string;
+  referralCode?: string;
 }
 
 export const authApi = {
@@ -96,6 +97,7 @@ export const usersApi = {
   colorOfWeek: () => get<{ user: User | null; weekStart: string }>('/users/color-of-week'),
   hallOfFame: (limit = 20) => get<{ posts: MediaPost[] }>(`/users/hall-of-fame?limit=${limit}`),
   legendary: () => get<{ king: User | null; queen: User | null; weekStart: string }>('/users/legendary'),
+  referral: () => get<{ code: string | null; count: number; referred: Array<{ displayName: string; username: string; joinedAt: string }> }>('/users/referral'),
   weeklyTrack: () => get<{ track: { title: string; artist: string; genre: string; url: string; setBy: string | null; weekStart: string } | null }>('/users/weekly-track'),
   setWeeklyTrack: (input: { title: string; artist: string; genre: string; url: string }) =>
     post<{ ok: boolean }>('/users/weekly-track', input),

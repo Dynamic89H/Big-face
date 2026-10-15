@@ -14,6 +14,7 @@ export default function SignupPage() {
     password: '',
     displayName: '',
     gender: 'female',
+    referralCode: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -32,6 +33,7 @@ export default function SignupPage() {
         password: form.password,
         displayName: form.displayName.trim(),
         gender: form.gender,
+        referralCode: form.referralCode.trim() || undefined,
       });
       navigate('/avatar-studio?onboarding=1', { replace: true });
     } catch (err) {
@@ -70,6 +72,10 @@ export default function SignupPage() {
                 <option key={g} value={g}>{g[0].toUpperCase() + g.slice(1)}</option>
               ))}
             </select>
+          </div>
+          <div className="field">
+            <label htmlFor="su-referral">Referral code <span className="form-note">(optional)</span></label>
+            <input id="su-referral" className="input" value={form.referralCode} onChange={set('referralCode')} maxLength={16} placeholder="Friend's invite code — you both earn rewards" style={{ textTransform: 'uppercase' }} />
           </div>
           {error && <div className="form-error">{error}</div>}
           <button className="btn btn-block" type="submit" disabled={busy}>

@@ -43,6 +43,23 @@ router.get('/hall-of-fame', auth_1.requireAuth, (0, util_1.asyncHandler)(async (
 router.get('/legendary', auth_1.requireAuth, (0, util_1.asyncHandler)(async (_req, res) => {
     res.json(await (0, legendary_1.getLatestLegendary)());
 }));
+// Referral: my code + stats.
+router.get('/referral', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
+    const me = req.user.id;
+    const { rows: u } = await db_1.pool.query('SELECT referral_code FROM users WHERE id = $1', [me]);
+    const { rows: refs } = await db_1.pool.query(`SELECT u.display_name, u.username, r.created_at FROM referrals r
+       JOIN users u ON u.id = r.referred_id
+       WHERE r.referrer_id = $1 ORDER BY r.created_at DESC`, [me]);
+    res.json({
+        code: u[0]?.referral_code ?? null,
+        count: refs.length,
+        referred: refs.map((r) => ({
+            displayName: r.display_name,
+            username: r.username,
+            joinedAt: r.created_at,
+        })),
+    });
+}));
 // Top Track of the Week — anyone can read; only King/Queen can set.
 router.get('/weekly-track', auth_1.requireAuth, (0, util_1.asyncHandler)(async (_req, res) => {
     const { rows } = await db_1.pool.query(`SELECT wt.*, u.display_name AS set_by_name
