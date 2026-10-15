@@ -36,6 +36,20 @@ async function awardXp(userId, amount, _reason) {
         throw new Error('User not found');
     const xp = Number(rows[0].xp);
     const newLevel = levelForXp(xp);
+    // Crew XP: member's gains count toward their crew (and active wars).
+    try {
+        const { rows: cm } = await db_1.pool.query('SELECT crew_id FROM crew_members WHERE user_id = $1 LIMIT 1', [userId]);
+        if (cm.length && amount > 0) {
+            await db_1.pool.query('UPDATE crews SET total_xp = total_xp + $1 WHERE id = $2', [amount, cm[0].crew_id]);
+            await db_1.pool.query(`UPDATE crew_wars SET
+           challenger_score = challenger_score + CASE WHEN challenger_crew_id = $2 THEN $1 ELSE 0 END,
+           defender_score = defender_score + CASE WHEN defender_crew_id = $2 THEN $1 ELSE 0 END
+         WHERE status = 'live' AND (challenger_crew_id = $2 OR defender_crew_id = $2)`, [amount, cm[0].crew_id]);
+        }
+    }
+    catch {
+        /* crew XP is best-effort */
+    }
     if (newLevel > Number(rows[0].level)) {
         await db_1.pool.query('UPDATE users SET level = $1 WHERE id = $2', [newLevel, userId]);
         return { leveledUp: true, level: newLevel, xp };

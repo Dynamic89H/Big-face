@@ -34,6 +34,12 @@ export interface ServerToClientEvents {
   'red:carpet': (payload: RedCarpetPayload) => void;
   'user:rank-up': (payload: RankUpPayload) => void;
   'gift:received': (payload: GiftReceivedPayload) => void;
+  'battle:created': (payload: { battleId: string }) => void;
+  'battle:started': (payload: { battleId: string }) => void;
+  'battle:ended': (payload: { battleId: string }) => void;
+  'battle:score': (payload: { battleId: string }) => void;
+  'crew:war': (payload: { warId: string }) => void;
+  'track:tipped': (payload: { trackId: string }) => void;
 }
 
 export interface ClientToServerEvents {

@@ -47,6 +47,7 @@ const sendGiftSchema = z.object({
   receiverId: z.string().uuid(),
   giftKey: z.string().min(1),
   message: z.string().max(500).optional().default(''),
+  battleId: z.string().uuid().optional(),
 });
 
 router.post(
@@ -105,6 +106,32 @@ router.post(
 
     const shaped = toGift(giftRow, senderRes.rows[0], receiverRes.rows[0]);
     emitToUser(body.receiverId, 'gift:received', { gift: shaped });
+
+    // Battle scoring: if this gift was sent during a live battle to a battler, count it.
+    if (body.battleId) {
+      try {
+        const { rows: b } = await pool.query(
+          `SELECT id FROM battles WHERE id = $1 AND status = 'live'
+           AND (host_id = $2 OR challenger_id = $2) LIMIT 1`,
+          [body.battleId, body.receiverId]
+        );
+        if (b.length) {
+          await pool.query(
+            `UPDATE battle_scores SET gift_tokens = gift_tokens + $1, gift_count = gift_count + 1
+             WHERE battle_id = $2 AND battler_id = $3`,
+            [gift.tokenCost, body.battleId, body.receiverId]
+          );
+          const { emitToAll } = await import('../sockets');
+          emitToAll('battle:score', {
+            battleId: body.battleId, battlerId: body.receiverId,
+            giftKey: gift.key, giftLabel: gift.label, tokens: gift.tokenCost,
+          });
+        }
+      } catch {
+        /* scoring is best-effort */
+      }
+    }
+
     res.status(201).json({ gift: shaped });
   })
 );

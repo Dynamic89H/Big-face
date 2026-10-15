@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GIFT_CATALOG = void 0;
 const express_1 = require("express");
@@ -40,6 +73,7 @@ const sendGiftSchema = zod_1.z.object({
     receiverId: zod_1.z.string().uuid(),
     giftKey: zod_1.z.string().min(1),
     message: zod_1.z.string().max(500).optional().default(''),
+    battleId: zod_1.z.string().uuid().optional(),
 });
 router.post('/', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
     const body = sendGiftSchema.parse(req.body);
@@ -91,6 +125,25 @@ router.post('/', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) =
     (0, sockets_1.maybeEmitRankUp)(senderId, await (0, xp_1.awardXp)(senderId, 2, 'gift sent'));
     const shaped = toGift(giftRow, senderRes.rows[0], receiverRes.rows[0]);
     (0, sockets_1.emitToUser)(body.receiverId, 'gift:received', { gift: shaped });
+    // Battle scoring: if this gift was sent during a live battle to a battler, count it.
+    if (body.battleId) {
+        try {
+            const { rows: b } = await db_1.pool.query(`SELECT id FROM battles WHERE id = $1 AND status = 'live'
+           AND (host_id = $2 OR challenger_id = $2) LIMIT 1`, [body.battleId, body.receiverId]);
+            if (b.length) {
+                await db_1.pool.query(`UPDATE battle_scores SET gift_tokens = gift_tokens + $1, gift_count = gift_count + 1
+             WHERE battle_id = $2 AND battler_id = $3`, [gift.tokenCost, body.battleId, body.receiverId]);
+                const { emitToAll } = await Promise.resolve().then(() => __importStar(require('../sockets')));
+                emitToAll('battle:score', {
+                    battleId: body.battleId, battlerId: body.receiverId,
+                    giftKey: gift.key, giftLabel: gift.label, tokens: gift.tokenCost,
+                });
+            }
+        }
+        catch {
+            /* scoring is best-effort */
+        }
+    }
     res.status(201).json({ gift: shaped });
 }));
 async function listGifts(where, userId) {

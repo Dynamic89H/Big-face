@@ -200,7 +200,7 @@ export const walletApi = {
 
 export const giftsApi = {
   catalog: () => get<{ gifts: GiftCatalogItem[] }>('/gifts/catalog'),
-  send: (input: { receiverId: string; giftKey: string; message?: string }) =>
+  send: (input: { receiverId: string; giftKey: string; message?: string; battleId?: string }) =>
     post<{ gift: Gift }>('/gifts', input),
   received: () => get<{ gifts: Gift[] }>('/gifts/received'),
   sent: () => get<{ gifts: Gift[] }>('/gifts/sent'),
@@ -222,6 +222,38 @@ export const lifestyleApi = {
   assets: () => get<{ assets: LifestyleAsset[] }>('/lifestyle/assets'),
   mine: () => get<{ assets: LifestyleAsset[] }>('/lifestyle/mine'),
   buy: (assetId: string) => post<{ ok: boolean; name: string }>(`/lifestyle/buy/${assetId}`, {}),
+};
+
+// --- Battles ---
+export const battlesApi = {
+  list: () => get<{ battles: any[] }>('/battles'),
+  create: (title?: string) => post<{ battle: { id: string } }>('/battles', { title }),
+  get: (id: string) => get<{ battle: any; scores: any[] }>(`/battles/${id}`),
+  join: (id: string) => post<{ ok: boolean }>(`/battles/${id}/join`, {}),
+  end: (id: string) => post<{ ok: boolean; winnerId: string | null }>(`/battles/${id}/end`, {}),
+};
+
+// --- Crews ---
+export const crewsApi = {
+  list: () => get<{ crews: any[] }>('/crews'),
+  mine: () => get<{ crew: any | null }>('/crews/mine'),
+  create: (input: { name: string; tag: string; description?: string; color?: string }) =>
+    post<{ crew: { id: string } }>('/crews', input),
+  join: (id: string) => post<{ ok: boolean }>(`/crews/${id}/join`, {}),
+  leave: () => post<{ ok: boolean }>('/crews/leave', {}),
+  war: (crewId: string) => post<{ war: { id: string } }>(`/crews/war/${crewId}`, {}),
+  activeWars: () => get<{ wars: any[] }>('/crews/wars/active'),
+};
+
+// --- Artists ---
+export const artistsApi = {
+  tracks: (sort?: string) => get<{ tracks: any[] }>(`/artists/tracks${sort ? `?sort=${sort}` : ''}`),
+  top: () => get<{ artists: any[] }>('/artists/top'),
+  become: (artistName: string) => post<{ ok: boolean }>('/artists/profile', { artistName }),
+  dropTrack: (input: { title: string; genre: string; audioUrl: string; coverUrl?: string }) =>
+    post<{ track: { id: string } }>('/artists/tracks', input),
+  play: (id: string) => post<{ ok: boolean }>(`/artists/tracks/${id}/play`, {}),
+  tip: (id: string, tokens: number) => post<{ ok: boolean }>(`/artists/tracks/${id}/tip`, { tokens }),
 };
 
 // --- Earnings / Payouts ---

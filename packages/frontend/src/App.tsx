@@ -13,6 +13,9 @@ import ThroneRoomPage from './pages/ThroneRoomPage';
 import FameTrackerPage from './pages/FameTrackerPage';
 import FriendsPage from './pages/FriendsPage';
 import LifestylePage from './pages/LifestylePage';
+import { BattlesPage, BattleRoomPage } from './pages/BattlePage';
+import CrewsPage from './pages/CrewsPage';
+import ArtistsPage from './pages/ArtistsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import DJBoothPage from './pages/DJBoothPage';
 import SafetyPage from './pages/SafetyPage';
@@ -70,6 +73,10 @@ export default function App() {
             <Route path="fame" element={<FameTrackerPage />} />
             <Route path="friends" element={<FriendsPage />} />
             <Route path="lifestyle" element={<LifestylePage />} />
+            <Route path="battles" element={<BattlesPage />} />
+            <Route path="battles/:id" element={<BattleRoomPage />} />
+            <Route path="crews" element={<CrewsPage />} />
+            <Route path="artists" element={<ArtistsPage />} />
             <Route path="dj-booth" element={<DJBoothPage />} />
             <Route path="safety" element={<SafetyPage />} />
             <Route path="wallet" element={<WalletPage />} />
