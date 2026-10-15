@@ -1,9 +1,14 @@
+import Engine3D from './Engine3D';
+
 interface ItemVisualProps {
   slot: string;
   style: Record<string, unknown>;
   name: string;
   size?: number;
 }
+
+// Slots that render in full 3D.
+const ENGINE_3D_SLOTS = ['chain', 'ring', 'watch', 'earring', 'grill', 'hat'];
 
 // Maps item slot + style to realistic product images.
 function imageFor(slot: string, style: Record<string, unknown>, name: string): string | null {
@@ -42,7 +47,24 @@ function imageFor(slot: string, style: Record<string, unknown>, name: string): s
 }
 
 // Renders a realistic visual preview for avatar studio items.
+// Jewelry renders in full interactive 3D; clothes use realistic product shots.
 export default function ItemVisual({ slot, style, name, size = 100 }: ItemVisualProps) {
+  // Full 3D engine for jewelry — interactive, rotatable.
+  if (ENGINE_3D_SLOTS.includes(slot)) {
+    return (
+      <div title={name} style={{ position: 'relative' }}>
+        <Engine3D slot={slot} style={style} width={size + 20} height={size + 20} />
+        <div style={{
+          position: 'absolute', bottom: 4, right: 8,
+          fontSize: '0.65rem', color: 'var(--neon-cyan)',
+          background: 'rgba(0,0,0,0.5)', padding: '2px 6px', borderRadius: 4,
+        }}>
+          3D
+        </div>
+      </div>
+    );
+  }
+
   const img = imageFor(slot, style, name);
   const shimmer = style.shimmer as boolean;
 
