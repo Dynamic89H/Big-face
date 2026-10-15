@@ -246,6 +246,19 @@ export const pushApi = {
   test: () => post<{ ok: boolean; sent: number }>('/push/test', {}),
 };
 
+// --- Factory ---
+export const factoryApi = {
+  list: (kind?: string, style?: string) => {
+    const params = new URLSearchParams();
+    if (kind) params.set('kind', kind);
+    if (style) params.set('style', style);
+    return get<{ assets: any[] }>(`/factory?${params}`);
+  },
+  create: (data: { kind: string; style: string; prompt: string; imageUrl?: string; sourceUrl?: string }) =>
+    post<{ asset: any }>('/factory', data),
+  like: (id: string) => post<{ ok: boolean }>(`/factory/${id}/like`, {}),
+};
+
 // --- Battles ---
 export const battlesApi = {
   list: () => get<{ battles: any[] }>('/battles'),
