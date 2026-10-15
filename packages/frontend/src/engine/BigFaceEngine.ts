@@ -45,103 +45,150 @@ export class BigFaceEngine {
     this.start();
   }
 
-  /** The living 3D environment — digital cityscape backdrop for the whole app. */
+  /** The living 3D environment — black starfield with shooting stars. */
   private buildEnvironment(): void {
-    // --- Lighting rig ---
-    const ambient = new THREE.AmbientLight(0x8899ff, 0.5);
-    this.scene.add(ambient);
+    // --- Pure black space ---
+    this.scene.background = new THREE.Color(0x000000);
+    this.scene.fog = null;
 
-    const key = new THREE.DirectionalLight(0xffffff, 1.0);
-    key.position.set(5, 8, 6);
+    // --- Soft ambient so 3D models stay visible ---
+    const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+    this.scene.add(ambient);
+    const key = new THREE.DirectionalLight(0xffffff, 0.8);
+    key.position.set(3, 4, 5);
     this.scene.add(key);
 
-    const cyanGlow = new THREE.PointLight(0x00f0ff, 30, 40);
-    cyanGlow.position.set(-8, 3, -6);
-    this.scene.add(cyanGlow);
+    // --- Starfield: 1500 stars ---
+    const starCount = 1500;
+    const positions = new Float32Array(starCount * 3);
+    const colors = new Float32Array(starCount * 3);
+    const sizes = new Float32Array(starCount);
+    const palette = [
+      new THREE.Color(0xffffff), new THREE.Color(0xffffff),
+      new THREE.Color(0xcce6ff), new THREE.Color(0xffe9c4),
+      new THREE.Color(0x00f0ff),
+    ];
 
-    const pinkGlow = new THREE.PointLight(0xff2fd6, 25, 40);
-    pinkGlow.position.set(8, 2, -8);
-    this.scene.add(pinkGlow);
+    for (let i = 0; i < starCount; i++) {
+      // Spread across a large sphere shell
+      const r = 30 + Math.random() * 50;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      positions[i * 3 + 2] = -Math.abs(r * Math.cos(phi)) - 5;
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      const brightness = 0.5 + Math.random() * 0.5;
+      colors[i * 3] = c.r * brightness;
+      colors[i * 3 + 1] = c.g * brightness;
+      colors[i * 3 + 2] = c.b * brightness;
+      sizes[i] = 0.5 + Math.random() * 1.5;
+    }
 
-    const purpleGlow = new THREE.PointLight(0x8b5cf6, 20, 50);
-    purpleGlow.position.set(0, 6, -12);
-    this.scene.add(purpleGlow);
-
-    // --- Digital grid floor ---
-    const grid = new THREE.GridHelper(60, 60, 0x00f0ff, 0x1a2a4a);
-    (grid.material as THREE.Material).transparent = true;
-    (grid.material as THREE.Material).opacity = 0.25;
-    grid.position.y = -3;
-    this.scene.add(grid);
-
-    // --- Floating city blocks (distant skyline) ---
-    const buildingMat = new THREE.MeshStandardMaterial({
-      color: 0x0d1220, roughness: 0.4, metalness: 0.8,
-      emissive: 0x001133, emissiveIntensity: 0.6,
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    starGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const starMat = new THREE.PointsMaterial({
+      size: 0.35, vertexColors: true, transparent: true, opacity: 0.95,
+      sizeAttenuation: true,
     });
-    const windowMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.5 });
+    const stars = new THREE.Points(starGeo, starMat);
+    this.scene.add(stars);
 
-    for (let i = 0; i < 28; i++) {
-      const w = 1 + Math.random() * 2;
-      const h = 3 + Math.random() * 8;
-      const d = 1 + Math.random() * 2;
-      const building = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMat);
-      const side = i % 2 === 0 ? -1 : 1;
-      building.position.set(
-        side * (6 + Math.random() * 14),
-        h / 2 - 3,
-        -8 - Math.random() * 18
-      );
-      this.scene.add(building);
+    // Twinkle — subtle opacity pulse
+    this.onUpdate((_dt, t) => {
+      starMat.opacity = 0.85 + Math.sin(t * 2) * 0.1;
+      stars.rotation.y = t * 0.005;
+    });
 
-      // Lit windows
-      const floors = Math.floor(h / 0.8);
-      for (let f = 0; f < floors; f += 2) {
-        if (Math.random() > 0.4) {
-          const win = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.7, 0.3), windowMat);
-          win.position.set(building.position.x, -2 + f * 0.8, building.position.z + d / 2 + 0.01);
-          this.scene.add(win);
+    // --- Shooting stars ---
+    interface Meteor {
+      mesh: THREE.Mesh;
+      velocity: THREE.Vector3;
+      life: number;
+      maxLife: number;
+    }
+    const meteors: Meteor[] = [];
+    const meteorGeo = new THREE.SphereGeometry(0.08, 8, 8);
+    // Elongated glow trail via scaled sphere
+    const trailGeo = new THREE.CylinderGeometry(0.02, 0.06, 2.5, 8);
+
+    const spawnMeteor = () => {
+      const headMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const head = new THREE.Mesh(meteorGeo, headMat);
+      const trailMat = new THREE.MeshBasicMaterial({
+        color: 0x88ccff, transparent: true, opacity: 0.6,
+      });
+      const trail = new THREE.Mesh(trailGeo, trailMat);
+
+      const meteorGroup = new THREE.Group();
+      meteorGroup.add(head);
+      meteorGroup.add(trail);
+
+      // Random start in upper sky
+      const startX = (Math.random() - 0.5) * 40;
+      const startY = 8 + Math.random() * 10;
+      const startZ = -15 - Math.random() * 15;
+      meteorGroup.position.set(startX, startY, startZ);
+
+      // Streak diagonally down
+      const dir = new THREE.Vector3(
+        (Math.random() - 0.5) * 0.6 - 0.4,
+        -0.8 - Math.random() * 0.4,
+        0
+      ).normalize();
+
+      // Orient trail along direction
+      trail.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().negate());
+      trail.position.copy(dir.clone().multiplyScalar(-1.25));
+
+      // Wrap in a single mesh-like object for tracking
+      const wrapper = new THREE.Mesh();
+      wrapper.add(meteorGroup);
+      // Store velocity on the group
+      (wrapper as any).velocity = dir.multiplyScalar(12 + Math.random() * 8);
+      (wrapper as any).life = 0;
+      (wrapper as any).maxLife = 1.5 + Math.random();
+
+      this.scene.add(wrapper);
+      meteors.push({
+        mesh: wrapper,
+        velocity: (wrapper as any).velocity,
+        life: 0,
+        maxLife: (wrapper as any).maxLife,
+      });
+    };
+
+    // Spawn a shooting star every 2–6 seconds
+    let nextMeteor = 2;
+    this.onUpdate((dt, t) => {
+      if (t > nextMeteor) {
+        spawnMeteor();
+        nextMeteor = t + 2 + Math.random() * 4;
+      }
+      for (let i = meteors.length - 1; i >= 0; i--) {
+        const m = meteors[i];
+        m.life += dt;
+        m.mesh.position.addScaledVector(m.velocity, dt);
+        // Fade out near end of life
+        const fade = 1 - m.life / m.maxLife;
+        m.mesh.traverse((obj) => {
+          if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshBasicMaterial) {
+            obj.material.transparent = true;
+            obj.material.opacity = Math.max(0, fade);
+          }
+        });
+        if (m.life >= m.maxLife) {
+          this.scene.remove(m.mesh);
+          meteors.splice(i, 1);
         }
       }
-    }
-
-    // --- Floating particles (digital dust) ---
-    const particleCount = 400;
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-    const palette = [new THREE.Color(0x00f0ff), new THREE.Color(0xff2fd6), new THREE.Color(0xffc94d), new THREE.Color(0x8b5cf6)];
-
-    for (let i = 0; i < particleCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 40;
-      positions[i * 3 + 1] = Math.random() * 12 - 3;
-      positions[i * 3 + 2] = -Math.random() * 25;
-      const c = palette[Math.floor(Math.random() * palette.length)];
-      colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
-    }
-
-    const pGeo = new THREE.BufferGeometry();
-    pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    pGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    const pMat = new THREE.PointsMaterial({ size: 0.08, vertexColors: true, transparent: true, opacity: 0.8 });
-    const particles = new THREE.Points(pGeo, pMat);
-    this.scene.add(particles);
-
-    // Animate particles drifting upward
-    this.onUpdate((_dt, t) => {
-      const pos = pGeo.attributes.position as THREE.BufferAttribute;
-      for (let i = 0; i < particleCount; i++) {
-        let y = pos.getY(i) + 0.008;
-        if (y > 9) y = -3;
-        pos.setY(i, y);
-        pos.setX(i, pos.getX(i) + Math.sin(t * 0.5 + i) * 0.002);
-      }
-      pos.needsUpdate = true;
     });
 
     // --- Slow camera drift ---
     this.onUpdate((_dt, t) => {
-      this.camera.position.x = Math.sin(t * 0.1) * 1.2;
-      this.camera.position.y = 1.5 + Math.sin(t * 0.07) * 0.3;
+      this.camera.position.x = Math.sin(t * 0.08) * 0.8;
+      this.camera.position.y = 1.5 + Math.sin(t * 0.05) * 0.2;
       this.camera.lookAt(0, 0.5, -5);
     });
   }
