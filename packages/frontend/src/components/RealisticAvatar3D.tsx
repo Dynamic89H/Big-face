@@ -53,46 +53,31 @@ export default function RealisticAvatar3D({
 
     const stage = new THREE.Group();
 
-    // Character photo on a 3D card with depth
+    // Character photo — floating naturally, NO frame
     const loader = new THREE.TextureLoader();
     loader.load(characterImg, (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       const aspect = tex.image.width / tex.image.height;
-      const h = 3.2;
+      const h = 3.4;
       const w = h * aspect;
 
-      // Main photo plane
       const photoMat = new THREE.MeshStandardMaterial({
-        map: tex, roughness: 0.4, metalness: 0.1,
+        map: tex, roughness: 0.5, metalness: 0.05,
+        transparent: true,
       });
       const photo = new THREE.Mesh(new THREE.PlaneGeometry(w, h), photoMat);
       stage.add(photo);
 
-      // Gold 3D frame
-      const frameMat = new THREE.MeshStandardMaterial({
-        color: 0xc9a227, metalness: 0.9, roughness: 0.3,
-      });
-      const frameThickness = 0.08;
-      // Top/bottom
-      [-1, 1].forEach((s) => {
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(w + frameThickness * 2, frameThickness, 0.1), frameMat);
-        bar.position.set(0, s * (h / 2 + frameThickness / 2), -0.02);
-        stage.add(bar);
-      });
-      // Sides
-      [-1, 1].forEach((s) => {
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, h, 0.1), frameMat);
-        bar.position.set(s * (w / 2 + frameThickness / 2), 0, -0.02);
-        stage.add(bar);
-      });
-
-      // Backing — dark with depth
-      const backing = new THREE.Mesh(
-        new THREE.PlaneGeometry(w + 0.3, h + 0.3),
-        new THREE.MeshStandardMaterial({ color: 0x0a0a12, roughness: 0.8 })
+      // Soft glow behind character (not a frame)
+      const halo = new THREE.Mesh(
+        new THREE.PlaneGeometry(w + 0.6, h + 0.6),
+        new THREE.MeshBasicMaterial({
+          color: 0xc9a227, transparent: true, opacity: 0.12,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        })
       );
-      backing.position.z = -0.15;
-      stage.add(backing);
+      halo.position.z = -0.2;
+      stage.add(halo);
     });
 
     // Floating particles around the stage

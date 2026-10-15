@@ -58,11 +58,29 @@ export class BigFaceEngine {
     key.position.set(3, 4, 5);
     this.scene.add(key);
 
-    // --- Starfield: 1500 stars ---
+    // --- Starfield: 1500 stars with ROUND soft sprites (not blocky) ---
     const starCount = 1500;
+
+    // Generate a soft circular star sprite (no more Lego squares)
+    const makeStarSprite = (): THREE.Texture => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d')!;
+      const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gradient.addColorStop(0, 'rgba(255,255,255,1)');
+      gradient.addColorStop(0.3, 'rgba(255,255,255,0.8)');
+      gradient.addColorStop(0.6, 'rgba(255,255,255,0.2)');
+      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 64, 64);
+      const tex = new THREE.CanvasTexture(canvas);
+      return tex;
+    };
+    const starSprite = makeStarSprite();
+
     const positions = new Float32Array(starCount * 3);
     const colors = new Float32Array(starCount * 3);
-    const sizes = new Float32Array(starCount);
     const palette = [
       new THREE.Color(0xffffff), new THREE.Color(0xffffff),
       new THREE.Color(0xcce6ff), new THREE.Color(0xffe9c4),
@@ -70,7 +88,6 @@ export class BigFaceEngine {
     ];
 
     for (let i = 0; i < starCount; i++) {
-      // Spread across a large sphere shell
       const r = 30 + Math.random() * 50;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
@@ -82,15 +99,16 @@ export class BigFaceEngine {
       colors[i * 3] = c.r * brightness;
       colors[i * 3 + 1] = c.g * brightness;
       colors[i * 3 + 2] = c.b * brightness;
-      sizes[i] = 0.5 + Math.random() * 1.5;
     }
 
     const starGeo = new THREE.BufferGeometry();
     starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     starGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     const starMat = new THREE.PointsMaterial({
-      size: 0.35, vertexColors: true, transparent: true, opacity: 0.95,
-      sizeAttenuation: true,
+      size: 0.6, map: starSprite, vertexColors: true,
+      transparent: true, opacity: 0.95,
+      sizeAttenuation: true, depthWrite: false,
+      blending: THREE.AdditiveBlending,
     });
     const stars = new THREE.Points(starGeo, starMat);
     this.scene.add(stars);

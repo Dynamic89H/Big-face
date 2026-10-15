@@ -75,6 +75,7 @@ export default function LivingCharacter({ img, name, width = 280, height = 380 }
       style={{
         width, height, position: 'relative', overflow: 'hidden',
         borderRadius: 20, margin: '0 auto',
+        background: 'transparent',
       }}
     >
       {/* Ambient glow behind character */}
