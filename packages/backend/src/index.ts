@@ -17,6 +17,7 @@ import lifestyleRouter from './routes/lifestyle';
 import battlesRouter from './routes/battles';
 import crewsRouter from './routes/crews';
 import artistsRouter from './routes/artists';
+import gambleRouter from './routes/gamble';
 import roomsRouter from './routes/rooms';
 import messagesRouter from './routes/messages';
 import uploadsRouter from './routes/uploads';
@@ -58,6 +59,7 @@ app.use('/api/lifestyle', lifestyleRouter);
 app.use('/api/battles', battlesRouter);
 app.use('/api/crews', crewsRouter);
 app.use('/api/artists', artistsRouter);
+app.use('/api/gamble', gambleRouter);
 app.use('/api/rooms', roomsRouter);
 app.use('/api', messagesRouter); // /rooms/:id/messages, /messages/:id/...
 app.use('/api/uploads', uploadsRouter);

@@ -5,7 +5,8 @@ export type RevenueSource =
   | 'gift_margin'
   | 'tip_margin'
   | 'payout_fee'
-  | 'battle_gift_margin';
+  | 'battle_gift_margin'
+  | 'dice_margin';
 
 /**
  * Records Dweezy's cut from any money flow. Call this EVERY time

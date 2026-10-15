@@ -228,6 +228,15 @@ export const lifestyleApi = {
     post<{ ok: boolean; applied: string }>(`/lifestyle/customize/${assetId}`, { category, itemId }),
 };
 
+// --- Gamble Face ---
+export const gambleApi = {
+  list: () => get<{ games: any[] }>('/gamble'),
+  mine: () => get<{ games: any[] }>('/gamble/mine'),
+  create: (betTokens: number) => post<{ game: { id: string } }>('/gamble', { betTokens }),
+  join: (id: string) => post<any>(`/gamble/${id}/join`, {}),
+  cancel: (id: string) => post<{ ok: boolean }>(`/gamble/${id}/cancel`, {}),
+};
+
 // --- Battles ---
 export const battlesApi = {
   list: () => get<{ battles: any[] }>('/battles'),

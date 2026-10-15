@@ -17,6 +17,7 @@ import LifestylePage from './pages/LifestylePage';
 import { BattlesPage, BattleRoomPage } from './pages/BattlePage';
 import CrewsPage from './pages/CrewsPage';
 import ArtistsPage from './pages/ArtistsPage';
+import GamblePage from './pages/GamblePage';
 import PrivacyPage from './pages/PrivacyPage';
 import DJBoothPage from './pages/DJBoothPage';
 import SafetyPage from './pages/SafetyPage';
@@ -79,6 +80,7 @@ export default function App() {
             <Route path="battles/:id" element={<BattleRoomPage />} />
             <Route path="crews" element={<CrewsPage />} />
             <Route path="artists" element={<ArtistsPage />} />
+            <Route path="gamble" element={<GamblePage />} />
             <Route path="dj-booth" element={<DJBoothPage />} />
             <Route path="safety" element={<SafetyPage />} />
             <Route path="wallet" element={<WalletPage />} />

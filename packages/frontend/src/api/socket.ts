@@ -40,6 +40,10 @@ export interface ServerToClientEvents {
   'battle:score': (payload: { battleId: string }) => void;
   'crew:war': (payload: { warId: string }) => void;
   'track:tipped': (payload: { trackId: string }) => void;
+  'gamble:created': (payload: { gameId: string; betTokens?: number }) => void;
+  'gamble:finished': (payload: any) => void;
+  'gamble:cancelled': (payload: { gameId: string }) => void;
+  'gamble:result': (payload: any) => void;
 }
 
 export interface ClientToServerEvents {
