@@ -13,6 +13,16 @@ export default function GameLivePage() {
   usePageTitle('Game Live');
   const navigate = useNavigate();
   const [tab, setTab] = useState<'arena' | 'dice'>('arena');
+  const [action, setAction] = useState<'idle' | 'dance' | 'flex' | 'taunt' | 'celebrate' | 'walk'>('idle');
+
+  const ACTIONS = [
+    { id: 'idle', icon: '🧍', label: 'Chill' },
+    { id: 'dance', icon: '💃', label: 'Dance' },
+    { id: 'flex', icon: '💪', label: 'Flex' },
+    { id: 'taunt', icon: '😤', label: 'Taunt' },
+    { id: 'celebrate', icon: '🎉', label: 'Celebrate' },
+    { id: 'walk', icon: '🚶', label: 'Strut' },
+  ] as const;
 
   return (
     <div className="page" style={{ padding: 0 }}>
@@ -43,7 +53,22 @@ export default function GameLivePage() {
       {/* Live 3D world */}
       <div style={{ padding: '0 1.2rem' }}>
         {tab === 'arena' ? (
-          <GameLobby width={1400} height={600} characterCount={8} />
+          <>
+            <GameLobby width={1400} height={600} characterCount={8} playerAction={action} highlightPlayer />
+            {/* Avatar action controls */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span style={{ alignSelf: 'center', fontWeight: 700, marginRight: '0.3rem' }}>🎮 Your move:</span>
+              {ACTIONS.map((a) => (
+                <button
+                  key={a.id}
+                  className={`btn btn-sm ${action === a.id ? '' : 'btn-ghost'}`}
+                  onClick={() => setAction(a.id)}
+                >
+                  {a.icon} {a.label}
+                </button>
+              ))}
+            </div>
+          </>
         ) : (
           <AmbientDice width={1400} height={600} />
         )}

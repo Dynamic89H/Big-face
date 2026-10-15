@@ -5,6 +5,8 @@ interface GameLobbyProps {
   width?: number;
   height?: number;
   characterCount?: number;
+  playerAction?: 'idle' | 'dance' | 'flex' | 'taunt' | 'celebrate' | 'walk';
+  highlightPlayer?: boolean;
 }
 
 /**
@@ -12,7 +14,7 @@ interface GameLobbyProps {
  * Multiple 3D hero characters walk around, idle, and interact in a neon arena.
  * This is what makes Big Face feel like a real game.
  */
-export default function GameLobby({ width = 800, height = 500, characterCount = 5 }: GameLobbyProps) {
+export default function GameLobby({ width = 800, height = 500, characterCount = 5, playerAction = 'idle', highlightPlayer = false }: GameLobbyProps) {
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -182,8 +184,67 @@ export default function GameLobby({ width = 800, height = 500, characterCount = 
         shirtColors[i % shirtColors.length]
       );
       w.group.position.set((Math.random() - 0.5) * 12, 0, (Math.random() - 0.5) * 12);
+      // Player character stands on the center platform, highlighted
+      if (i === 0 && highlightPlayer) {
+        w.group.position.set(0, 0.3, 0);
+        w.state = 'idle';
+        // Gold spotlight on player
+        const spot = new THREE.SpotLight(0xffd700, 50, 15, 0.4);
+        spot.position.set(0, 8, 2);
+        spot.target = w.group;
+        scene.add(spot);
+        scene.add(spot.target);
+      }
       walkers.push(w);
     }
+
+    // Player action overrides
+    const playerActions: Record<string, (w: Walker, t: number, dt: number) => void> = {
+      dance: (w, t, dt) => {
+        w.group.position.y = Math.abs(Math.sin(t * 6)) * 0.15;
+        w.group.rotation.y += dt * 2;
+        w.leftArm.rotation.z = -2.2 + Math.sin(t * 6) * 0.3;
+        w.rightArm.rotation.z = 2.2 - Math.sin(t * 6) * 0.3;
+        w.leftLeg.rotation.x = Math.sin(t * 6) * 0.3;
+        w.rightLeg.rotation.x = -Math.sin(t * 6) * 0.3;
+      },
+      flex: (w, t) => {
+        // Double bicep flex
+        w.leftArm.rotation.z = -2.6;
+        w.rightArm.rotation.z = 2.6;
+        w.leftArm.rotation.x = -0.3 + Math.sin(t * 3) * 0.1;
+        w.rightArm.rotation.x = -0.3 - Math.sin(t * 3) * 0.1;
+        w.torso.scale.set(1.08, 1.05, 1.08); // puffed chest
+        w.head.rotation.x = -0.15;
+      },
+      taunt: (w, t) => {
+        // Point and laugh
+        w.rightArm.rotation.x = -1.8;
+        w.rightArm.rotation.z = 0.3;
+        w.group.rotation.y = Math.sin(t * 2) * 0.3;
+        w.head.rotation.x = -0.2 + Math.sin(t * 4) * 0.05; // laughing
+        w.group.position.y = Math.abs(Math.sin(t * 4)) * 0.08;
+      },
+      celebrate: (w, t, dt) => {
+        // Arms up, jumping
+        w.leftArm.rotation.z = -2.8;
+        w.rightArm.rotation.z = 2.8;
+        w.group.position.y = Math.abs(Math.sin(t * 5)) * 0.25;
+        w.group.rotation.y += dt * 3;
+      },
+      walk: (w, t) => {
+        // Confident strut in a circle
+        const angle = t * 0.5;
+        w.group.position.set(Math.cos(angle) * 1.5, 0.3, Math.sin(angle) * 1.5);
+        w.group.rotation.y = -angle + Math.PI / 2;
+        const swing = Math.sin(t * 8) * 0.5;
+        w.leftLeg.rotation.x = swing;
+        w.rightLeg.rotation.x = -swing;
+        w.leftArm.rotation.x = -swing * 0.7;
+        w.rightArm.rotation.x = swing * 0.7;
+      },
+      idle: () => { /* breathing handled below */ },
+    };
 
     // --- Animation loop ---
     let raf = 0;
@@ -194,13 +255,20 @@ export default function GameLobby({ width = 800, height = 500, characterCount = 
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
 
-      walkers.forEach((w) => {
+      walkers.forEach((w, idx) => {
         w.stateTime += dt;
         w.breathPhase += dt * 1.6;
         const breath = (Math.sin(w.breathPhase) + 1) / 2;
 
         // Breathing — always
         w.torso.scale.set(1 + breath * 0.05, 1 + breath * 0.07, 1 + breath * 0.05);
+
+        // Player character does the custom action
+        if (idx === 0 && highlightPlayer && playerAction !== 'idle') {
+          const action = playerActions[playerAction];
+          if (action) action(w, t, dt);
+          return;
+        }
 
         // State machine
         if (w.stateTime > 4 + Math.random() * 3) {
