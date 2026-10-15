@@ -67,6 +67,20 @@ router.get(
   })
 );
 
+// Public: view another user's lifestyle showcase.
+router.get(
+  '/:id/lifestyle',
+  asyncHandler(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT a.kind, a.name, a.rarity FROM lifestyle_assets a
+       JOIN user_lifestyle_assets ua ON ua.asset_id = a.id
+       WHERE ua.user_id = $1 ORDER BY a.token_price DESC LIMIT 6`,
+      [req.params.id]
+    );
+    res.json({ assets: rows });
+  })
+);
+
 // Referral: my code + stats.
 router.get(
   '/referral',

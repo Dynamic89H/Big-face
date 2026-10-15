@@ -43,6 +43,13 @@ router.get('/hall-of-fame', auth_1.requireAuth, (0, util_1.asyncHandler)(async (
 router.get('/legendary', auth_1.requireAuth, (0, util_1.asyncHandler)(async (_req, res) => {
     res.json(await (0, legendary_1.getLatestLegendary)());
 }));
+// Public: view another user's lifestyle showcase.
+router.get('/:id/lifestyle', (0, util_1.asyncHandler)(async (req, res) => {
+    const { rows } = await db_1.pool.query(`SELECT a.kind, a.name, a.rarity FROM lifestyle_assets a
+       JOIN user_lifestyle_assets ua ON ua.asset_id = a.id
+       WHERE ua.user_id = $1 ORDER BY a.token_price DESC LIMIT 6`, [req.params.id]);
+    res.json({ assets: rows });
+}));
 // Referral: my code + stats.
 router.get('/referral', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
     const me = req.user.id;

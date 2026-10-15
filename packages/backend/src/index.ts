@@ -13,6 +13,7 @@ import { initSockets } from './sockets';
 import authRouter from './routes/auth';
 import usersRouter from './routes/users';
 import friendsRouter from './routes/friends';
+import lifestyleRouter from './routes/lifestyle';
 import roomsRouter from './routes/rooms';
 import messagesRouter from './routes/messages';
 import uploadsRouter from './routes/uploads';
@@ -50,6 +51,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/friends', friendsRouter);
+app.use('/api/lifestyle', lifestyleRouter);
 app.use('/api/rooms', roomsRouter);
 app.use('/api', messagesRouter); // /rooms/:id/messages, /messages/:id/...
 app.use('/api/uploads', uploadsRouter);

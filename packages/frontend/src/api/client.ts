@@ -98,6 +98,7 @@ export const usersApi = {
   hallOfFame: (limit = 20) => get<{ posts: MediaPost[] }>(`/users/hall-of-fame?limit=${limit}`),
   legendary: () => get<{ king: User | null; queen: User | null; weekStart: string }>('/users/legendary'),
   referral: () => get<{ code: string | null; count: number; referred: Array<{ displayName: string; username: string; joinedAt: string }> }>('/users/referral'),
+  lifestyle: (id: string) => get<{ assets: Array<{ kind: string; name: string; rarity: string }> }>(`/users/${id}/lifestyle`),
   weeklyTrack: () => get<{ track: { title: string; artist: string; genre: string; url: string; setBy: string | null; weekStart: string } | null }>('/users/weekly-track'),
   setWeeklyTrack: (input: { title: string; artist: string; genre: string; url: string }) =>
     post<{ ok: boolean }>('/users/weekly-track', input),
@@ -203,6 +204,24 @@ export const giftsApi = {
     post<{ gift: Gift }>('/gifts', input),
   received: () => get<{ gifts: Gift[] }>('/gifts/received'),
   sent: () => get<{ gifts: Gift[] }>('/gifts/sent'),
+};
+
+// --- Lifestyle (houses & cars) ---
+export interface LifestyleAsset {
+  id: string;
+  kind: 'house' | 'car';
+  name: string;
+  rarity: string;
+  minLevel: number;
+  tokenPrice: number;
+  style: Record<string, unknown>;
+  owned?: boolean;
+}
+
+export const lifestyleApi = {
+  assets: () => get<{ assets: LifestyleAsset[] }>('/lifestyle/assets'),
+  mine: () => get<{ assets: LifestyleAsset[] }>('/lifestyle/mine'),
+  buy: (assetId: string) => post<{ ok: boolean; name: string }>(`/lifestyle/buy/${assetId}`, {}),
 };
 
 // --- Earnings / Payouts ---

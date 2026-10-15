@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { usersApi, mediaApi, friendsApi, ApiError } from '../api/client';
+import { usersApi, mediaApi, friendsApi, lifestyleApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { MediaPost, User, UserStats } from '../types';
 import { timeAgo } from '../types';
@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [friendStatus, setFriendStatus] = useState<string | null>(null);
   const [friendBusy, setFriendBusy] = useState(false);
+  const [lifestyle, setLifestyle] = useState<Array<{ kind: string; name: string; rarity: string }>>([]);
 
   const isMe = id === me?.id;
 
@@ -76,6 +77,15 @@ export default function ProfilePage() {
         mediaApi.list(60),
       ]);
       void loadFriendStatus();
+      // Load lifestyle showcase (best-effort).
+      try {
+        const { assets } = id === me?.id
+          ? await lifestyleApi.mine()
+          : await usersApi.lifestyle(id);
+        setLifestyle(assets.slice(0, 6));
+      } catch {
+        /* no lifestyle yet */
+      }
       setProfile(user);
       setStats(stats);
       setLikeCount(stats.followersLikes);
@@ -224,6 +234,38 @@ export default function ProfilePage() {
           })()}
         </div>
       </div>
+
+      <h2 style={{ margin: '1.6rem 0 0.9rem' }}>💎 Lifestyle</h2>
+      {lifestyle.length === 0 ? (
+        <div className="card empty-wrap" style={{ padding: '1rem' }}>
+          <p className="form-note" style={{ margin: 0 }}>
+            {isMe ? (
+              <>No cribs or whips yet. <Link to="/lifestyle">Start building your empire →</Link></>
+            ) : (
+              `${profile.displayName} hasn't bought any houses or cars yet.`
+            )}
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          {lifestyle.map((a, i) => (
+            <div
+              key={i}
+              className="card"
+              style={{
+                padding: '0.6rem 0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                borderColor: a.rarity === 'legendary' ? 'var(--gold)' : undefined,
+              }}
+            >
+              <span style={{ fontSize: '1.5rem' }}>{a.kind === 'house' ? '🏠' : '🚗'}</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>{a.name}</div>
+                <div className="form-note" style={{ textTransform: 'capitalize', fontSize: '0.7rem' }}>{a.rarity}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <h2 style={{ margin: '1.6rem 0 0.9rem' }}>Posts</h2>
       {posts.length === 0 ? (

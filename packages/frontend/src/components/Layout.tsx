@@ -22,6 +22,7 @@ const NAV = [
   { to: '/throne', label: 'Throne Room', icon: '👑' },
   { to: '/fame', label: 'Fame Tracker', icon: '🌟' },
   { to: '/friends', label: 'Friends', icon: '👥' },
+  { to: '/lifestyle', label: 'Lifestyle', icon: '💎' },
   { to: '/dj-booth', label: 'DJ Booth', icon: '🎧' },
   { to: '/safety', label: 'Safety', icon: '🛡️' },
   { to: '/wallet', label: 'Wallet', icon: '💰' },
