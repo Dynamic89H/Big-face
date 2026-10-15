@@ -200,6 +200,11 @@ export default function ProfilePage() {
           {isMe && (
             <div className="profile-actions">
               <Link className="btn btn-sm" to="/profile/edit">✏️ Edit profile</Link>
+              {(profile.loginStreak ?? 0) > 0 && (
+                <span className="badge badge-gold" title={`${profile.loginStreak}-day login streak`}>
+                  🔥 {profile.loginStreak}-day streak
+                </span>
+              )}
             </div>
           )}
           {actionError && <div className="form-error" style={{ marginTop: '0.8rem' }}>{actionError}</div>}

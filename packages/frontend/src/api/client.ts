@@ -83,7 +83,7 @@ export interface SignupInput {
 export const authApi = {
   signup: (input: SignupInput) => post<{ token: string; user: User }>('/auth/signup', input),
   login: (identifier: string, password: string) =>
-    post<{ token: string; user: User }>('/auth/login', { identifier, password }),
+    post<{ token: string; user: User; dailyReward: { streak: number; xp: number } | null }>('/auth/login', { identifier, password }),
   me: () => get<{ user: User }>('/auth/me'),
 };
 

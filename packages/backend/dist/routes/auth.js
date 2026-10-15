@@ -118,8 +118,9 @@ router.post('/login', (0, util_1.asyncHandler)(async (req, res) => {
     const ok = await bcryptjs_1.default.compare(body.password, rows[0].password_hash);
     if (!ok)
         throw new util_1.HttpError(401, 'Invalid credentials');
-    await (0, xp_1.awardDailyLoginXp)(rows[0].id);
-    res.json({ token: (0, auth_1.signToken)(rows[0].id), user: (0, util_1.toUser)(rows[0]) });
+    const daily = await (0, xp_1.awardDailyLoginXp)(rows[0].id);
+    const fresh = await db_1.pool.query('SELECT * FROM users WHERE id = $1', [rows[0].id]);
+    res.json({ token: (0, auth_1.signToken)(rows[0].id), user: (0, util_1.toUser)(fresh.rows[0]), dailyReward: daily.awarded ? { streak: daily.streak, xp: daily.xp } : null });
 }));
 router.get('/me', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) => {
     res.json({ user: (0, util_1.toUser)(req.user) });

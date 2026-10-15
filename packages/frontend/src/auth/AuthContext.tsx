@@ -11,6 +11,8 @@ interface AuthContextValue {
   logout: () => void;
   refreshUser: () => Promise<void>;
   setUser: (u: User | null) => void;
+  dailyReward: { streak: number; xp: number } | null;
+  clearDailyReward: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dailyReward, setDailyReward] = useState<{ streak: number; xp: number } | null>(null);
 
   const refreshUser = useCallback(async () => {
     const { user: fresh } = await authApi.me();
@@ -49,9 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser]);
 
   const login = useCallback(async (identifier: string, password: string) => {
-    const { token, user } = await authApi.login(identifier, password);
+    const { token, user, dailyReward: reward } = await authApi.login(identifier, password);
     setToken(token);
     setUser(user);
+    if (reward) setDailyReward(reward);
     getSocket(); // socket reads the fresh token at creation
   }, []);
 
@@ -68,9 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const clearDailyReward = useCallback(() => setDailyReward(null), []);
+
   const value = useMemo(
-    () => ({ user, loading, login, signup, logout, refreshUser, setUser }),
-    [user, loading, login, signup, logout, refreshUser],
+    () => ({ user, loading, login, signup, logout, refreshUser, setUser, dailyReward, clearDailyReward }),
+    [user, loading, login, signup, logout, refreshUser, dailyReward, clearDailyReward],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

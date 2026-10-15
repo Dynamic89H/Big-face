@@ -10,6 +10,7 @@ export interface User {
   avatarConfig: Record<string, unknown> | null;
   xp: number;
   level: number;
+  loginStreak?: number;
   createdAt: string;
 }
 

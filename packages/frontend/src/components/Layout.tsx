@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { getSocket, type GiftReceivedPayload, type RankUpPayload } from '../api/socket';
 import RedCarpetBanner from './RedCarpetBanner';
+import DailyRewardBanner from './DailyRewardBanner';
 import Avatar, { facePhotoOf } from './Avatar';
 import { GIFT_EMOJI } from './GiftDialog';
 
@@ -110,6 +111,7 @@ export default function Layout() {
       </div>
 
       <RedCarpetBanner />
+      <DailyRewardBanner />
     </div>
   );
 }
