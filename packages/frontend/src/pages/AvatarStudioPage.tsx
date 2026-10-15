@@ -1,27 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { avatarApi, walletApi, ApiError } from '../api/client';
+import { avatarApi, walletApi, usersApi, uploadsApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { AvatarItem } from '../types';
-import { RARITY_COLORS, initialsOf } from '../types';
-
-// Slot labels positioned around the preview silhouette.
-const SLOT_POS: Record<string, { top: string; left: string }> = {
-  crown: { top: '-6px', left: '50%' },
-  hat: { top: '6px', left: '50%' },
-  head: { top: '26px', left: '50%' },
-  face: { top: '52px', left: '50%' },
-  glasses: { top: '52px', left: '50%' },
-  neck: { top: '104px', left: '50%' },
-  body: { top: '150px', left: '50%' },
-  outfit: { top: '150px', left: '50%' },
-  background: { top: '200px', left: '50%' },
-  effect: { top: '226px', left: '50%' },
-};
-
-function slotPos(slot: string) {
-  return SLOT_POS[slot.toLowerCase()] ?? { top: '120px', left: '50%' };
-}
+import { RARITY_COLORS } from '../types';
+import CharacterAvatar from '../components/CharacterAvatar';
 
 export default function AvatarStudioPage() {
   const { user, refreshUser } = useAuth();
@@ -36,6 +19,9 @@ export default function AvatarStudioPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [facePhotoUrl, setFacePhotoUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
@@ -50,10 +36,29 @@ export default function AvatarStudioPage() {
       setOwnedIds(new Set(owned.map((o) => o.item.id)));
       setEquipped(equipped);
       setBalance(balance);
+      // Restore saved face photo from avatar config.
+      const cfg = (user?.avatarConfig ?? {}) as Record<string, unknown>;
+      if (typeof cfg.facePhotoUrl === 'string') setFacePhotoUrl(cfg.facePhotoUrl);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not load the studio.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const uploadFacePhoto = async (file: File) => {
+    setUploadingPhoto(true);
+    setActionError(null);
+    try {
+      const { url } = await uploadsApi.upload(file);
+      const cfg = { ...((user?.avatarConfig ?? {}) as Record<string, unknown>), facePhotoUrl: url };
+      await usersApi.updateMe({ avatarConfig: cfg });
+      setFacePhotoUrl(url);
+      refreshUser().catch(() => undefined);
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : 'Could not upload photo.');
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -209,30 +214,38 @@ export default function AvatarStudioPage() {
           </div>
 
           <div className="card preview-stage">
-            <h3 style={{ margin: 0 }}>Live preview</h3>
-            <div className="silhouette">
-              <div className="sil-head" style={{ background: user?.profileColor ?? '#0066FF', color: '#fff' }}>
-                {initialsOf(user?.displayName ?? '?')}
-              </div>
-              <div className="sil-body" />
-              {equippedList.map((item) => {
-                const pos = slotPos(item.slot);
-                const rarity = RARITY_COLORS[item.rarity] ?? '#9aa3b2';
-                return (
-                  <span
-                    key={item.id}
-                    className="equip-chip"
-                    style={{ ...pos, transform: 'translateX(-50%)', borderColor: rarity, color: rarity }}
-                    title={`${item.name} (${item.slot})`}
-                  >
-                    {item.name}
-                  </span>
-                );
-              })}
+            <h3 style={{ margin: 0 }}>Your character</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
+              <CharacterAvatar
+                equipped={equipped}
+                facePhotoUrl={facePhotoUrl}
+                displayName={user?.displayName}
+                profileColor={user?.profileColor}
+                size={220}
+              />
             </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) uploadFacePhoto(f);
+                e.target.value = '';
+              }}
+            />
+            <button
+              className="btn btn-block"
+              style={{ marginTop: '0.5rem' }}
+              disabled={uploadingPhoto}
+              onClick={() => fileRef.current?.click()}
+            >
+              {uploadingPhoto ? 'Uploading…' : facePhotoUrl ? '📸 Change face photo' : '📸 Upload your face photo'}
+            </button>
             {equippedList.length === 0 ? (
               <p className="form-note" style={{ textAlign: 'center' }}>
-                Nothing equipped yet.<br />Acquire gear and equip it to see it here.
+                Nothing equipped yet.<br />Grab gear below and watch your character come alive.
               </p>
             ) : (
               <p className="form-note" style={{ textAlign: 'center' }}>
