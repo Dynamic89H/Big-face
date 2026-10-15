@@ -15,6 +15,7 @@ const config_1 = require("../config");
 const db_1 = require("../db");
 const util_1 = require("../util");
 const tokens_1 = require("./tokens");
+const platformRevenue_1 = require("./platformRevenue");
 /** Token packs from API_CONTRACT.md: packId -> { tokens, price in cents }. */
 exports.TOKEN_PACKS = {
     starter: { tokens: 100, amountCents: 99, label: 'Starter Pack' },
@@ -140,6 +141,13 @@ async function confirmTokenPurchase(userId, paymentIntentId) {
     const tokens = parseInt(pi.metadata?.tokens ?? '0', 10);
     if (!tokens || tokens <= 0)
         throw new util_1.HttpError(400, 'Payment has no token amount');
+    // Dweezy gets 100% of token pack sales (minus Stripe's cut) — recorded.
+    const packCents = pi.amount_received ?? pi.amount ?? 0;
+    await (0, platformRevenue_1.recordPlatformRevenue)('token_purchase', packCents, {
+        userId,
+        reference: `pack:${pi.metadata?.packId ?? 'unknown'}:${pi.id}`,
+        grossCents: packCents,
+    });
     return (0, tokens_1.addTokens)(userId, tokens, 'purchase', {
         reference: `pack:${pi.metadata?.packId ?? 'unknown'}`,
         stripePaymentIntentId: pi.id,
@@ -222,6 +230,12 @@ async function createPayout(userId, amountCents) {
         await db.query(`INSERT INTO platform_earnings (payout_id, user_id, gross_cents, platform_cents, creator_cents)
        VALUES ($1, $2, $3, $4, $5)`, [payoutRow.id, userId, amountCents, platformCents, creatorCents]);
         await db.query('COMMIT');
+        // Also log to unified revenue ledger — Dweezy's 30% on every payout.
+        await (0, platformRevenue_1.recordPlatformRevenue)('payout_fee', platformCents, {
+            userId,
+            reference: `payout:${payoutRow.id}`,
+            grossCents: amountCents,
+        });
         const shape = () => ({
             id: String(payoutRow.id),
             userId: String(payoutRow.user_id),

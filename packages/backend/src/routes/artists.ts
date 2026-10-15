@@ -5,6 +5,7 @@ import { asyncHandler, HttpError } from '../util';
 import { requireAuth } from '../middleware/auth';
 import { awardXp } from '../services/xp';
 import { addTokens } from '../services/tokens';
+import { recordPlatformRevenue } from '../services/platformRevenue';
 import { emitToUser } from '../sockets';
 
 const router = Router();
@@ -138,6 +139,15 @@ router.post(
 
     await awardXp(tipperId, 5, 'tip_sent').catch(() => undefined);
     await awardXp(track.artist_id, 15, 'tip_received').catch(() => undefined);
+
+    // Dweezy's 10% cut on every track tip — recorded, never lost.
+    const tipPlatformCut = tokens - artistCut;
+    await recordPlatformRevenue('tip_margin', tipPlatformCut, {
+      userId: tipperId,
+      reference: `tip:${track.id}`,
+      grossCents: tokens,
+    });
+
     emitToUser(track.artist_id, 'track:tipped', { trackId: track.id, tokens, tipperId });
     res.json({ ok: true, artistCut });
   })

@@ -145,7 +145,15 @@ exports.default = router;
 router.get('/platform-earnings', (0, util_1.asyncHandler)(async (req, res) => {
     const pending = await (0, paypal_1.pendingPlatformTotal)();
     const { rows } = await db_1.pool.query(`SELECT COALESCE(SUM(platform_cents), 0)::int AS lifetime FROM platform_earnings`);
-    res.json({ pendingCents: pending, lifetimeCents: Number(rows[0].lifetime) });
+    // Unified ledger: every cent of Dweezy's cut, broken down by source.
+    const { totalPlatformRevenue, platformRevenueBySource } = await Promise.resolve().then(() => __importStar(require('../services/platformRevenue')));
+    const [total, bySource] = await Promise.all([totalPlatformRevenue(), platformRevenueBySource()]);
+    res.json({
+        pendingCents: pending,
+        lifetimeCents: Number(rows[0].lifetime),
+        revenueLedgerCents: total,
+        revenueBySource: bySource,
+    });
 }));
 router.post('/platform-payout', (0, util_1.asyncHandler)(async (req, res) => {
     const result = await (0, paypal_1.payoutPlatformEarnings)();

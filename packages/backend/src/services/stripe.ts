@@ -3,6 +3,7 @@ import { config } from '../config';
 import { pool } from '../db';
 import { HttpError } from '../util';
 import { addTokens } from './tokens';
+import { recordPlatformRevenue } from './platformRevenue';
 
 /** Token packs from API_CONTRACT.md: packId -> { tokens, price in cents }. */
 export const TOKEN_PACKS = {
@@ -150,6 +151,15 @@ export async function confirmTokenPurchase(
   }
   const tokens = parseInt(pi.metadata?.tokens ?? '0', 10);
   if (!tokens || tokens <= 0) throw new HttpError(400, 'Payment has no token amount');
+
+  // Dweezy gets 100% of token pack sales (minus Stripe's cut) — recorded.
+  const packCents = pi.amount_received ?? pi.amount ?? 0;
+  await recordPlatformRevenue('token_purchase', packCents, {
+    userId,
+    reference: `pack:${pi.metadata?.packId ?? 'unknown'}:${pi.id}`,
+    grossCents: packCents,
+  });
+
   return addTokens(userId, tokens, 'purchase', {
     reference: `pack:${pi.metadata?.packId ?? 'unknown'}`,
     stripePaymentIntentId: pi.id,
@@ -263,6 +273,13 @@ export async function createPayout(userId: string, amountCents: number): Promise
       [payoutRow.id, userId, amountCents, platformCents, creatorCents]
     );
     await db.query('COMMIT');
+
+    // Also log to unified revenue ledger — Dweezy's 30% on every payout.
+    await recordPlatformRevenue('payout_fee', platformCents, {
+      userId,
+      reference: `payout:${payoutRow.id}`,
+      grossCents: amountCents,
+    });
 
     const shape = () => ({
       id: String(payoutRow.id),

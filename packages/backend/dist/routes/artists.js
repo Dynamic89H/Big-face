@@ -7,6 +7,7 @@ const util_1 = require("../util");
 const auth_1 = require("../middleware/auth");
 const xp_1 = require("../services/xp");
 const tokens_1 = require("../services/tokens");
+const platformRevenue_1 = require("../services/platformRevenue");
 const sockets_1 = require("../sockets");
 const router = (0, express_1.Router)();
 // Become an artist (or update artist profile).
@@ -97,6 +98,13 @@ router.post('/tracks/:id/tip', auth_1.requireAuth, (0, util_1.asyncHandler)(asyn
     }
     await (0, xp_1.awardXp)(tipperId, 5, 'tip_sent').catch(() => undefined);
     await (0, xp_1.awardXp)(track.artist_id, 15, 'tip_received').catch(() => undefined);
+    // Dweezy's 10% cut on every track tip — recorded, never lost.
+    const tipPlatformCut = tokens - artistCut;
+    await (0, platformRevenue_1.recordPlatformRevenue)('tip_margin', tipPlatformCut, {
+        userId: tipperId,
+        reference: `tip:${track.id}`,
+        grossCents: tokens,
+    });
     (0, sockets_1.emitToUser)(track.artist_id, 'track:tipped', { trackId: track.id, tokens, tipperId });
     res.json({ ok: true, artistCut });
 }));

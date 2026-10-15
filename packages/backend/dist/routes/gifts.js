@@ -42,6 +42,7 @@ const auth_1 = require("../middleware/auth");
 const moderation_1 = require("../middleware/moderation");
 const tokens_1 = require("../services/tokens");
 const xp_1 = require("../services/xp");
+const platformRevenue_1 = require("../services/platformRevenue");
 const sockets_1 = require("../sockets");
 const router = (0, express_1.Router)();
 /** Gift catalog from API_CONTRACT.md. */
@@ -125,6 +126,13 @@ router.post('/', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res) =
     (0, sockets_1.maybeEmitRankUp)(senderId, await (0, xp_1.awardXp)(senderId, 2, 'gift sent'));
     const shaped = toGift(giftRow, senderRes.rows[0], receiverRes.rows[0]);
     (0, sockets_1.emitToUser)(body.receiverId, 'gift:received', { gift: shaped });
+    // Dweezy's 20% cut on every gift — recorded, never lost.
+    const platformCut = gift.tokenCost - receiverCut;
+    await (0, platformRevenue_1.recordPlatformRevenue)(body.battleId ? 'battle_gift_margin' : 'gift_margin', platformCut, {
+        userId: senderId,
+        reference: `gift:${giftRow.id}`,
+        grossCents: gift.tokenCost,
+    });
     // Battle scoring: if this gift was sent during a live battle to a battler, count it.
     if (body.battleId) {
         try {

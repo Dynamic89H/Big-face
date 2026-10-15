@@ -6,6 +6,7 @@ import { requireAuth } from '../middleware/auth';
 import { cleanText } from '../middleware/moderation';
 import { addTokens } from '../services/tokens';
 import { awardXp } from '../services/xp';
+import { recordPlatformRevenue } from '../services/platformRevenue';
 import { emitToUser, maybeEmitRankUp } from '../sockets';
 
 const router = Router();
@@ -106,6 +107,14 @@ router.post(
 
     const shaped = toGift(giftRow, senderRes.rows[0], receiverRes.rows[0]);
     emitToUser(body.receiverId, 'gift:received', { gift: shaped });
+
+    // Dweezy's 20% cut on every gift — recorded, never lost.
+    const platformCut = gift.tokenCost - receiverCut;
+    await recordPlatformRevenue(body.battleId ? 'battle_gift_margin' : 'gift_margin', platformCut, {
+      userId: senderId,
+      reference: `gift:${giftRow.id}`,
+      grossCents: gift.tokenCost,
+    });
 
     // Battle scoring: if this gift was sent during a live battle to a battler, count it.
     if (body.battleId) {

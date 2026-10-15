@@ -145,7 +145,15 @@ router.get(
     const { rows } = await pool.query(
       `SELECT COALESCE(SUM(platform_cents), 0)::int AS lifetime FROM platform_earnings`
     );
-    res.json({ pendingCents: pending, lifetimeCents: Number(rows[0].lifetime) });
+    // Unified ledger: every cent of Dweezy's cut, broken down by source.
+    const { totalPlatformRevenue, platformRevenueBySource } = await import('../services/platformRevenue');
+    const [total, bySource] = await Promise.all([totalPlatformRevenue(), platformRevenueBySource()]);
+    res.json({
+      pendingCents: pending,
+      lifetimeCents: Number(rows[0].lifetime),
+      revenueLedgerCents: total,
+      revenueBySource: bySource,
+    });
   })
 );
 
