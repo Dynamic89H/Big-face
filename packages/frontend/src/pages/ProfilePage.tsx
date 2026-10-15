@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { usersApi, mediaApi, ApiError } from '../api/client';
+import { usersApi, mediaApi, friendsApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { MediaPost, User, UserStats } from '../types';
 import { timeAgo } from '../types';
@@ -25,8 +25,46 @@ export default function ProfilePage() {
   const [showGift, setShowGift] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [friendStatus, setFriendStatus] = useState<string | null>(null);
+  const [friendBusy, setFriendBusy] = useState(false);
 
   const isMe = id === me?.id;
+
+  const loadFriendStatus = async () => {
+    if (!id || id === me?.id) return;
+    try {
+      const { status } = await friendsApi.status(id);
+      setFriendStatus(status);
+    } catch {
+      /* non-fatal */
+    }
+  };
+
+  const sendFriendRequest = async () => {
+    if (!id) return;
+    setFriendBusy(true);
+    try {
+      await friendsApi.request(id);
+      setFriendStatus('request_sent');
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : 'Could not send request.');
+    } finally {
+      setFriendBusy(false);
+    }
+  };
+
+  const unfriend = async () => {
+    if (!id) return;
+    setFriendBusy(true);
+    try {
+      await friendsApi.unfriend(id);
+      setFriendStatus(null);
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : 'Could not unfriend.');
+    } finally {
+      setFriendBusy(false);
+    }
+  };
 
   const load = async () => {
     if (!id) return;
@@ -37,6 +75,7 @@ export default function ProfilePage() {
         usersApi.get(id),
         mediaApi.list(60),
       ]);
+      void loadFriendStatus();
       setProfile(user);
       setStats(stats);
       setLikeCount(stats.followersLikes);
@@ -140,6 +179,17 @@ export default function ProfilePage() {
               <button className={`like-btn${liked ? ' liked' : ''}`} onClick={toggleLike} style={{ fontSize: '0.95rem', padding: '0.55rem 1.1rem' }}>
                 {liked ? '❤️ Liked' : '🤍 Like'}
               </button>
+              {friendStatus === 'accepted' ? (
+                <button className="btn btn-sm" disabled style={{ opacity: 0.7 }}>✓ Friends</button>
+              ) : friendStatus === 'request_sent' ? (
+                <button className="btn btn-sm" disabled style={{ opacity: 0.7 }}>⏳ Request sent</button>
+              ) : friendStatus === 'request_received' ? (
+                <Link className="btn btn-sm" to="/friends">Respond to request</Link>
+              ) : (
+                <button className="btn btn-sm" onClick={sendFriendRequest} disabled={friendBusy}>
+                  {friendBusy ? 'Sending…' : '👥 Add Friend'}
+                </button>
+              )}
               <button className="btn btn-sm" onClick={() => setShowGift(true)}>🎁 Send gift</button>
               <button className="btn btn-ghost btn-sm" onClick={toggleBlock}>
                 {blocked ? 'Unblock' : '⛔ Block'}

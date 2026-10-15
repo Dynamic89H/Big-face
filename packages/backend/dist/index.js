@@ -49,6 +49,7 @@ const util_1 = require("./util");
 const sockets_1 = require("./sockets");
 const auth_1 = __importDefault(require("./routes/auth"));
 const users_1 = __importDefault(require("./routes/users"));
+const friends_1 = __importDefault(require("./routes/friends"));
 const rooms_1 = __importDefault(require("./routes/rooms"));
 const messages_1 = __importDefault(require("./routes/messages"));
 const uploads_1 = __importDefault(require("./routes/uploads"));
@@ -80,6 +81,7 @@ app.get('/api/health', (_req, res) => {
 });
 app.use('/api/auth', auth_1.default);
 app.use('/api/users', users_1.default);
+app.use('/api/friends', friends_1.default);
 app.use('/api/rooms', rooms_1.default);
 app.use('/api', messages_1.default); // /rooms/:id/messages, /messages/:id/...
 app.use('/api/uploads', uploads_1.default);

@@ -11,6 +11,7 @@ import HallOfFamePage from './pages/HallOfFamePage';
 import AvatarStudioPage from './pages/AvatarStudioPage';
 import ThroneRoomPage from './pages/ThroneRoomPage';
 import FameTrackerPage from './pages/FameTrackerPage';
+import FriendsPage from './pages/FriendsPage';
 import DJBoothPage from './pages/DJBoothPage';
 import SafetyPage from './pages/SafetyPage';
 import WalletPage from './pages/WalletPage';
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="avatar-studio" element={<AvatarStudioPage />} />
             <Route path="throne" element={<ThroneRoomPage />} />
             <Route path="fame" element={<FameTrackerPage />} />
+            <Route path="friends" element={<FriendsPage />} />
             <Route path="dj-booth" element={<DJBoothPage />} />
             <Route path="safety" element={<SafetyPage />} />
             <Route path="wallet" element={<WalletPage />} />

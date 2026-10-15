@@ -105,6 +105,17 @@ export const usersApi = {
   unblock: (id: string) => del<void>(`/users/${id}/block`),
 };
 
+// --- Friends ---
+export const friendsApi = {
+  list: () => get<{ friends: User[] }>('/friends'),
+  requests: () => get<{ received: User[]; sent: User[] }>('/friends/requests'),
+  status: (userId: string) => get<{ status: string | null }>(`/friends/status/${userId}`),
+  request: (userId: string) => post<{ ok: boolean }>('/friends/request', { userId }),
+  accept: (userId: string) => post<{ ok: boolean }>('/friends/accept', { userId }),
+  decline: (userId: string) => post<{ ok: boolean }>('/friends/decline', { userId }),
+  unfriend: (userId: string) => del<{ ok: boolean }>(`/friends/${userId}`),
+};
+
 // --- Rooms ---
 export const roomsApi = {
   list: () => get<{ rooms: RoomSummary[] }>('/rooms'),
