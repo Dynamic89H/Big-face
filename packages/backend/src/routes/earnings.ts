@@ -12,11 +12,13 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const me = req.user!.id;
-    const { rows: u } = await pool.query('SELECT token_balance FROM users WHERE id = $1', [me]);
+    const { rows: u } = await pool.query(
+      'SELECT token_balance, xp, level FROM users WHERE id = $1', [me]
+    );
     const { rows: e } = await pool.query(
       `SELECT COALESCE(SUM(amount), 0)::int AS earned
        FROM token_transactions
-       WHERE user_id = $1 AND amount > 0 AND kind IN ('gift_received', 'bonus')`,
+       WHERE user_id = $1 AND amount > 0 AND kind IN ('gift_received', 'bonus', 'level_up_reward', 'track_tip_received')`,
       [me]
     );
     const { rows: g } = await pool.query(
@@ -28,11 +30,23 @@ router.get(
        FROM payouts WHERE user_id = $1 AND status = 'paid'`,
       [me]
     );
+    const { rows: lr } = await pool.query(
+      `SELECT COALESCE(SUM(tokens_awarded), 0)::int AS total, MAX(level)::int AS max_level
+       FROM level_rewards WHERE user_id = $1`,
+      [me]
+    );
+    // Next level reward preview.
+    const nextLevel = (u[0]?.level ?? 1) + 1;
     res.json({
       tokenBalance: Number(u[0].token_balance),
+      xp: Number(u[0]?.xp ?? 0),
+      level: Number(u[0]?.level ?? 1),
       earnedTokens: e[0].earned,
       giftsReceived: g[0].c,
       payoutsTotal: p[0].total,
+      levelRewardsTotal: lr[0].total,
+      nextLevelReward: nextLevel * 50,
+      nextLevel,
     });
   })
 );

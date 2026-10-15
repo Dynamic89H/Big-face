@@ -175,9 +175,31 @@ export function emitToUser(userId: string, event: string, payload: unknown): voi
   io?.to(`user:${userId}`).emit(event, payload);
 }
 
-/** Fires user:rank-up when an XP award crossed a level threshold. */
+/** Fires user:rank-up when an XP award crossed a level threshold. Also pays token rewards. */
 export function maybeEmitRankUp(userId: string, res: AwardXpResult): void {
   if (res.leveledUp) {
     emitToAll('user:rank-up', { userId, level: res.level, tier: tierForLevel(res.level) });
+    // Level-up token reward: higher level = bigger bag. Fire and forget.
+    payLevelUpReward(userId, res.level).catch(() => undefined);
   }
+}
+
+/** Token reward for ranking up: level × 50 tokens. Level 10 = 500 tokens = $5. */
+async function payLevelUpReward(userId: string, level: number): Promise<void> {
+  const { pool } = await import('../db');
+  const { addTokens } = await import('../services/tokens');
+
+  // Idempotent: never pay twice for the same level.
+  const { rows: existing } = await pool.query(
+    'SELECT 1 FROM level_rewards WHERE user_id = $1 AND level = $2',
+    [userId, level]
+  );
+  if (existing.length) return;
+
+  const tokens = level * 50;
+  await addTokens(userId, tokens, 'level_up_reward', { reference: `level:${level}` });
+  await pool.query(
+    'INSERT INTO level_rewards (user_id, level, tokens_awarded) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+    [userId, level, tokens]
+  );
 }

@@ -1,7 +1,7 @@
 import { PoolClient } from 'pg';
 import { pool } from '../db';
 
-export type TokenKind = 'purchase' | 'gift_sent' | 'gift_received' | 'payout' | 'bonus' | 'track_tip_sent' | 'track_tip_received';
+export type TokenKind = 'purchase' | 'gift_sent' | 'gift_received' | 'payout' | 'bonus' | 'track_tip_sent' | 'track_tip_received' | 'level_up_reward';
 
 interface AddTokensOpts {
   reference?: string;

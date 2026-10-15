@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initSockets = initSockets;
 exports.emitToAll = emitToAll;
@@ -150,9 +183,23 @@ function emitToRoom(roomId, event, payload) {
 function emitToUser(userId, event, payload) {
     io?.to(`user:${userId}`).emit(event, payload);
 }
-/** Fires user:rank-up when an XP award crossed a level threshold. */
+/** Fires user:rank-up when an XP award crossed a level threshold. Also pays token rewards. */
 function maybeEmitRankUp(userId, res) {
     if (res.leveledUp) {
         emitToAll('user:rank-up', { userId, level: res.level, tier: (0, xp_1.tierForLevel)(res.level) });
+        // Level-up token reward: higher level = bigger bag. Fire and forget.
+        payLevelUpReward(userId, res.level).catch(() => undefined);
     }
+}
+/** Token reward for ranking up: level × 50 tokens. Level 10 = 500 tokens = $5. */
+async function payLevelUpReward(userId, level) {
+    const { pool } = await Promise.resolve().then(() => __importStar(require('../db')));
+    const { addTokens } = await Promise.resolve().then(() => __importStar(require('../services/tokens')));
+    // Idempotent: never pay twice for the same level.
+    const { rows: existing } = await pool.query('SELECT 1 FROM level_rewards WHERE user_id = $1 AND level = $2', [userId, level]);
+    if (existing.length)
+        return;
+    const tokens = level * 50;
+    await addTokens(userId, tokens, 'level_up_reward', { reference: `level:${level}` });
+    await pool.query('INSERT INTO level_rewards (user_id, level, tokens_awarded) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [userId, level, tokens]);
 }
