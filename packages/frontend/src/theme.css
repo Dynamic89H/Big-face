@@ -2,7 +2,7 @@
 
 :root {
   --bg: #070810;
-  --panel: rgba(22, 26, 38, 0.72);
+  --panel: rgba(10, 12, 24, 0.55);
   --panel-2: rgba(28, 33, 48, 0.72);
   --border: rgba(120, 140, 200, 0.14);
   --text: #f2f4f8;
@@ -79,7 +79,7 @@ h1:not(.wordmark) {
 .sidebar {
   width: 248px;
   flex-shrink: 0;
-  background: rgba(14, 17, 28, 0.82);
+  background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid var(--border);
@@ -175,7 +175,7 @@ h1:not(.wordmark) {
 
 /* ---------- Cards / panels ---------- */
 .card {
-  background: var(--panel);
+  background: rgba(10, 12, 24, 0.55);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
