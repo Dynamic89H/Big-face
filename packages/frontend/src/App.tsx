@@ -20,6 +20,7 @@ import ArtistsPage from './pages/ArtistsPage';
 import GamblePage from './pages/GamblePage';
 import FactoryPage from './pages/FactoryPage';
 import GameLivePage from './pages/GameLivePage';
+import CharacterStudioPage from './pages/CharacterStudioPage';
 import PrivacyPage from './pages/PrivacyPage';
 import DJBoothPage from './pages/DJBoothPage';
 import SafetyPage from './pages/SafetyPage';
@@ -90,6 +91,7 @@ export default function App() {
             <Route path="gamble" element={<GamblePage />} />
             <Route path="factory" element={<FactoryPage />} />
             <Route path="game-live" element={<GameLivePage />} />
+            <Route path="character-studio" element={<CharacterStudioPage />} />
             <Route path="dj-booth" element={<DJBoothPage />} />
             <Route path="safety" element={<SafetyPage />} />
             <Route path="wallet" element={<WalletPage />} />
