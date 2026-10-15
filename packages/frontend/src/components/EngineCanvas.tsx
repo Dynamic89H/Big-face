@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { BigFaceEngine } from '../engine/BigFaceEngine';
 
 /**
@@ -8,21 +8,17 @@ import { BigFaceEngine } from '../engine/BigFaceEngine';
  */
 export default function EngineCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
     try {
       BigFaceEngine.get().init(canvasRef.current);
-      setReady(true);
     } catch (e) {
       // WebGL unavailable — fall back to CSS background.
       document.body.classList.add('engine-fallback');
       console.warn('Big Face Engine could not start:', e);
     }
   }, []);
-
-  if (!ready) return null;
 
   return (
     <canvas
