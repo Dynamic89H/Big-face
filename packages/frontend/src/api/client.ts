@@ -91,7 +91,7 @@ export const authApi = {
 export const usersApi = {
   get: (id: string) => get<{ user: User; stats: UserStats }>(`/users/${id}`),
   search: (q: string) => get<{ users: User[] }>(`/users/search?q=${encodeURIComponent(q)}`),
-  updateMe: (input: { displayName?: string; bio?: string; profileColor?: string; gender?: string; avatarConfig?: unknown }) =>
+  updateMe: (input: { displayName?: string; bio?: string; profileColor?: string; profileBackground?: string; gender?: string; avatarConfig?: unknown }) =>
     patch<{ user: User }>('/users/me', input),
   leaderboard: (limit = 50) => get<{ entries: LeaderboardEntry[] }>(`/users/leaderboard?limit=${limit}`),
   colorOfWeek: () => get<{ user: User | null; weekStart: string }>('/users/color-of-week'),

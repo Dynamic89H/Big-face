@@ -11,6 +11,7 @@ export interface User {
   xp: number;
   level: number;
   loginStreak?: number;
+  profileBackground?: string;
   createdAt: string;
 }
 

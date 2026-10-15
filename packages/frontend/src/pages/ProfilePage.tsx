@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import type { MediaPost, User, UserStats } from '../types';
 import { timeAgo } from '../types';
 import Avatar, { facePhotoOf } from '../components/Avatar';
+import { backgroundCss } from '../profileBackgrounds';
 import GiftDialog from '../components/GiftDialog';
 import ReportDialog from '../components/ReportDialog';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -163,7 +164,7 @@ export default function ProfilePage() {
   return (
     <div>
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="profile-cover" style={{ background: `linear-gradient(135deg, ${profile.profileColor}, #0e1013)` }} />
+        <div className="profile-cover" style={{ background: backgroundCss(profile.profileBackground, profile.profileColor) }} />
         <div className="profile-head">
           <Avatar displayName={profile.displayName} profileColor={profile.profileColor} size="xl" photoUrl={facePhotoOf(profile)} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.6rem', marginTop: '0.7rem' }}>

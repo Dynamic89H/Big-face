@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { usersApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { PROFILE_PRESETS } from '../types';
+import { PROFILE_BACKGROUNDS, backgroundCss } from '../profileBackgrounds';
 import Avatar from '../components/Avatar';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -17,6 +18,7 @@ export default function ProfileEditPage() {
   const [bio, setBio] = useState(user?.bio ?? '');
   const [gender, setGender] = useState(user?.gender ?? 'female');
   const [profileColor, setProfileColor] = useState(user?.profileColor ?? '#0066FF');
+  const [profileBackground, setProfileBackground] = useState(user?.profileBackground ?? 'default');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -32,6 +34,7 @@ export default function ProfileEditPage() {
         bio: bio.trim(),
         gender,
         profileColor,
+        profileBackground,
       });
       setUser(updated);
       navigate(`/u/${updated.id}`);
@@ -97,6 +100,41 @@ export default function ProfileEditPage() {
                 aria-label="Pick a custom color"
                 title="Custom color"
               />
+            </div>
+          </div>
+          <div className="field">
+            <label>Profile background</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '0.5rem' }}>
+              {PROFILE_BACKGROUNDS.map((bg) => (
+                <button
+                  key={bg.id}
+                  type="button"
+                  onClick={() => setProfileBackground(bg.id)}
+                  title={bg.name}
+                  aria-label={`Use ${bg.name} background`}
+                  style={{
+                    height: 64,
+                    borderRadius: 10,
+                    border: profileBackground === bg.id ? '3px solid var(--gold)' : '1px solid var(--border)',
+                    background: bg.id === 'default'
+                      ? `linear-gradient(135deg, ${profileColor}, #0e1013)`
+                      : bg.css,
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute', bottom: 2, left: 0, right: 0,
+                      fontSize: '0.6rem', fontWeight: 700, textAlign: 'center',
+                      color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                    }}
+                  >
+                    {bg.name}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
           {error && <div className="form-error">{error}</div>}

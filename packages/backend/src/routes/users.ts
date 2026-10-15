@@ -202,6 +202,7 @@ const patchMeSchema = z.object({
   displayName: z.string().min(1).max(60).optional(),
   bio: z.string().max(500).optional(),
   profileColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a hex color like #0066FF').optional(),
+  profileBackground: z.string().max(40).regex(/^[a-z0-9-]+$/, 'letters, numbers and dashes only').optional(),
   avatarConfig: z.record(z.any()).optional(),
   gender: z.enum(['male', 'female', 'other']).optional(),
 });
@@ -215,6 +216,7 @@ router.patch(
       displayName: 'display_name',
       bio: 'bio',
       profileColor: 'profile_color',
+      profileBackground: 'profile_background',
       avatarConfig: 'avatar_config',
       gender: 'gender',
     };

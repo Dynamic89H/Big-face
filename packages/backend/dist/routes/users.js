@@ -135,6 +135,7 @@ const patchMeSchema = zod_1.z.object({
     displayName: zod_1.z.string().min(1).max(60).optional(),
     bio: zod_1.z.string().max(500).optional(),
     profileColor: zod_1.z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a hex color like #0066FF').optional(),
+    profileBackground: zod_1.z.string().max(40).regex(/^[a-z0-9-]+$/, 'letters, numbers and dashes only').optional(),
     avatarConfig: zod_1.z.record(zod_1.z.any()).optional(),
     gender: zod_1.z.enum(['male', 'female', 'other']).optional(),
 });
@@ -144,6 +145,7 @@ router.patch('/me', auth_1.requireAuth, (0, util_1.asyncHandler)(async (req, res
         displayName: 'display_name',
         bio: 'bio',
         profileColor: 'profile_color',
+        profileBackground: 'profile_background',
         avatarConfig: 'avatar_config',
         gender: 'gender',
     };

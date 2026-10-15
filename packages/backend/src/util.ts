@@ -28,6 +28,7 @@ export interface UserShape {
   xp: number;
   level: number;
   loginStreak?: number;
+  profileBackground?: string;
   createdAt: string;
 }
 
@@ -43,6 +44,7 @@ export function toUser(row: any): UserShape {
     xp: Number(row.xp ?? 0),
     level: Number(row.level ?? 1),
     loginStreak: Number(row.login_streak ?? 0),
+    profileBackground: row.profile_background ?? row.profileBackground ?? 'default',
     createdAt:
       row.created_at != null
         ? new Date(row.created_at).toISOString()
