@@ -221,7 +221,11 @@ export interface LifestyleAsset {
 export const lifestyleApi = {
   assets: () => get<{ assets: LifestyleAsset[] }>('/lifestyle/assets'),
   mine: () => get<{ assets: LifestyleAsset[] }>('/lifestyle/mine'),
+  mineDetailed: () => get<{ assets: any[] }>('/lifestyle/mine/detailed'),
   buy: (assetId: string) => post<{ ok: boolean; name: string }>(`/lifestyle/buy/${assetId}`, {}),
+  shop: () => get<{ items: any[] }>('/lifestyle/shop'),
+  customize: (assetId: string, category: string, itemId: string) =>
+    post<{ ok: boolean; applied: string }>(`/lifestyle/customize/${assetId}`, { category, itemId }),
 };
 
 // --- Battles ---
