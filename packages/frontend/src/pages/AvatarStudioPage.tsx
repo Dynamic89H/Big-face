@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import type { AvatarItem } from '../types';
 import { RARITY_COLORS } from '../types';
 import CharacterAvatar from '../components/CharacterAvatar';
+import ItemVisual from '../components/ItemVisual';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 // Character lineup — realistic 3D game-style base characters users pick from.
@@ -203,6 +204,7 @@ export default function AvatarStudioPage() {
                           <span className="rarity-tag" style={{ color: rarity }}>{item.rarity}</span>
                           {isEquipped && <span className="badge badge-blue">Equipped</span>}
                         </div>
+                        <ItemVisual slot={item.slot} style={item.style as Record<string, unknown>} name={item.name} size={90} />
                         <div className="item-name">{item.name}</div>
                         <div className="item-meta">
                           {item.minLevel > 1 && <div>🔒 Level {item.minLevel}+ required</div>}
