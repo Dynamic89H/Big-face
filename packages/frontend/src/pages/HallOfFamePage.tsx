@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { mediaApi, uploadsApi, usersApi, ApiError } from '../api/client';
 import type { MediaPost, User } from '../types';
 import { timeAgo } from '../types';
-import Avatar from '../components/Avatar';
+import Avatar, { facePhotoOf } from '../components/Avatar';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function HallOfFamePage() {
@@ -89,7 +89,7 @@ export default function HallOfFamePage() {
 
       {spotlight && (
         <div className="card spotlight" style={{ marginBottom: '1.4rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Avatar displayName={spotlight.displayName} profileColor={spotlight.profileColor} size="lg" />
+          <Avatar displayName={spotlight.displayName} profileColor={spotlight.profileColor} size="lg" photoUrl={facePhotoOf(spotlight)} />
           <div>
             <div className="badge badge-blue" style={{ marginBottom: '0.3rem' }}>🎨 Color of the Week</div>
             <Link to={`/u/${spotlight.id}`} style={{ fontWeight: 800, fontSize: '1.1rem' }}>
@@ -161,7 +161,7 @@ export default function HallOfFamePage() {
                 <div className="media-meta">
                   {i < 3 && <span className="badge badge-gold">{['🥇', '🥈', '🥉'][i]}</span>}
                   <Link to={`/u/${p.user.id}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Avatar displayName={p.user.displayName} profileColor={p.user.profileColor} size="sm" />
+                    <Avatar displayName={p.user.displayName} profileColor={p.user.profileColor} size="sm" photoUrl={facePhotoOf(p.user)} />
                     <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{p.user.displayName}</span>
                   </Link>
                 </div>

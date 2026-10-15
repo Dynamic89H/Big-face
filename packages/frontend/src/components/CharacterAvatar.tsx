@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { AvatarItem } from '../types';
 
 interface Props {
@@ -30,6 +31,8 @@ function metalColor(metal?: string): string {
 
 /** Full-body SVG character that renders equipped avatar items visually. */
 export default function CharacterAvatar({ equipped, facePhotoUrl, displayName, profileColor, size = 280 }: Props) {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const clipId = `bf-face-clip-${uid}`;
   const hair = styleOf(equipped['hair']);
   const top = styleOf(equipped['top']);
   const bottom = styleOf(equipped['bottom']);
@@ -172,12 +175,12 @@ export default function CharacterAvatar({ equipped, facePhotoUrl, displayName, p
 
       {/* ===== FACE ===== */}
       {facePhotoUrl ? (
-        <clipPath id="bf-face-clip">
+        <clipPath id={clipId}>
           <circle cx="100" cy="82" r="30" />
         </clipPath>
       ) : null}
       {facePhotoUrl ? (
-        <image href={facePhotoUrl} x="70" y="52" width="60" height="60" clipPath="url(#bf-face-clip)" preserveAspectRatio="xMidYMid slice" />
+        <image href={facePhotoUrl} x="70" y="52" width="60" height="60" clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice" />
       ) : (
         <g>
           {/* stylized face */}
@@ -237,10 +240,6 @@ export default function CharacterAvatar({ equipped, facePhotoUrl, displayName, p
         </g>
       )}
 
-      {/* profile color ring */}
-      {profileColor && (
-        <circle cx="100" cy="200" r="0" fill="none" />
-      )}
       <text x="100" y="395" textAnchor="middle" fontSize="11" fill="#9aa3b2">
         {initials}
       </text>

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { usersApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { LeaderboardEntry, User } from '../types';
-import Avatar from '../components/Avatar';
+import Avatar, { facePhotoOf } from '../components/Avatar';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -23,7 +23,7 @@ function RoyalCard({ title, crown, person }: { title: string; crown: string; per
       <div className="crown">{crown}</div>
       <h3 style={{ margin: '0.4rem 0' }}>{title}</h3>
       <Link to={`/u/${person.id}`} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
-        <Avatar displayName={person.displayName} profileColor={person.profileColor} />
+        <Avatar displayName={person.displayName} profileColor={person.profileColor} photoUrl={facePhotoOf(person)} />
         <div>
           <div className="starlight">{person.displayName}</div>
           <div className="form-note">@{person.username} · Level {person.level} · {person.xp} XP</div>
@@ -104,7 +104,7 @@ export default function LeaderboardPage() {
               >
                 <div className="lb-rank">{i < 3 ? MEDALS[i] : `#${e.rank}`}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', minWidth: 0 }}>
-                  <Avatar displayName={e.user.displayName} profileColor={e.user.profileColor} size="sm" />
+                  <Avatar displayName={e.user.displayName} profileColor={e.user.profileColor} size="sm" photoUrl={facePhotoOf(e.user)} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {e.user.displayName}{isMe && ' (you)'}

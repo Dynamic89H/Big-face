@@ -156,14 +156,6 @@ export default function AvatarStudioPage() {
         {balance !== null && <span className="badge badge-gold" style={{ fontSize: '0.9rem' }}>💰 {balance} tokens</span>}
       </div>
 
-      {onboarding && (
-        <div style={{ marginBottom: '1.2rem' }}>
-          <button className="btn btn-block" onClick={() => navigate('/chats', { replace: true })}>
-            Done — Enter Big Face →
-          </button>
-        </div>
-      )}
-
       {actionError && <div className="form-error">{actionError}</div>}
 
       {loading && <div className="loading-wrap"><div className="spinner" /><p>Opening the studio…</p></div>}
@@ -299,6 +291,15 @@ export default function AvatarStudioPage() {
               <p className="form-note" style={{ textAlign: 'center' }}>
                 {equippedList.length} item{equippedList.length === 1 ? '' : 's'} equipped
               </p>
+            )}
+            {onboarding && (
+              <button
+                className="btn btn-block"
+                style={{ marginTop: '1rem', background: 'linear-gradient(135deg, #d4af37, #aa8a2e)', fontSize: '1.05rem', padding: '0.9rem' }}
+                onClick={() => navigate('/chats', { replace: true })}
+              >
+                Done — Enter Big Face →
+              </button>
             )}
           </div>
         </div>

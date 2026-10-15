@@ -5,7 +5,7 @@ import { giftsApi, usersApi, walletApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { GiftCatalogItem, Transaction, User } from '../types';
 import { TOKEN_PACKS, timeAgo, type TokenPack } from '../types';
-import Avatar from '../components/Avatar';
+import Avatar, { facePhotoOf } from '../components/Avatar';
 import GiftDialog, { GIFT_EMOJI } from '../components/GiftDialog';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -209,7 +209,7 @@ export default function WalletPage() {
             {giftCandidates.map((c) => (
               <div key={c.id} className="room-item" onClick={() => { setGiftTo(c); setGiftQuery(''); setGiftCandidates([]); }} role="button" tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && setGiftTo(c)}>
-                <Avatar displayName={c.displayName} profileColor={c.profileColor} size="sm" />
+                <Avatar displayName={c.displayName} profileColor={c.profileColor} size="sm" photoUrl={facePhotoOf(c)} />
                 <div className="info">
                   <div className="name">{c.displayName}</div>
                   <div className="preview">@{c.username} · Level {c.level}</div>

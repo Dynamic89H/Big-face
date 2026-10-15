@@ -15,7 +15,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { useAuth } from '../auth/AuthContext';
 import type { Attachment, Message, Room, User } from '../types';
 import { formatDay, formatTime } from '../types';
-import Avatar from '../components/Avatar';
+import Avatar, { facePhotoOf } from '../components/Avatar';
 import EmojiPicker from '../components/EmojiPicker';
 import ReportDialog from '../components/ReportDialog';
 
@@ -366,7 +366,7 @@ export default function ChatRoomPage() {
               <div className={`msg-row${own ? ' own' : ''}`}>
                 {!own && (
                   <Link to={`/u/${m.sender.id}`} style={{ flexShrink: 0 }}>
-                    <Avatar displayName={m.sender.displayName} profileColor={m.sender.profileColor} size="sm" />
+                    <Avatar displayName={m.sender.displayName} profileColor={m.sender.profileColor} size="sm" photoUrl={facePhotoOf(m.sender)} />
                   </Link>
                 )}
                 <div className="msg-body-wrap">

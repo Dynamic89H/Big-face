@@ -15,17 +15,28 @@ interface Props {
   profileColor: string;
   size?: 'sm' | 'lg' | 'xl';
   online?: boolean;
+  photoUrl?: string | null;
 }
 
-export default function Avatar({ displayName, profileColor, size, online }: Props) {
+export default function Avatar({ displayName, profileColor, size, online, photoUrl }: Props) {
   return (
     <span
       className={`avatar${size ? ` ${size}` : ''}`}
-      style={{ background: profileColor, color: textOn(profileColor) }}
+      style={
+        photoUrl
+          ? { backgroundImage: `url(${photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+          : { background: profileColor, color: textOn(profileColor) }
+      }
       aria-hidden
     >
-      {initialsOf(displayName)}
+      {!photoUrl && initialsOf(displayName)}
       {online !== undefined && <span className={`presence-dot${online ? '' : ' off'}`} />}
     </span>
   );
+}
+
+// Helper: pull the face photo URL out of a user's avatar config.
+export function facePhotoOf(user: { avatarConfig?: Record<string, unknown> | null } | null | undefined): string | null {
+  const cfg = (user?.avatarConfig ?? {}) as Record<string, unknown>;
+  return typeof cfg.facePhotoUrl === 'string' ? cfg.facePhotoUrl : null;
 }

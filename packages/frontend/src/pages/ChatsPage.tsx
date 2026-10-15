@@ -4,7 +4,7 @@ import { roomsApi, usersApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { RoomSummary, User } from '../types';
 import { timeAgo } from '../types';
-import Avatar from '../components/Avatar';
+import Avatar, { facePhotoOf } from '../components/Avatar';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 // Room list with "New room" and "New DM" flows. User lookup for DMs searches
@@ -204,7 +204,7 @@ export default function ChatsPage() {
             {candidates.map((c) => (
               <div key={c.id} className="room-item" onClick={() => startDm(c)} role="button" tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && startDm(c)}>
-                <Avatar displayName={c.displayName} profileColor={c.profileColor} size="sm" />
+                <Avatar displayName={c.displayName} profileColor={c.profileColor} size="sm" photoUrl={facePhotoOf(c)} />
                 <div className="info">
                   <div className="name">{c.displayName}</div>
                   <div className="preview">@{c.username} · Level {c.level}</div>

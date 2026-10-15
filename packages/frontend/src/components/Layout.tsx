@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { getSocket, type GiftReceivedPayload, type RankUpPayload } from '../api/socket';
 import RedCarpetBanner from './RedCarpetBanner';
-import Avatar from './Avatar';
+import Avatar, { facePhotoOf } from './Avatar';
 import { GIFT_EMOJI } from './GiftDialog';
 
 interface Toast {
@@ -82,7 +82,7 @@ export default function Layout() {
         <NavLink to="/chats" className="wordmark">BIG FACE</NavLink>
         <nav className="nav">{navLinks('nav-link')}</nav>
         <div className="user-chip">
-          <Avatar displayName={user.displayName} profileColor={user.profileColor} online />
+          <Avatar displayName={user.displayName} profileColor={user.profileColor} online photoUrl={facePhotoOf(user)} />
           <div className="meta">
             <div className="name">{user.displayName}</div>
             <div className="level">Level {user.level} · {user.xp} XP</div>
