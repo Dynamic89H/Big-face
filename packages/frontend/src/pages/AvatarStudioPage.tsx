@@ -9,6 +9,7 @@ import ItemVisual from '../components/ItemVisual';
 import HeroAvatar3D from '../components/HeroAvatar3D';
 import RealisticAvatar3D from '../components/RealisticAvatar3D';
 import LivingCharacter from '../components/LivingCharacter';
+import ModelCharacter from '../components/ModelCharacter';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 // Character lineup — realistic 3D game-style base characters users pick from.
@@ -271,7 +272,7 @@ export default function AvatarStudioPage() {
               />
             ) : (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
-              <LivingCharacter img={character.img} name={character.name} width={240} height={320} />
+              <ModelCharacter img={character.img} name={character.name} width={260} height={340} />
             </div>
             )}
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '0.6rem' }}>
@@ -292,32 +293,33 @@ export default function AvatarStudioPage() {
             </p>
             {/* All 9 character models — browse and select */}
             <h4 style={{ textAlign: 'center', margin: '1rem 0 0.6rem' }}>Your Character Models</h4>
+            <p className="form-note" style={{ textAlign: 'center', marginBottom: '0.8rem' }}>
+              👆 Move your finger over them — they're real 3D models
+            </p>
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-              gap: '0.8rem', marginBottom: '1rem',
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+              gap: '1rem', marginBottom: '1rem',
             }}>
               {CHARACTERS.map((c) => (
                 <div
                   key={c.id}
                   onClick={() => selectCharacter(c.id)}
                   style={{
-                    cursor: 'pointer', borderRadius: 16, overflow: 'hidden',
-                    border: c.id === characterId ? `3px solid ${user?.profileColor || '#0066FF'}` : '2px solid var(--border)',
-                    opacity: c.id === characterId ? 1 : 0.75,
-                    transition: 'transform 0.2s, opacity 0.2s',
-                    transform: c.id === characterId ? 'scale(1.03)' : 'scale(1)',
+                    cursor: 'pointer',
+                    opacity: c.id === characterId ? 1 : 0.7,
+                    filter: c.id === characterId ? 'none' : 'saturate(0.8)',
+                    transition: 'opacity 0.2s',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = c.id === characterId ? 'scale(1.03)' : 'scale(1)'; }}
                 >
-                  <LivingCharacter img={c.img} name={c.name} width={160} height={200} />
-                  <div style={{
-                    textAlign: 'center', padding: '0.4rem', fontWeight: 700, fontSize: '0.8rem',
-                    background: c.id === characterId ? user?.profileColor || '#0066FF' : 'rgba(0,0,0,0.6)',
-                    color: '#fff',
-                  }}>
-                    {c.id === characterId ? '✓ ' : ''}{c.name}
-                  </div>
+                  <ModelCharacter img={c.img} name={c.name} width={170} height={220} />
+                  {c.id === characterId && (
+                    <div style={{
+                      textAlign: 'center', marginTop: '0.4rem', fontWeight: 800,
+                      color: 'var(--gold)', fontSize: '0.85rem',
+                    }}>
+                      ✓ Selected
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

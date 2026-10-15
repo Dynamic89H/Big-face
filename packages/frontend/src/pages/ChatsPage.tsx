@@ -6,7 +6,6 @@ import type { RoomSummary, User } from '../types';
 import { timeAgo } from '../types';
 import Avatar, { facePhotoOf } from '../components/Avatar';
 import { usePageTitle } from '../hooks/usePageTitle';
-import { usePageTitle } from '../hooks/usePageTitle';
 
 // Room list with "New room" and "New DM" flows. User lookup for DMs searches
 // the leaderboard (the contract has no username-search endpoint).
