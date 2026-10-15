@@ -60,12 +60,58 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
     camera.position.set(0, 1.4, 4.5);
     camera.lookAt(0, 1.2, 0);
 
+    // 2K-quality renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     mount.appendChild(renderer.domElement);
+
+    // Generate 2K procedural skin texture with natural detail
+    const makeSkinTexture = (baseColor: string): THREE.Texture => {
+      const size = 2048;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Base
+      ctx.fillStyle = baseColor;
+      ctx.fillRect(0, 0, size, size);
+
+      // Subtle skin variation — thousands of tiny dots for realism
+      for (let i = 0; i < 8000; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 1 + Math.random() * 3;
+        const shade = Math.random();
+        ctx.fillStyle = shade > 0.5
+          ? `rgba(255,255,255,${0.02 + Math.random() * 0.03})`
+          : `rgba(0,0,0,${0.02 + Math.random() * 0.04})`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Subtle pores
+      for (let i = 0; i < 3000; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        ctx.fillStyle = `rgba(0,0,0,${0.03 + Math.random() * 0.03})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    };
 
     // Studio lighting — soft and flattering (not harsh)
     scene.add(new THREE.AmbientLight(0xffffff, 0.75));
@@ -99,9 +145,11 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
         character.remove(child);
       }
 
-      // Skin with subtle sheen for a natural look (not flat, not plastic)
+      // Skin with 2K texture + subtle sheen for a natural look
+      const skinTex = makeSkinTexture(cfg.skinTone);
       const skin = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(cfg.skinTone),
+        map: skinTex,
+        color: new THREE.Color(0xffffff), // texture carries the color
         roughness: 0.45, metalness: 0.0,
       });
       const hairMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(cfg.hairColor), roughness: 0.55 });
@@ -128,7 +176,7 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
         heart: [1.05, 1.05, 0.9],
       };
       const fs = faceShapes[cfg.faceShape];
-      const headGeo = new THREE.SphereGeometry(0.26, 32, 24);
+      const headGeo = new THREE.SphereGeometry(0.26, 64, 48);
       headGeo.scale(fs[0], fs[1], fs[2]);
       const head = new THREE.Mesh(headGeo, skin);
       head.castShadow = true;
@@ -137,12 +185,12 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
       // Eyes — larger for female
       const eyeScale = cfg.eyeSize * (isFemale ? 1.15 : 1.0);
       [-1, 1].forEach((s) => {
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.042 * eyeScale, 12, 10), eyeMat);
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.042 * eyeScale, 24, 18), eyeMat);
         eye.position.set(s * 0.095, 0.03, 0.225 * fs[2]);
         eye.scale.z = 0.6;
         headGroup.add(eye);
         // Eye shine
-        const shine = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8),
+        const shine = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 10),
           new THREE.MeshBasicMaterial({ color: 0xffffff }));
         shine.position.set(s * 0.095 + 0.015, 0.045, 0.245 * fs[2]);
         headGroup.add(shine);
@@ -170,7 +218,7 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
       headGroup.add(nose);
 
       // Lips — fuller for female
-      const lips = new THREE.Mesh(new THREE.SphereGeometry(0.045 * cfg.lipSize, 12, 8), lipMat);
+      const lips = new THREE.Mesh(new THREE.SphereGeometry(0.045 * cfg.lipSize, 24, 18), lipMat);
       lips.scale.set(1.4 * (isFemale ? 1.2 : 1.0), 0.5 * (isFemale ? 1.3 : 1.0), 0.5);
       lips.position.set(0, -0.13, 0.225 * fs[2]);
       headGroup.add(lips);
@@ -179,7 +227,7 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
       if (!isFemale && cfg.facialHair !== 'none') {
         const fhMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(cfg.hairColor), roughness: 0.9 });
         if (cfg.facialHair === 'beard' || cfg.facialHair === 'goatee') {
-          const beard = new THREE.Mesh(new THREE.SphereGeometry(0.14, 14, 10), fhMat);
+          const beard = new THREE.Mesh(new THREE.SphereGeometry(0.14, 24, 18), fhMat);
           beard.scale.set(1.1, 0.7, 0.8);
           beard.position.set(0, -0.2, 0.12);
           headGroup.add(beard);
@@ -195,28 +243,28 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
       const hairGroup = new THREE.Group();
       if (cfg.hairStyle === 'dreads' || cfg.hairStyle === 'locs') {
         for (let i = 0; i < 10; i++) {
-          const dread = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.025, 0.5 + Math.random() * 0.2, 8), hairMat);
+          const dread = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.025, 0.5 + Math.random() * 0.2, 12), hairMat);
           const angle = (i / 10) * Math.PI * 2;
           dread.position.set(Math.cos(angle) * 0.18, -0.15, Math.sin(angle) * 0.18 - 0.05);
           dread.rotation.z = Math.cos(angle) * 0.2;
           dread.rotation.x = Math.sin(angle) * 0.2;
           hairGroup.add(dread);
         }
-        const top = new THREE.Mesh(new THREE.SphereGeometry(0.24, 18, 14), hairMat);
+        const top = new THREE.Mesh(new THREE.SphereGeometry(0.24, 32, 24), hairMat);
         top.scale.set(1, 0.6, 1);
         top.position.y = 0.18;
         hairGroup.add(top);
       } else if (cfg.hairStyle === 'afro') {
-        const afro = new THREE.Mesh(new THREE.SphereGeometry(0.34, 20, 16), hairMat);
+        const afro = new THREE.Mesh(new THREE.SphereGeometry(0.34, 32, 24), hairMat);
         afro.position.y = 0.15;
         hairGroup.add(afro);
       } else if (cfg.hairStyle === 'fade') {
-        const fade = new THREE.Mesh(new THREE.SphereGeometry(0.25, 18, 14), hairMat);
+        const fade = new THREE.Mesh(new THREE.SphereGeometry(0.25, 32, 24), hairMat);
         fade.scale.set(0.95, 0.45, 0.95);
         fade.position.y = 0.2;
         hairGroup.add(fade);
       } else if (cfg.hairStyle === 'bob') {
-        const bob = new THREE.Mesh(new THREE.SphereGeometry(0.28, 18, 14), hairMat);
+        const bob = new THREE.Mesh(new THREE.SphereGeometry(0.28, 32, 24), hairMat);
         bob.scale.set(1.05, 1.0, 1.05);
         bob.position.y = 0.05;
         hairGroup.add(bob);
@@ -226,24 +274,24 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
         pixie.position.y = 0.19;
         hairGroup.add(pixie);
       } else if (cfg.hairStyle === 'waves') {
-        const waves = new THREE.Mesh(new THREE.SphereGeometry(0.25, 18, 14), hairMat);
+        const waves = new THREE.Mesh(new THREE.SphereGeometry(0.25, 32, 24), hairMat);
         waves.scale.set(1, 0.5, 1);
         waves.position.y = 0.19;
         hairGroup.add(waves);
         for (let i = 0; i < 8; i++) {
-          const bump = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), hairMat);
+          const bump = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 10), hairMat);
           const a = (i / 8) * Math.PI * 2;
           bump.position.set(Math.cos(a) * 0.2, 0.26, Math.sin(a) * 0.2);
           hairGroup.add(bump);
         }
       } else if (cfg.hairStyle === 'long') {
-        const top = new THREE.Mesh(new THREE.SphereGeometry(0.26, 18, 14), hairMat);
+        const top = new THREE.Mesh(new THREE.SphereGeometry(0.26, 32, 24), hairMat);
         top.scale.set(1, 0.7, 1);
         top.position.y = 0.15;
         hairGroup.add(top);
         // Long flowing hair down the back and sides
         [-1, 1].forEach((s) => {
-          const lock = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.05, 0.7, 10), hairMat);
+          const lock = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.05, 0.7, 16), hairMat);
           lock.position.set(s * 0.22, -0.25, -0.05);
           lock.rotation.z = s * 0.1;
           hairGroup.add(lock);
@@ -252,11 +300,11 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
         back.position.set(0, -0.25, -0.22);
         hairGroup.add(back);
       } else if (cfg.hairStyle === 'ponytail') {
-        const top = new THREE.Mesh(new THREE.SphereGeometry(0.25, 18, 14), hairMat);
+        const top = new THREE.Mesh(new THREE.SphereGeometry(0.25, 32, 24), hairMat);
         top.scale.set(1, 0.6, 1);
         top.position.y = 0.17;
         hairGroup.add(top);
-        const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.55, 10), hairMat);
+        const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.55, 16), hairMat);
         tail.position.set(0, -0.1, -0.28);
         tail.rotation.x = 0.3;
         hairGroup.add(tail);
@@ -270,7 +318,7 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
       character.add(headGroup);
 
       // Neck
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.2, 12), skin);
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.2, 20), skin);
       neck.position.y = (2.05 * heightScale) - 0.32;
       character.add(neck);
 
@@ -278,7 +326,7 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
       torsoGroup = new THREE.Group();
       torsoGroup.position.y = 1.35 * heightScale;
       const torso = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.30 * bodyScale * shoulderWidth, 0.24 * bodyScale, 0.65, 18),
+        new THREE.CylinderGeometry(0.30 * bodyScale * shoulderWidth, 0.24 * bodyScale, 0.65, 32),
         new THREE.MeshStandardMaterial({ color: 0x2a2a3a, roughness: 0.8 })
       );
       torso.castShadow = true;
@@ -287,7 +335,7 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
       // Female bust
       if (isFemale) {
         [-1, 1].forEach((s) => {
-          const bust = new THREE.Mesh(new THREE.SphereGeometry(0.11 * bodyScale, 14, 12),
+          const bust = new THREE.Mesh(new THREE.SphereGeometry(0.11 * bodyScale, 24, 18),
             new THREE.MeshStandardMaterial({ color: 0x2a2a3a, roughness: 0.8 }));
           bust.scale.set(1, 0.85, 0.7);
           bust.position.set(s * 0.12, 0.12, 0.20);
@@ -301,14 +349,14 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
         const arm = new THREE.Group();
         arm.position.set(s * 0.36 * bodyScale * shoulderWidth, 1.62 * heightScale, 0);
         const armW = isFemale ? 0.85 : 1.0;
-        const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.08 * armW, 0.07 * armW, 0.34, 12), skin);
+        const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.08 * armW, 0.07 * armW, 0.34, 20), skin);
         upper.position.y = -0.17;
         upper.castShadow = true;
         arm.add(upper);
-        const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.32, 12), skin);
+        const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.32, 20), skin);
         fore.position.y = -0.48;
         arm.add(fore);
-        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), skin);
+        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 12), skin);
         hand.scale.set(0.8, 1.2, 0.6);
         hand.position.y = -0.68;
         arm.add(hand);
@@ -320,11 +368,11 @@ export default function CreatorEngine({ config, width = 300, height = 440 }: Cre
       [-1, 1].forEach((s) => {
         const leg = new THREE.Group();
         leg.position.set(s * 0.13 * bodyScale * hipWidth, 0.95 * heightScale, 0);
-        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.10 * bodyScale, 0.08 * bodyScale, 0.45, 12), pantsMat);
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.10 * bodyScale, 0.08 * bodyScale, 0.45, 20), pantsMat);
         thigh.position.y = -0.22;
         thigh.castShadow = true;
         leg.add(thigh);
-        const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.075 * bodyScale, 0.06 * bodyScale, 0.42, 12), pantsMat);
+        const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.075 * bodyScale, 0.06 * bodyScale, 0.42, 20), pantsMat);
         shin.position.y = -0.62;
         leg.add(shin);
         const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.28),
