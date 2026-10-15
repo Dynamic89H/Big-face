@@ -43,3 +43,34 @@ self.addEventListener('fetch', (e) => {
     })
   );
 });
+
+// === Push notifications ===
+self.addEventListener('push', (e) => {
+  let data = { title: '👑 Big Face', body: 'Something new is happening!', url: '/', icon: '/probus-lion.webp' };
+  try {
+    if (e.data) data = { ...data, ...e.data.json() };
+  } catch { /* use defaults */ }
+
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/probus-lion.webp',
+      badge: '/probus-lion.webp',
+      data: { url: data.url || '/' },
+      vibrate: [100, 50, 100],
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url || '/';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ('focus' in client) return client.focus();
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});

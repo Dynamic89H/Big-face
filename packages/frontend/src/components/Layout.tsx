@@ -7,6 +7,8 @@ import RedCarpetBanner from './RedCarpetBanner';
 import DailyRewardBanner from './DailyRewardBanner';
 import Avatar, { facePhotoOf } from './Avatar';
 import { GIFT_EMOJI } from './GiftDialog';
+import WhatIsBigFace from './WhatIsBigFace';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 interface Toast {
   id: number;
@@ -41,6 +43,25 @@ export default function Layout() {
   const { t, lang, setLang } = useLang();
   const navigate = useNavigate();
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [showExplainer, setShowExplainer] = useState(false);
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const { supported, permission, subscribed, subscribe } = usePushNotifications();
+
+  // Show "What is Big Face" explainer once for new users.
+  useEffect(() => {
+    if (user && !localStorage.getItem('bigface-explainer-seen')) {
+      setShowExplainer(true);
+    }
+  }, [user?.id]);
+
+  // Prompt for push notifications after explainer is dismissed.
+  useEffect(() => {
+    if (user && !showExplainer && supported && permission === 'default' && !subscribed
+        && !localStorage.getItem('bigface-notif-asked')) {
+      const timer = setTimeout(() => setShowNotifPrompt(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id, showExplainer, supported, permission, subscribed]);
 
   const pushToast = (title: string, sub: string) => {
     const id = ++toastId;
@@ -74,6 +95,17 @@ export default function Layout() {
 
   if (!user) return null;
 
+  const closeExplainer = () => {
+    localStorage.setItem('bigface-explainer-seen', '1');
+    setShowExplainer(false);
+  };
+
+  const handleNotifChoice = async (enable: boolean) => {
+    localStorage.setItem('bigface-notif-asked', '1');
+    setShowNotifPrompt(false);
+    if (enable) await subscribe();
+  };
+
   const navLinks = (cls: string) =>
     NAV.map((n) => (
       <NavLink key={n.to} to={n.to} className={({ isActive }) => `${cls}${isActive ? ' active' : ''}`}>
@@ -88,6 +120,23 @@ export default function Layout() {
       // The user's profile color drives accent theming across the shell.
       style={{ '--accent': user.profileColor || '#0066FF' } as CSSProperties}
     >
+      {showExplainer && <WhatIsBigFace onClose={closeExplainer} />}
+      {showNotifPrompt && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+        }}>
+          <div className="card" style={{ maxWidth: 360, textAlign: 'center', padding: '1.8rem' }}>
+            <div style={{ fontSize: '3rem' }}>🔔</div>
+            <h3>Stay in the loop</h3>
+            <p className="form-note">Get daily updates — new battles, big pots, and rewards. Never miss out.</p>
+            <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', marginTop: '1rem' }}>
+              <button className="btn" onClick={() => handleNotifChoice(true)}>🔔 Turn on</button>
+              <button className="btn btn-ghost" onClick={() => handleNotifChoice(false)}>Not now</button>
+            </div>
+          </div>
+        </div>
+      )}
       <aside className="sidebar">
         <NavLink to="/chats" className="wordmark">BIG FACE</NavLink>
         <nav className="nav">{navLinks('nav-link')}</nav>

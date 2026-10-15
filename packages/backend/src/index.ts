@@ -18,6 +18,7 @@ import battlesRouter from './routes/battles';
 import crewsRouter from './routes/crews';
 import artistsRouter from './routes/artists';
 import gambleRouter from './routes/gamble';
+import pushRouter from './routes/push';
 import roomsRouter from './routes/rooms';
 import messagesRouter from './routes/messages';
 import uploadsRouter from './routes/uploads';
@@ -60,6 +61,7 @@ app.use('/api/battles', battlesRouter);
 app.use('/api/crews', crewsRouter);
 app.use('/api/artists', artistsRouter);
 app.use('/api/gamble', gambleRouter);
+app.use('/api/push', pushRouter);
 app.use('/api/rooms', roomsRouter);
 app.use('/api', messagesRouter); // /rooms/:id/messages, /messages/:id/...
 app.use('/api/uploads', uploadsRouter);

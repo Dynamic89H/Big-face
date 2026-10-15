@@ -55,6 +55,7 @@ const battles_1 = __importDefault(require("./routes/battles"));
 const crews_1 = __importDefault(require("./routes/crews"));
 const artists_1 = __importDefault(require("./routes/artists"));
 const gamble_1 = __importDefault(require("./routes/gamble"));
+const push_1 = __importDefault(require("./routes/push"));
 const rooms_1 = __importDefault(require("./routes/rooms"));
 const messages_1 = __importDefault(require("./routes/messages"));
 const uploads_1 = __importDefault(require("./routes/uploads"));
@@ -92,6 +93,7 @@ app.use('/api/battles', battles_1.default);
 app.use('/api/crews', crews_1.default);
 app.use('/api/artists', artists_1.default);
 app.use('/api/gamble', gamble_1.default);
+app.use('/api/push', push_1.default);
 app.use('/api/rooms', rooms_1.default);
 app.use('/api', messages_1.default); // /rooms/:id/messages, /messages/:id/...
 app.use('/api/uploads', uploads_1.default);

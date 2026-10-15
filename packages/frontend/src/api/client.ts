@@ -237,6 +237,15 @@ export const gambleApi = {
   cancel: (id: string) => post<{ ok: boolean }>(`/gamble/${id}/cancel`, {}),
 };
 
+// --- Push Notifications ---
+export const pushApi = {
+  vapidKey: () => get<{ publicKey: string }>('/push/vapid-key'),
+  subscribe: (data: { endpoint: string; p256dh: string; auth: string; lang?: string }) =>
+    post<{ ok: boolean }>('/push/subscribe', data),
+  unsubscribe: (endpoint: string) => post<{ ok: boolean }>('/push/unsubscribe', { endpoint }),
+  test: () => post<{ ok: boolean; sent: number }>('/push/test', {}),
+};
+
 // --- Battles ---
 export const battlesApi = {
   list: () => get<{ battles: any[] }>('/battles'),
