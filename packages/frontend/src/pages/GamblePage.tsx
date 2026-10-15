@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { gambleApi, ApiError } from '../api/client';
 import { celebrate } from '../components/Celebration';
+import AmbientDice from '../components/AmbientDice';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -123,6 +124,11 @@ export default function GamblePage() {
   };
 
   const join = async (gameId: string, bet: number) => {
+    // Everyone needs an avatar to play.
+    if (!user?.characterId) {
+      setMsg('🎭 You need an avatar to play! Pick your character in the Avatar Studio first.');
+      return;
+    }
     if (!confirm(`Match the ${bet.toLocaleString()} token bet and roll?`)) return;
     setRolling(true);
     setResult(null);
@@ -174,6 +180,19 @@ export default function GamblePage() {
         @keyframes neonGlow { 0%,100% { text-shadow: 0 0 10px #0ff, 0 0 20px #0ff; } 50% { text-shadow: 0 0 20px #f0f, 0 0 40px #f0f; } }
         @keyframes diceShake { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
       `}</style>
+
+      {/* Live ambient dice rolling in the background */}
+      <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
+        <AmbientDice width={800} height={220} />
+        <div style={{
+          position: 'absolute', top: 12, left: 16,
+          display: 'flex', alignItems: 'center',
+          background: 'rgba(0,0,0,0.6)', padding: '4px 12px', borderRadius: 20,
+          fontSize: '0.8rem', fontWeight: 700, color: '#ff5c5c',
+        }}>
+          <span className="live-dot" /> LIVE
+        </div>
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', position: 'relative' }}>
         <img
