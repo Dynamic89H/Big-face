@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { gambleApi, ApiError } from '../api/client';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
@@ -45,6 +45,28 @@ export default function GamblePage() {
   const [result, setResult] = useState<GameResult | null>(null);
   const [rolling, setRolling] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [musicOn, setMusicOn] = useState(false);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
+
+  // Background music toggle.
+  const toggleMusic = () => {
+    if (!musicRef.current) {
+      // Casino-style ambient loop.
+      musicRef.current = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_2c8a5d8b9e.mp3');
+      musicRef.current.loop = true;
+      musicRef.current.volume = 0.3;
+    }
+    if (musicOn) {
+      musicRef.current.pause();
+    } else {
+      musicRef.current.play().catch(() => setMsg('⚠️ Could not play music.'));
+    }
+    setMusicOn(!musicOn);
+  };
+
+  useEffect(() => {
+    return () => musicRef.current?.pause();
+  }, []);
 
   const load = async () => {
     try {
@@ -131,17 +153,41 @@ export default function GamblePage() {
   const iWon = result && user && result.winnerId === user.id;
 
   return (
-    <div className="page">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+    <div className="page" style={{
+      background: 'linear-gradient(135deg, #0a0a2e 0%, #1a1a4e 50%, #0a0a2e 100%)',
+      borderRadius: 16, padding: '1.5rem',
+      boxShadow: '0 0 40px rgba(138,43,226,0.3), inset 0 0 60px rgba(0,0,0,0.5)',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Animated digital background */}
+      <div style={{
+        position: 'absolute', inset: 0, opacity: 0.1, pointerEvents: 'none',
+        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,255,255,0.1) 10px, rgba(0,255,255,0.1) 20px)',
+        animation: 'bgScroll 20s linear infinite',
+      }} />
+      <style>{`
+        @keyframes bgScroll { to { background-position: 100px 100px; } }
+        @keyframes neonGlow { 0%,100% { text-shadow: 0 0 10px #0ff, 0 0 20px #0ff; } 50% { text-shadow: 0 0 20px #f0f, 0 0 40px #f0f; } }
+        @keyframes diceShake { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
+      `}</style>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', position: 'relative' }}>
         <img
           src="/probus-lion.webp"
           alt="Probus the Lion - Gamble Face dealer"
-          style={{ width: 80, height: 80, borderRadius: '50%', border: '3px solid var(--gold)', objectFit: 'cover' }}
+          style={{ width: 80, height: 80, borderRadius: '50%', border: '3px solid var(--gold)', objectFit: 'cover', boxShadow: '0 0 20px rgba(201,162,39,0.6)' }}
         />
-        <div>
-          <h1 style={{ margin: 0 }}>🎲 Gamble Face</h1>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ margin: 0, animation: 'neonGlow 3s ease-in-out infinite' }}>🎲 Gamble Face</h1>
           <p className="form-note" style={{ margin: 0 }}>Probus the Lion runs this table 🦁</p>
         </div>
+        <button
+          className={`btn btn-sm ${musicOn ? '' : 'btn-ghost'}`}
+          onClick={toggleMusic}
+          title={musicOn ? 'Mute music' : 'Play background music'}
+        >
+          {musicOn ? '🔊' : '🔇'}
+        </button>
       </div>
       <p className="form-note">
         Roll dice with real players. Winner takes the pot (minus 10% house cut).
