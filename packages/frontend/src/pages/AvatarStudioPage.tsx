@@ -5,7 +5,6 @@ import { useAuth } from '../auth/AuthContext';
 import type { AvatarItem } from '../types';
 import { RARITY_COLORS } from '../types';
 import CharacterAvatar from '../components/CharacterAvatar';
-import ModelAvatar from '../components/ModelAvatar';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function AvatarStudioPage() {
@@ -210,12 +209,22 @@ export default function AvatarStudioPage() {
 
           <div className="card preview-stage">
             <h3 style={{ margin: 0 }}>Your character</h3>
-            <ModelAvatar
-              equipped={equipped}
-              facePhotoUrl={facePhotoUrl}
-              profileColor={user?.profileColor}
-              size={240}
-            />
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
+              <img
+                src="/avatar-realistic-default.webp"
+                alt="Your Big Face character"
+                style={{
+                  width: 240, height: 240, objectFit: 'cover', objectPosition: 'top',
+                  borderRadius: 16, border: `2px solid ${user?.profileColor || '#0066FF'}`,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                }}
+              />
+            </div>
+            {facePhotoUrl && (
+              <p className="form-note" style={{ textAlign: 'center' }}>
+                📸 Face photo uploaded — it'll blend into your character soon.
+              </p>
+            )}
             <input
               ref={fileRef}
               type="file"
