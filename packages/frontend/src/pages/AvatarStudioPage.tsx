@@ -7,6 +7,15 @@ import { RARITY_COLORS } from '../types';
 import CharacterAvatar from '../components/CharacterAvatar';
 import { usePageTitle } from '../hooks/usePageTitle';
 
+// Character lineup — realistic 3D game-style base characters users pick from.
+const CHARACTERS = [
+  { id: 'male-street', name: 'Street King', img: '/avatar-realistic-default.webp' },
+  { id: 'female-street', name: 'Street Queen', img: '/avatar-female-street.webp' },
+  { id: 'male-fresh', name: 'Sharp Suit', img: '/avatar-male-fresh.webp' },
+  { id: 'female-glam', name: 'Red Carpet', img: '/avatar-female-glam.webp' },
+  { id: 'male-sporty', name: 'Ball Player', img: '/avatar-male-sporty.webp' },
+];
+
 export default function AvatarStudioPage() {
   usePageTitle('Avatar Studio');
   const { user, refreshUser } = useAuth();
@@ -22,8 +31,23 @@ export default function AvatarStudioPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [facePhotoUrl, setFacePhotoUrl] = useState<string | null>(null);
+  const [characterId, setCharacterId] = useState<string>('male-street');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const character = CHARACTERS.find((c) => c.id === characterId) ?? CHARACTERS[0];
+
+  const selectCharacter = async (id: string) => {
+    setCharacterId(id);
+    setActionError(null);
+    try {
+      const cfg = { ...((user?.avatarConfig ?? {}) as Record<string, unknown>), characterId: id };
+      await usersApi.updateMe({ avatarConfig: cfg });
+      refreshUser().catch(() => undefined);
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : 'Could not save your character.');
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -41,6 +65,9 @@ export default function AvatarStudioPage() {
       // Restore saved face photo and 3D avatar from avatar config.
       const cfg = (user?.avatarConfig ?? {}) as Record<string, unknown>;
       if (typeof cfg.facePhotoUrl === 'string') setFacePhotoUrl(cfg.facePhotoUrl);
+      if (typeof cfg.characterId === 'string' && CHARACTERS.some((c) => c.id === cfg.characterId)) {
+        setCharacterId(cfg.characterId);
+      }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not load the studio.');
     } finally {
@@ -211,8 +238,8 @@ export default function AvatarStudioPage() {
             <h3 style={{ margin: 0 }}>Your character</h3>
             <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
               <img
-                src="/avatar-realistic-default.webp"
-                alt="Your Big Face character"
+                src={character.img}
+                alt={character.name}
                 style={{
                   width: 240, height: 240, objectFit: 'cover', objectPosition: 'top',
                   borderRadius: 16, border: `2px solid ${user?.profileColor || '#0066FF'}`,
@@ -220,11 +247,25 @@ export default function AvatarStudioPage() {
                 }}
               />
             </div>
-            {facePhotoUrl && (
-              <p className="form-note" style={{ textAlign: 'center' }}>
-                📸 Face photo uploaded — it'll blend into your character soon.
-              </p>
-            )}
+            <p className="form-note" style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
+              {character.name}
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '0.8rem' }}>
+              {CHARACTERS.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => selectCharacter(c.id)}
+                  title={c.name}
+                  style={{
+                    width: 56, height: 56, borderRadius: 12, overflow: 'hidden', padding: 0,
+                    border: c.id === characterId ? `3px solid ${user?.profileColor || '#0066FF'}` : '2px solid var(--border)',
+                    cursor: 'pointer', opacity: c.id === characterId ? 1 : 0.65,
+                  }}
+                >
+                  <img src={c.img} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
+                </button>
+              ))}
+            </div>
             <input
               ref={fileRef}
               type="file"
