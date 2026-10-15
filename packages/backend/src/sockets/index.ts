@@ -5,6 +5,7 @@ import { pool } from '../db';
 import { AuthUser, verifyToken } from '../middleware/auth';
 import { createMessage } from '../services/messages';
 import { awardXp, tierForLevel, AwardXpResult } from '../services/xp';
+import { getLatestLegendary } from '../services/legendary';
 
 let io: Server | null = null;
 
@@ -122,9 +123,15 @@ export function initSockets(httpServer: HttpServer): Server {
       }
       socket.join(`video:${roomId}`);
       (socket.data.videoRooms as Set<string>).add(roomId);
+      // Flag legendary winners so clients can play the royal chime on entrance.
+      let isLegendary = false;
+      try {
+        const leg = await getLatestLegendary();
+        isLegendary = leg.king?.id === user.id || leg.queen?.id === user.id;
+      } catch { /* non-fatal */ }
       socket
         .to(`video:${roomId}`)
-        .emit('video:peer-joined', { userId: user.id, socketId: socket.id });
+        .emit('video:peer-joined', { userId: user.id, socketId: socket.id, isLegendary });
       ack?.({ ok: true });
     });
 

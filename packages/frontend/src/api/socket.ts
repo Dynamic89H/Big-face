@@ -15,7 +15,7 @@ export interface MessageReactionPayload {
 export interface TypingUpdatePayload { roomId: string; userId: string; isTyping: boolean }
 export interface PresenceUpdatePayload { roomId: string; onlineUserIds: string[] }
 export interface ReadUpdatePayload { messageId: string; userId: string }
-export interface VideoPeerJoinedPayload { userId: string; socketId: string }
+export interface VideoPeerJoinedPayload { userId: string; socketId: string; isLegendary?: boolean }
 export interface VideoPeerLeftPayload { socketId: string }
 export interface VideoSignalPayload { from: string; signal: unknown }
 export interface RedCarpetPayload { king: User | null; queen: User | null; weekStart: string }

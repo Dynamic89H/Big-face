@@ -11,6 +11,7 @@ const db_1 = require("../db");
 const auth_1 = require("../middleware/auth");
 const messages_1 = require("../services/messages");
 const xp_1 = require("../services/xp");
+const legendary_1 = require("../services/legendary");
 let io = null;
 /** roomId -> set of userIds currently joined via `room:join` (presence). */
 const roomPresence = new Map();
@@ -104,9 +105,16 @@ function initSockets(httpServer) {
             }
             socket.join(`video:${roomId}`);
             socket.data.videoRooms.add(roomId);
+            // Flag legendary winners so clients can play the royal chime on entrance.
+            let isLegendary = false;
+            try {
+                const leg = await (0, legendary_1.getLatestLegendary)();
+                isLegendary = leg.king?.id === user.id || leg.queen?.id === user.id;
+            }
+            catch { /* non-fatal */ }
             socket
                 .to(`video:${roomId}`)
-                .emit('video:peer-joined', { userId: user.id, socketId: socket.id });
+                .emit('video:peer-joined', { userId: user.id, socketId: socket.id, isLegendary });
             ack?.({ ok: true });
         });
         socket.on('video:leave', ({ roomId }) => {

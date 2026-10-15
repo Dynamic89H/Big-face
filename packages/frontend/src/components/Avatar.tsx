@@ -16,21 +16,35 @@ interface Props {
   size?: 'sm' | 'lg' | 'xl';
   online?: boolean;
   photoUrl?: string | null;
+  crowned?: boolean;
 }
 
-export default function Avatar({ displayName, profileColor, size, online, photoUrl }: Props) {
+export default function Avatar({ displayName, profileColor, size, online, photoUrl, crowned }: Props) {
   return (
-    <span
-      className={`avatar${size ? ` ${size}` : ''}`}
-      style={
-        photoUrl
-          ? { backgroundImage: `url(${photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-          : { background: profileColor, color: textOn(profileColor) }
-      }
-      aria-hidden
-    >
-      {!photoUrl && initialsOf(displayName)}
-      {online !== undefined && <span className={`presence-dot${online ? '' : ' off'}`} />}
+    <span style={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}>
+      {crowned && (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute', top: '-0.9em', left: '50%', transform: 'translateX(-50%)',
+            fontSize: '1.1em', zIndex: 2, filter: 'drop-shadow(0 0 4px rgba(201,162,39,0.8))',
+          }}
+        >
+          👑
+        </span>
+      )}
+      <span
+        className={`avatar${size ? ` ${size}` : ''}`}
+        style={
+          photoUrl
+            ? { backgroundImage: `url(${photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : { background: profileColor, color: textOn(profileColor) }
+        }
+        aria-hidden
+      >
+        {!photoUrl && initialsOf(displayName)}
+        {online !== undefined && <span className={`presence-dot${online ? '' : ' off'}`} />}
+      </span>
     </span>
   );
 }

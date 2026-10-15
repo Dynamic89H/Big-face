@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
-import { throneApi, giftsApi, ApiError } from '../api/client';
+import { throneApi, giftsApi, usersApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { Gift, ThroneInfo, User } from '../types';
 import { timeAgo, xpForLevel } from '../types';
 import { GIFT_EMOJI } from '../components/GiftDialog';
 import GiftDialog from '../components/GiftDialog';
 import { usePageTitle } from '../hooks/usePageTitle';
+
+// Throne trim options — gold and platinum for the top, plus brand colors.
+const THRONE_TRIMS = [
+  { id: 'gold', name: 'Gold', color: '#c9a227' },
+  { id: 'platinum', name: 'Platinum', color: '#e5e4e2' },
+  { id: 'blue', name: 'Electric Blue', color: '#0066FF' },
+  { id: 'coral', name: 'Coral', color: '#FF5C5C' },
+  { id: 'purple', name: 'Royal Purple', color: '#7c3aed' },
+];
 
 // CSS throne class per tier (mirrors the contract's tier names).
 function throneClass(tier: string): string {
@@ -26,6 +35,8 @@ export default function ThroneRoomPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showTribute, setShowTribute] = useState(false);
+  const [trim, setTrim] = useState<string>('gold');
+  const [trimSaving, setTrimSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -39,6 +50,8 @@ export default function ThroneRoomPage() {
       setInfo(throne);
       setKing(legendary.king);
       setReceived(gifts.slice(0, 10));
+      const cfg = (user?.avatarConfig ?? {}) as Record<string, unknown>;
+      if (typeof cfg.throneTrim === 'string') setTrim(cfg.throneTrim);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not load the throne room.');
     } finally {
@@ -49,6 +62,21 @@ export default function ThroneRoomPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const saveTrim = async (id: string) => {
+    setTrim(id);
+    setTrimSaving(true);
+    try {
+      const cfg = { ...((user?.avatarConfig ?? {}) as Record<string, unknown>), throneTrim: id };
+      await usersApi.updateMe({ avatarConfig: cfg });
+    } catch {
+      /* non-fatal */
+    } finally {
+      setTrimSaving(false);
+    }
+  };
+
+  const trimColor = THRONE_TRIMS.find((t) => t.id === trim)?.color ?? '#c9a227';
 
   const progress = (() => {
     if (!info) return 0;
@@ -76,10 +104,10 @@ export default function ThroneRoomPage() {
       {!loading && !error && info && (
         <>
           <div className="card throne-stage">
-            <div className={`throne ${throneClass(info.tier)}`}>
-              <div className="t-glow" />
-              <div className="t-back" />
-              <div className="t-seat" />
+            <div className={`throne ${throneClass(info.tier)}`} style={{ ['--trim' as string]: trimColor }}>
+              <div className="t-glow" style={{ background: `radial-gradient(ellipse at center, ${trimColor}44, transparent 70%)` }} />
+              <div className="t-back" style={{ borderColor: trimColor }} />
+              <div className="t-seat" style={{ borderColor: trimColor }} />
               <div className="t-base" />
               {info.tier.toLowerCase().includes('golden') || info.tier.toLowerCase().includes('legendary') ? (
                 <div className="t-crown">👑</div>
@@ -103,6 +131,32 @@ export default function ThroneRoomPage() {
                   ? `${info.xpForNext} XP to Level ${info.level + 1}`
                   : 'Max level — legendary status achieved.'}
               </p>
+            </div>
+            <div style={{ marginTop: '1.2rem', width: '100%', maxWidth: 420 }}>
+              <h3 style={{ margin: '0 0 0.6rem' }}>👑 Throne trim</h3>
+              <p className="form-note" style={{ margin: '0 0 0.6rem' }}>
+                Pick your outline — gold or platinum for royalty.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                {THRONE_TRIMS.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => saveTrim(t.id)}
+                    disabled={trimSaving}
+                    title={t.name}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.4rem',
+                      padding: '0.4rem 0.8rem', borderRadius: 999, cursor: 'pointer',
+                      border: trim === t.id ? `2px solid ${t.color}` : '1px solid var(--border)',
+                      background: trim === t.id ? 'var(--surface)' : 'transparent',
+                      color: 'inherit', fontWeight: trim === t.id ? 700 : 400,
+                    }}
+                  >
+                    <span style={{ width: 14, height: 14, borderRadius: '50%', background: t.color, border: '1px solid rgba(0,0,0,0.3)' }} />
+                    {t.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

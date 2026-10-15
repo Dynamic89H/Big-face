@@ -4,11 +4,12 @@ import { usersApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { LeaderboardEntry, User } from '../types';
 import Avatar, { facePhotoOf } from '../components/Avatar';
+import LegendaryBadge from '../components/LegendaryBadge';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-function RoyalCard({ title, crown, person }: { title: string; crown: string; person: User | null }) {
+function RoyalCard({ title, crown, person, role }: { title: string; crown: string; person: User | null; role: 'king' | 'queen' }) {
   if (!person) {
     return (
       <div className="card royal-card">
@@ -23,9 +24,10 @@ function RoyalCard({ title, crown, person }: { title: string; crown: string; per
       <div className="crown">{crown}</div>
       <h3 style={{ margin: '0.4rem 0' }}>{title}</h3>
       <Link to={`/u/${person.id}`} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
-        <Avatar displayName={person.displayName} profileColor={person.profileColor} photoUrl={facePhotoOf(person)} />
+        <Avatar displayName={person.displayName} profileColor={person.profileColor} photoUrl={facePhotoOf(person)} crowned />
         <div>
           <div className="starlight">{person.displayName}</div>
+          <div style={{ margin: '0.2rem 0' }}><LegendaryBadge role={role} size="sm" /></div>
           <div className="form-note">@{person.username} · Level {person.level} · {person.xp} XP</div>
         </div>
       </Link>
@@ -72,8 +74,8 @@ export default function LeaderboardPage() {
       </div>
 
       <div className="grid-2" style={{ marginBottom: '1.4rem' }}>
-        <RoyalCard title="Face King" crown="🤴" person={king} />
-        <RoyalCard title="Face Queen" crown="👸" person={queen} />
+        <RoyalCard title="Face King" crown="🤴" person={king} role="king" />
+        <RoyalCard title="Face Queen" crown="👸" person={queen} role="queen" />
       </div>
 
       {loading && <div className="loading-wrap"><div className="spinner" /><p>Counting XP…</p></div>}

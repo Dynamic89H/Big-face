@@ -19,6 +19,7 @@ const NAV = [
   { to: '/hall-of-fame', label: 'Hall of Fame', icon: '⭐' },
   { to: '/avatar-studio', label: 'Avatar Studio', icon: '🎨' },
   { to: '/throne', label: 'Throne Room', icon: '👑' },
+  { to: '/fame', label: 'Fame Tracker', icon: '🌟' },
   { to: '/dj-booth', label: 'DJ Booth', icon: '🎧' },
   { to: '/safety', label: 'Safety', icon: '🛡️' },
   { to: '/wallet', label: 'Wallet', icon: '💰' },

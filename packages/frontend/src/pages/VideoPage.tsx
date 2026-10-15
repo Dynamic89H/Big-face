@@ -12,6 +12,7 @@ import {
 } from '../api/socket';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useAuth } from '../auth/AuthContext';
+import { playRoyalChime } from '../utils/chime';
 import type { RoomSummary } from '../types';
 
 interface RemotePeer {
@@ -162,6 +163,7 @@ export default function VideoPage() {
     const s = getSocket();
     const onJoined = (p: VideoPeerJoinedPayload) => {
       if (!inCallRef.current) return;
+      if (p.isLegendary) playRoyalChime();
       createPeerConnection(p.socketId, p.userId, true).catch(() => undefined);
     };
     const onLeft = (p: VideoPeerLeftPayload) => removePeer(p.socketId);

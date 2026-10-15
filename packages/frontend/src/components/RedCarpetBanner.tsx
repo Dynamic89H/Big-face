@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getSocket, type RedCarpetPayload } from '../api/socket';
+import { playRoyalChime } from '../utils/chime';
 
 const APPLAUSE = ['👏', '🎉', '👑', '✨', '🌟', '🎊'];
 
@@ -9,7 +10,10 @@ export default function RedCarpetBanner() {
 
   useEffect(() => {
     const s = getSocket();
-    const onCarpet = (p: RedCarpetPayload) => setEvent(p);
+    const onCarpet = (p: RedCarpetPayload) => {
+      setEvent(p);
+      playRoyalChime();
+    };
     s.on('red:carpet', onCarpet);
     return () => {
       s.off('red:carpet', onCarpet);
