@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { useLang, LANGS, type Lang } from '../i18n/LangContext';
 import { getSocket, type GiftReceivedPayload, type RankUpPayload } from '../api/socket';
 import RedCarpetBanner from './RedCarpetBanner';
 import DailyRewardBanner from './DailyRewardBanner';
@@ -13,29 +14,30 @@ interface Toast {
   sub: string;
 }
 
-const NAV = [
-  { to: '/chats', label: 'Chats', icon: '💬' },
-  { to: '/video', label: 'Video', icon: '📹' },
-  { to: '/leaderboard', label: 'Leaderboard', icon: '🏆' },
-  { to: '/hall-of-fame', label: 'Hall of Fame', icon: '⭐' },
-  { to: '/avatar-studio', label: 'Avatar Studio', icon: '🎨' },
-  { to: '/throne', label: 'Throne Room', icon: '👑' },
-  { to: '/fame', label: 'Fame Tracker', icon: '🌟' },
-  { to: '/friends', label: 'Friends', icon: '👥' },
-  { to: '/lifestyle', label: 'Lifestyle', icon: '💎' },
-  { to: '/battles', label: 'Battles', icon: '⚔️' },
-  { to: '/crews', label: 'Crews', icon: '👥' },
-  { to: '/artists', label: 'Artists', icon: '🎤' },
-  { to: '/dj-booth', label: 'DJ Booth', icon: '🎧' },
-  { to: '/safety', label: 'Safety', icon: '🛡️' },
-  { to: '/wallet', label: 'Wallet', icon: '💰' },
-  { to: '/earnings', label: 'Earnings', icon: '💵' },
+const NAV: { to: string; key: string; icon: string }[] = [
+  { to: '/chats', key: 'nav_chat', icon: '💬' },
+  { to: '/video', key: 'nav_video', icon: '📹' },
+  { to: '/leaderboard', key: 'nav_leaderboard', icon: '🏆' },
+  { to: '/hall-of-fame', key: 'nav_hall', icon: '⭐' },
+  { to: '/avatar-studio', key: 'nav_studio', icon: '🎨' },
+  { to: '/throne', key: 'nav_throne', icon: '👑' },
+  { to: '/fame', key: 'nav_fame', icon: '🌟' },
+  { to: '/friends', key: 'nav_friends', icon: '👥' },
+  { to: '/lifestyle', key: 'nav_lifestyle', icon: '💎' },
+  { to: '/battles', key: 'nav_battles', icon: '⚔️' },
+  { to: '/crews', key: 'nav_crews', icon: '👥' },
+  { to: '/artists', key: 'nav_artists', icon: '🎤' },
+  { to: '/dj-booth', key: 'nav_dj', icon: '🎧' },
+  { to: '/safety', key: 'nav_safety', icon: '🛡️' },
+  { to: '/wallet', key: 'nav_wallet', icon: '💰' },
+  { to: '/earnings', key: 'nav_earnings', icon: '💵' },
 ];
 
 let toastId = 0;
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { t, lang, setLang } = useLang();
   const navigate = useNavigate();
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -75,7 +77,7 @@ export default function Layout() {
     NAV.map((n) => (
       <NavLink key={n.to} to={n.to} className={({ isActive }) => `${cls}${isActive ? ' active' : ''}`}>
         <span className="nav-icon">{n.icon}</span>
-        <span>{n.label}</span>
+        <span>{t(n.key as any)}</span>
       </NavLink>
     ));
 
@@ -96,6 +98,22 @@ export default function Layout() {
           </div>
           <button className="icon-btn" title="Edit profile" onClick={() => navigate('/profile/edit')}>✏️</button>
           <button className="icon-btn" title="Log out" onClick={handleLogout}>⏻</button>
+        </div>
+        <div style={{ padding: '0.5rem', display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+          {LANGS.map((l: { code: Lang; label: string; flag: string }) => (
+            <button
+              key={l.code}
+              onClick={() => setLang(l.code)}
+              title={l.label}
+              style={{
+                border: lang === l.code ? '2px solid var(--accent)' : '1px solid var(--border)',
+                borderRadius: 8, background: 'transparent', fontSize: '1.1rem',
+                padding: '0.2rem 0.4rem', cursor: 'pointer', opacity: lang === l.code ? 1 : 0.6,
+              }}
+            >
+              {l.flag}
+            </button>
+          ))}
         </div>
       </aside>
 

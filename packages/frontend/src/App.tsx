@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
+import { LangProvider } from './i18n/LangContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -49,6 +50,7 @@ function PublicOnly({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <LangProvider>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
@@ -87,6 +89,7 @@ export default function App() {
           </Route>
         </Routes>
       </AuthProvider>
+      </LangProvider>
     </BrowserRouter>
   );
 }
