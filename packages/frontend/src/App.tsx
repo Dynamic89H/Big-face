@@ -12,6 +12,7 @@ import AvatarStudioPage from './pages/AvatarStudioPage';
 import ThroneRoomPage from './pages/ThroneRoomPage';
 import FameTrackerPage from './pages/FameTrackerPage';
 import FriendsPage from './pages/FriendsPage';
+import PrivacyPage from './pages/PrivacyPage';
 import DJBoothPage from './pages/DJBoothPage';
 import SafetyPage from './pages/SafetyPage';
 import WalletPage from './pages/WalletPage';
@@ -48,6 +49,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
           <Route path="/signup" element={<PublicOnly><SignupPage /></PublicOnly>} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route
             path="/*"
             element={
