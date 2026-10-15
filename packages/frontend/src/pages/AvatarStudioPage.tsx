@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { avatarApi, walletApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { AvatarItem } from '../types';
@@ -24,6 +25,9 @@ function slotPos(slot: string) {
 
 export default function AvatarStudioPage() {
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const onboarding = searchParams.get('onboarding') === '1';
   const [items, setItems] = useState<AvatarItem[]>([]);
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
   const [equipped, setEquipped] = useState<Record<string, AvatarItem>>({});
@@ -121,11 +125,19 @@ export default function AvatarStudioPage() {
     <div>
       <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
         <div>
-          <h1 className="page-title">Avatar Studio</h1>
-          <p className="page-sub">Collect gear, flex your rarity. Some pieces need level or tokens.</p>
+          <h1 className="page-title">{onboarding ? '🎭 Create your character' : 'Avatar Studio'}</h1>
+          <p className="page-sub">{onboarding ? 'This is your Big Face. Gear up, then enter the arena.' : 'Collect gear, flex your rarity. Some pieces need level or tokens.'}</p>
         </div>
         {balance !== null && <span className="badge badge-gold" style={{ fontSize: '0.9rem' }}>💰 {balance} tokens</span>}
       </div>
+
+      {onboarding && (
+        <div style={{ marginBottom: '1.2rem' }}>
+          <button className="btn btn-block" onClick={() => navigate('/chats', { replace: true })}>
+            Done — Enter Big Face →
+          </button>
+        </div>
+      )}
 
       {actionError && <div className="form-error">{actionError}</div>}
 

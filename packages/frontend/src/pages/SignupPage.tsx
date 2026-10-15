@@ -33,7 +33,7 @@ export default function SignupPage() {
         displayName: form.displayName.trim(),
         gender: form.gender,
       });
-      navigate('/chats', { replace: true });
+      navigate('/avatar-studio?onboarding=1', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Signup failed. Please try again.');
     } finally {

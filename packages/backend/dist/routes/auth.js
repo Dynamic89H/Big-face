@@ -46,6 +46,10 @@ router.post('/signup', (0, util_1.asyncHandler)(async (req, res) => {
     const user = rows[0];
     await ensureWelcomeLounge(user.id);
     await (0, xp_1.awardDailyLoginXp)(user.id); // first login counts as today's login
+    // Starter wardrobe: grant all free level-1 items so new users can dress up immediately.
+    await db_1.pool.query(`INSERT INTO user_avatar_items (user_id, item_id)
+       SELECT $1, id FROM avatar_items WHERE min_level <= 1 AND token_price = 0
+       ON CONFLICT DO NOTHING`, [user.id]);
     res.status(201).json({ token: (0, auth_1.signToken)(user.id), user: (0, util_1.toUser)(user) });
 }));
 const loginSchema = zod_1.z.object({
