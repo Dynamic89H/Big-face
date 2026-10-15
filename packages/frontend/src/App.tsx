@@ -48,9 +48,12 @@ function PublicOnly({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+import EngineCanvas from './components/EngineCanvas';
+
 export default function App() {
   return (
     <BrowserRouter>
+      <EngineCanvas />
       <LangProvider>
       <AuthProvider>
         <Routes>

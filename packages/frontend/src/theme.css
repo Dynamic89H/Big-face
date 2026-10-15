@@ -30,39 +30,22 @@ html, body {
   color: var(--text);
   font-family: var(--font);
   min-height: 100%;
-  /* Layer 1: deep space base */
-  background: var(--bg);
+  /* Transparent — the Big Face Engine renders the live 3D world behind everything */
+  background: transparent;
 }
 
-/* Layered digital background — fixed behind everything */
-body::before {
+/* Legacy CSS layers — disabled now that the engine handles the background.
+   Kept as fallback if WebGL is unavailable (EngineCanvas hides on failure). */
+body.engine-fallback::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -2;
   background:
-    /* Layer 2: aurora glows */
     radial-gradient(ellipse 600px 400px at 15% 10%, rgba(0, 102, 255, 0.22), transparent 60%),
     radial-gradient(ellipse 500px 380px at 85% 20%, rgba(255, 47, 214, 0.14), transparent 60%),
     radial-gradient(ellipse 700px 500px at 50% 100%, rgba(139, 92, 246, 0.18), transparent 65%),
-    radial-gradient(ellipse 400px 300px at 70% 60%, rgba(0, 240, 255, 0.08), transparent 60%),
-    /* Layer 3: deep gradient wash */
     linear-gradient(180deg, #0a0c18 0%, #070810 40%, #0b0714 100%);
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  /* Layer 4: digital grid */
-  background-image:
-    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, black 30%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, black 30%, transparent 100%);
 }
 
 a { color: inherit; text-decoration: none; }
