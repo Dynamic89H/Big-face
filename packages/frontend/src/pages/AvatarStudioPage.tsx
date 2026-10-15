@@ -250,7 +250,7 @@ export default function AvatarStudioPage() {
                 className={`btn btn-sm ${view3D ? '' : 'btn-ghost'}`}
                 onClick={() => setView3D(true)}
               >
-                🎮 3D Hero
+                ✨ 3D Stage
               </button>
               <button
                 className={`btn btn-sm ${!view3D ? '' : 'btn-ghost'}`}
@@ -266,6 +266,7 @@ export default function AvatarStudioPage() {
                 characterImg={character.img}
                 characterName={character.name}
                 equipped={equipped}
+                showBody={false}
               />
             ) : (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
