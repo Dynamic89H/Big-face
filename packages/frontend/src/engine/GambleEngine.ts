@@ -84,6 +84,10 @@ export class GambleEngine {
   private targetLook = new THREE.Vector3();
   private prevPos = new THREE.Vector3();
   private prevLook = new THREE.Vector3();
+  // Reusable temps for camera math (avoid per-frame allocation = no GC stutter)
+  private camTmpOffset = new THREE.Vector3();
+  private camTmpSpherical = new THREE.Spherical();
+  private camTmpDir = new THREE.Vector3();
 
   // Dust
   private dustGeo!: THREE.BufferGeometry;
@@ -102,15 +106,15 @@ export class GambleEngine {
 
     this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 120);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    // Wide and tall — fill the screen. Use the full requested height.
-    this.renderer.setSize(width, height);
-    // 4K sharp: render at native device resolution (up to 3x). Mobile gets 2x
-    // to stay smooth — still retina-sharp, won't melt the GPU.
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
       || (window.innerWidth < 768 && 'ontouchstart' in window);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 2 : 3));
-    this.renderer.shadowMap.enabled = true;
+    this.renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance' });
+    // Wide and tall — fill the screen. Use the full requested height.
+    this.renderer.setSize(width, height);
+    // Mobile starts in lite mode: 1x pixels, no shadows. Desktop gets full quality.
+    // User can raise quality via setQuality() if their device handles it.
+    this.renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 3));
+    this.renderer.shadowMap.enabled = !isMobile;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
@@ -1434,9 +1438,9 @@ export class GambleEngine {
       if (Math.abs(this.userPolar) < 0.001) this.userPolar = 0;
     }
     if (this.userAzimuth !== 0 || this.userPolar !== 0) {
-      // Rotate position around the look target
-      const offset = pos.clone().sub(look);
-      const spherical = new THREE.Spherical().setFromVector3(offset);
+      // Rotate position around the look target (reused temps — no GC stutter)
+      const offset = this.camTmpOffset.copy(pos).sub(look);
+      const spherical = this.camTmpSpherical.setFromVector3(offset);
       spherical.theta += this.userAzimuth;
       spherical.phi = Math.max(0.15, Math.min(Math.PI / 2 + 0.1, spherical.phi + this.userPolar));
       offset.setFromSpherical(spherical);
