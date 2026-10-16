@@ -552,9 +552,31 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
 
     scene.add(table);
 
-    // Characters removed - waiting for real 3D models (Meshy)
-    // The room stands on its own as a premium casino environment
-    // Real characters will be added when available - no more placeholders
+    // ===== DUST PARTICLES in light beams =====
+    const dustCount = 300;
+    const dustGeo = new THREE.BufferGeometry();
+    const dustPos = new Float32Array(dustCount * 3);
+    const dustSpeed = new Float32Array(dustCount);
+    for (let i = 0; i < dustCount; i++) {
+      dustPos[i * 3] = (Math.random() - 0.5) * 20;
+      dustPos[i * 3 + 1] = Math.random() * 12;
+      dustPos[i * 3 + 2] = (Math.random() - 0.5) * 20;
+      dustSpeed[i] = 0.1 + Math.random() * 0.3;
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+    const dustMat = new THREE.PointsMaterial({
+      color: 0x88aaff, size: 0.035, transparent: true, opacity: 0.5,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const dust = new THREE.Points(dustGeo, dustMat);
+    scene.add(dust);
+
+    // Dice roll animation state
+    let diceRolling = false;
+    let rollTime = 0;
+    const rollDuration = 1.8;
+    const die1Start = die1.position.clone();
+    const die2Start = die2.position.clone();
 
     // ===== 4 CINEMATIC CAMERA ANGLES - ULTRA SMOOTH =====
     // Each camera covers a different section, cycling every 10 seconds
@@ -660,7 +682,50 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
         spot.intensity = 120 + Math.sin(t * 2 + i * 1.5) * 25;
       });
 
-      // Cinematic render with bloom, vignette, film grain
+      // Dust particles drift
+      const positions = dustGeo.attributes.position.array as Float32Array;
+      for (let i = 0; i < dustCount; i++) {
+        positions[i * 3 + 1] -= dustSpeed[i] * dt;
+        positions[i * 3] += Math.sin(t * 0.5 + i) * 0.001;
+        if (positions[i * 3 + 1] < 0) positions[i * 3 + 1] = 12;
+      }
+      dustGeo.attributes.position.needsUpdate = true;
+
+      // Dice roll every 12 seconds
+      if (!diceRolling && t % 12 < dt) {
+        diceRolling = true;
+        rollTime = 0;
+      }
+      if (diceRolling) {
+        rollTime += dt;
+        const p = Math.min(rollTime / rollDuration, 1);
+        const bounce = Math.abs(Math.sin(p * Math.PI * 4)) * (1 - p) * 1.2;
+        // Die 1 tumbles
+        die1.position.set(
+          die1Start.x + Math.sin(p * 9) * 0.5 * (1 - p),
+          1.79 + bounce,
+          die1Start.z + Math.cos(p * 7) * 0.4 * (1 - p)
+        );
+        die1.rotation.x += dt * 12 * (1 - p);
+        die1.rotation.y += dt * 15 * (1 - p);
+        die1.rotation.z += dt * 9 * (1 - p);
+        // Die 2 tumbles opposite
+        die2.position.set(
+          die2Start.x + Math.cos(p * 8) * 0.5 * (1 - p),
+          1.79 + Math.abs(Math.sin(p * Math.PI * 3 + 1)) * (1 - p) * 1.0,
+          die2Start.z + Math.sin(p * 6) * 0.4 * (1 - p)
+        );
+        die2.rotation.x += dt * 10 * (1 - p);
+        die2.rotation.y += dt * 13 * (1 - p);
+        die2.rotation.z += dt * 11 * (1 - p);
+        if (p >= 1) {
+          diceRolling = false;
+          die1.position.copy(die1Start);
+          die2.position.copy(die2Start);
+        }
+      }
+
+      // Cinematic render with vignette, film grain
       cinematicPass.uniforms.time.value = t;
       composer.render();
     };
