@@ -31,6 +31,31 @@ async function getOrCreateVault(): Promise<{ id: string; balance: number }> {
 }
 
 /**
+ * Win the Vault jackpot instantly (e.g. from spin wheel JACKPOT segment).
+ * Pays the entire balance to the winner and resets the vault.
+ */
+export async function winVaultJackpot(userId: string, source: string): Promise<number> {
+  const vault = await getOrCreateVault();
+  const jackpot = vault.balance;
+  if (jackpot <= 0) return 0;
+
+  await pool.query('UPDATE vault SET balance = 0 WHERE id = $1', [vault.id]);
+  await pool.query(
+    `INSERT INTO vault_winners (vault_id, user_id, amount, source) VALUES ($1, $2, $3, $4)`,
+    [vault.id, userId, jackpot, source]
+  );
+
+  const { addTokens } = await import('../services/tokens');
+  await addTokens(userId, jackpot, 'vault_jackpot', { reference: `jackpot:${vault.id}` });
+
+  const { emitToAll } = await import('../sockets');
+  emitToAll('vault:winner', { userId, amount: jackpot });
+  emitToAll('vault:update', { balance: 0 });
+
+  return jackpot;
+}
+
+/**
  * Contribute to the Vault. Called from any token transaction.
  * Gives the user raffle tickets proportional to their activity.
  */

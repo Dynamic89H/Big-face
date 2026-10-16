@@ -13,7 +13,7 @@ export default function SpinWheel() {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<SpinStatus>({ canSpin: true, streak: 0 });
   const [spinning, setSpinning] = useState(false);
-  const [result, setResult] = useState<{ prize: number; streak: number } | null>(null);
+  const [result, setResult] = useState<{ prize: number; streak: number; jackpot?: number } | null>(null);
   const [rotation, setRotation] = useState(0);
 
   const loadStatus = async () => {
@@ -155,11 +155,26 @@ export default function SpinWheel() {
 
             {result ? (
               <div>
-                <div style={{ fontSize: '2.5rem' }}>🎉</div>
-                <h3 style={{ color: 'var(--gold)', margin: '0.5rem 0' }}>
-                  +{result.prize.toLocaleString()} tokens!
-                </h3>
-                <p className="form-note">Streak: {result.streak} days</p>
+                {result.jackpot && result.jackpot > 0 ? (
+                  <>
+                    <div style={{ fontSize: '3rem' }}>💰🏆💰</div>
+                    <h3 className="pattern-gold-text" style={{ fontSize: '1.8rem', margin: '0.5rem 0' }}>
+                      JACKPOT!!!
+                    </h3>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--gold)' }}>
+                      +{result.jackpot.toLocaleString()} tokens!
+                    </div>
+                    <p className="form-note">You won the entire Vault! 🎉</p>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '2.5rem' }}>🎉</div>
+                    <h3 style={{ color: 'var(--gold)', margin: '0.5rem 0' }}>
+                      +{result.prize.toLocaleString()} tokens!
+                    </h3>
+                    <p className="form-note">Streak: {result.streak} days</p>
+                  </>
+                )}
                 <button className="btn" onClick={() => setOpen(false)}>Claim</button>
               </div>
             ) : (

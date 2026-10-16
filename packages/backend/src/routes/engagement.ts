@@ -78,6 +78,13 @@ router.post(
     const streakBonus = Math.min(streak * 0.1, 1.0);
     const prize = Math.floor(basePrize * (1 + streakBonus));
 
+    // JACKPOT: 1% chance to win the entire Vault
+    const { winVaultJackpot } = await import('./vault');
+    let jackpotWon = 0;
+    if (Math.random() < 0.01) {
+      jackpotWon = await winVaultJackpot(req.user!.id, 'spin').catch(() => 0);
+    }
+
     await pool.query(
       `INSERT INTO daily_spins (user_id, prize_tokens, streak) VALUES ($1, $2, $3)`,
       [req.user!.id, prize, streak]
@@ -88,14 +95,14 @@ router.post(
     // Publish to win feed
     await pool.query(
       `INSERT INTO win_feed (user_id, kind, amount_tokens, detail) VALUES ($1, 'spin', $2, $3)`,
-      [req.user!.id, prize, `${streak} day streak`]
+      [req.user!.id, prize + jackpotWon, jackpotWon > 0 ? `JACKPOT! ${streak} day streak` : `${streak} day streak`]
     );
     // Feed the Vault
     const { contributeToVault } = await import('./vault');
     await contributeToVault(req.user!.id, prize, 'spin').catch(() => undefined);
 
-    emitToAll('engagement:feed', { kind: 'spin', amount: prize });
-    res.json({ prize, streak, bonus: streakBonus });
+    emitToAll('engagement:feed', { kind: 'spin', amount: prize + jackpotWon });
+    res.json({ prize, streak, bonus: streakBonus, jackpot: jackpotWon });
   })
 );
 
