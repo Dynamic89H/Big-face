@@ -75,11 +75,16 @@ export class GambleEngine {
     this.scene.background = new THREE.Color(0x060608);
     this.scene.fog = new THREE.Fog(0x060608, 30, 60);
 
+    // Use the container's actual rendered size (responsive) — fall back to props
+    const cw = container.clientWidth || width;
+    const ch = container.clientHeight || height;
+    width = cw; height = ch;
+
     this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 120);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    const h = Math.min(height, width * 0.625);
-    this.renderer.setSize(width, h);
+    // Wide and tall — fill the screen. Use the full requested height.
+    this.renderer.setSize(width, height);
     // 4K sharp: render at native device resolution (up to 3x). Mobile gets 2x
     // to stay smooth — still retina-sharp, won't melt the GPU.
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -92,6 +97,15 @@ export class GambleEngine {
     // Sharper output: sRGB color space for accurate, vivid colors
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(this.renderer.domElement);
+
+    // Follow container resizes (responsive layout)
+    new ResizeObserver(() => {
+      const w = container.clientWidth, h = container.clientHeight;
+      if (!w || !h) return;
+      this.camera.aspect = w / h;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(w, h);
+    }).observe(container);
 
     this.buildLights();
     this.buildRoom();

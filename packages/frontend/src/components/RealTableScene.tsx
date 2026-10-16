@@ -56,7 +56,7 @@ const RealTableScene = forwardRef<RealTableSceneHandle, RealTableSceneProps>(
     return (
       <div style={{ textAlign: 'center' }}>
         <div ref={mountRef} style={{
-          width, height: Math.min(height, width * 0.625),
+          width: '100%', height: 'min(72vh, 1000px)',
           margin: '0 auto', borderRadius: 20, overflow: 'hidden',
         }} />
         <p className="form-note" style={{ marginTop: '0.5rem' }}>

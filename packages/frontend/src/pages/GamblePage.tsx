@@ -240,7 +240,7 @@ export default function GamblePage() {
       <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
         <Suspense fallback={
           <div style={{
-            width: '100%', height: 400, display: 'flex',
+            width: '100%', height: 'min(70vh, 1000px)', display: 'flex',
             alignItems: 'center', justifyContent: 'center',
             background: 'linear-gradient(160deg, #1a0f2e, #0d0d1a)',
             borderRadius: 16, color: 'var(--gold)',
@@ -248,7 +248,7 @@ export default function GamblePage() {
             🎲 Loading the casino...
           </div>
         }>
-          <RealTableScene ref={engineRef} width={1200} height={700} />
+          <RealTableScene ref={engineRef} width={1600} height={1000} />
         </Suspense>
         <div style={{
           position: 'absolute', top: 12, left: 16,
