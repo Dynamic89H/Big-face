@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
 export type GambleMood = 'idle' | 'tense' | 'win' | 'lose';
 export type GraphicsQuality = 'low' | 'medium' | 'high' | 'ultra' | 'max8k';
@@ -111,6 +113,7 @@ export class GambleEngine {
     this.buildLights();
     this.buildRoom();
     this.buildTable();
+    this.buildSeats();
     this.buildDust();
     this.buildConfetti();
     this.setupZoom();
@@ -235,6 +238,15 @@ export class GambleEngine {
     // Warmer ambient — inviting, not cold. Raised so walls read, not black holes.
     this.ambient = new THREE.AmbientLight(0x4a3620, 1.8);
     this.scene.add(this.ambient);
+
+    // HDRI environment — warm studio reflections on gold/chips/marble
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    new RGBELoader().load('/textures/studio.hdr', (hdrTex) => {
+      const envMap = pmrem.fromEquirectangular(hdrTex).texture;
+      this.scene.environment = envMap;
+      hdrTex.dispose();
+      pmrem.dispose();
+    });
 
     // Warm ceiling wash (was cold blue)
     this.ceilingBlue = new THREE.PointLight(0xffb366, 90, 40, 1.4);
@@ -822,6 +834,99 @@ export class GambleEngine {
     }
   }
 
+  /**
+   * Character seats — 4 AI opponents around the table.
+   * Loads GLB models and seats them. Falls back gracefully if models fail.
+   */
+  private buildSeats(): void {
+    const loader = new GLTFLoader();
+    // Character definitions: model file, seat angle, name
+    const seats: { model: string; angle: number; name: string }[] = [
+      { model: '/models/xbot.glb', angle: 0.6, name: 'The Boss' },
+      { model: '/models/michelle.glb', angle: 2.2, name: 'Diva' },
+      { model: '/models/soldier.glb', angle: 3.8, name: 'Dread Artist' },
+      { model: '/models/xbot.glb', angle: 5.4, name: 'Enforcer' },
+    ];
+
+    // Chair for each seat
+    const chairMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0f, roughness: 0.6 });
+    const chairBackMat = new THREE.MeshStandardMaterial({ color: 0x8b0000, roughness: 0.7 });
+
+    seats.forEach(({ model, angle, name }) => {
+      const sx = Math.cos(angle) * 4.2;
+      const sz = Math.sin(angle) * 4.2;
+
+      // Chair
+      const chair = new THREE.Group();
+      const seatMesh = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.15, 1.0), chairMat);
+      seatMesh.position.y = 0.55;
+      chair.add(seatMesh);
+      const backMesh = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 0.12), chairBackMat);
+      backMesh.position.set(0, 1.1, 0.45);
+      chair.add(backMesh);
+      for (const [lx, lz] of [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]]) {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.55, 8), chairMat);
+        leg.position.set(lx, 0.28, lz);
+        chair.add(leg);
+      }
+      chair.position.set(sx, 0, sz);
+      chair.lookAt(0, 0, 0);
+      chair.traverse((o) => { if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).castShadow = true; });
+      this.scene.add(chair);
+
+      // Name plate
+      const plateCanvas = document.createElement('canvas');
+      plateCanvas.width = 256; plateCanvas.height = 64;
+      const pctx = plateCanvas.getContext('2d')!;
+      pctx.fillStyle = 'rgba(0,0,0,0.7)';
+      pctx.fillRect(0, 0, 256, 64);
+      pctx.strokeStyle = '#d4af37'; pctx.lineWidth = 3;
+      pctx.strokeRect(2, 2, 252, 60);
+      pctx.fillStyle = '#ffd700';
+      pctx.font = 'bold 28px Arial';
+      pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
+      pctx.fillText(name, 128, 32);
+      const plateTex = new THREE.CanvasTexture(plateCanvas);
+      const plate = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.4, 0.35),
+        new THREE.MeshBasicMaterial({ map: plateTex, transparent: true })
+      );
+      plate.position.set(sx * 1.15, 2.2, sz * 1.15);
+      plate.lookAt(0, 2.2, 0);
+      this.scene.add(plate);
+
+      // Load character model
+      loader.load(model, (gltf) => {
+        const char = gltf.scene;
+        char.scale.setScalar(1.1);
+        char.position.set(sx, 0.6, sz);
+        char.lookAt(0, 1.2, 0);
+        char.traverse((o) => {
+          if ((o as THREE.Mesh).isMesh) {
+            (o as THREE.Mesh).castShadow = true;
+            (o as THREE.Mesh).receiveShadow = true;
+          }
+        });
+        this.scene.add(char);
+
+        // Play idle animation if available
+        if (gltf.animations.length > 0) {
+          const mixer = new THREE.AnimationMixer(char);
+          // Find an idle-like animation, or just play the first
+          const idleClip = gltf.animations.find((a) =>
+            a.name.toLowerCase().includes('idle')
+          ) || gltf.animations[0];
+          mixer.clipAction(idleClip).play();
+          // Store mixer for update loop
+          (this as any).charMixers = (this as any).charMixers || [];
+          (this as any).charMixers.push(mixer);
+        }
+      }, undefined, (err) => {
+        console.warn(`Could not load character ${name}:`, err);
+      });
+    });
+  }
+
   private buildDust(): void {
     this.dustGeo = new THREE.BufferGeometry();
     const pos = new Float32Array(this.dustCount * 3);
@@ -1025,6 +1130,12 @@ export class GambleEngine {
     this.raf = requestAnimationFrame(this.animate);
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const t = this.clock.elapsedTime;
+
+    // Character animations
+    const mixers = (this as any).charMixers as THREE.AnimationMixer[] | undefined;
+    if (mixers) {
+      for (const m of mixers) m.update(dt);
+    }
 
     // Mood transition
     if (this.moodTransition < 1) {
