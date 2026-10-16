@@ -8,7 +8,12 @@
 import { pool } from '../db';
 import { getDailyMessage, pushToUser } from '../services/push';
 
-async function main() {
+/**
+ * Broadcast today's rotating message to all subscribed users, localized
+ * to each user's preferred language.
+ * Returns counts; shared by the CLI runner and the /api/admin/daily-push endpoint.
+ */
+export async function sendDailyPush(): Promise<{ users: number; sent: number; failed: number }> {
   console.log('[daily-push] Starting daily notification broadcast...');
 
   // Get all users with push subscriptions and their languages.
@@ -37,7 +42,13 @@ async function main() {
   }
 
   console.log(`[daily-push] Done. Sent ${sent} notifications to ${rows.length} users (${failed} failed).`);
+  return { users: rows.length, sent, failed };
+}
+
+async function main() {
+  const result = await sendDailyPush();
   await pool.end();
+  console.log('[daily-push] Result:', result);
   process.exit(0);
 }
 

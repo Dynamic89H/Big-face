@@ -912,16 +912,31 @@ export class GambleEngine {
         char.scale.setScalar(1.1);
         char.position.set(sx, 0.6, sz);
         char.lookAt(0, 1.2, 0);
+        // Character-specific styling to match approved lineup
+        const charStyles: Record<string, { skin: number; shirt: number; pants: number }> = {
+          'The Boss': { skin: 0x6b4a35, shirt: 0x1a1a1a, pants: 0x1a1a1a },      // dark skin, black outfit
+          'Diva': { skin: 0x5d3d2a, shirt: 0xcc1133, pants: 0xcc1133 },           // dark skin, red dress
+          'Dread Artist': { skin: 0x6b4a35, shirt: 0xf0f0f0, pants: 0x2a2a2a },  // dark skin, white tank
+          'Enforcer': { skin: 0x5d3d2a, shirt: 0x111111, pants: 0x111111 },       // dark skin, black sleeveless
+        };
+        const style = charStyles[name] || { skin: 0x6b4a35, shirt: 0x333333, pants: 0x333333 };
         char.traverse((o) => {
           const mesh = o as THREE.Mesh;
           if (mesh.isMesh) {
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-            // FIX: SkinnedMesh frustum culling bug — animated models vanish
-            // because bounds are computed from bind pose, not animated pose
             mesh.frustumCulled = false;
+            // Tint materials: darken skin, color clothes per character
+            const mat = mesh.material as THREE.MeshStandardMaterial;
+            if (mat && mat.color) {
+              const matName = (mat.name || '').toLowerCase();
+              if (matName.includes('skin') || matName.includes('body')) {
+                mat.color.setHex(style.skin);
+              } else if (matName.includes('shirt') || matName.includes('top') || matName.includes('cloth')) {
+                mat.color.setHex(style.shirt);
+              }
+            }
           }
-          // Darken skin toward brown for street-realistic look
           const skinned = o as THREE.SkinnedMesh;
           if (skinned.isSkinnedMesh) {
             skinned.frustumCulled = false;
@@ -939,6 +954,20 @@ export class GambleEngine {
         const pendant = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.02), chainMat);
         pendant.position.set(0, 1.32, 0.18);
         char.add(pendant);
+
+        // The Boss gets a red bandana (Tupac-style)
+        if (name === 'The Boss') {
+          const bandanaMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.8 });
+          const bandana = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2.2), bandanaMat);
+          bandana.position.set(0, 1.62, 0);
+          bandana.scale.set(1.05, 0.7, 1.05);
+          char.add(bandana);
+          // Bandana knot tails
+          const tail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.02), bandanaMat);
+          tail.position.set(0, 1.55, -0.16);
+          tail.rotation.x = 0.3;
+          char.add(tail);
+        }
 
         this.scene.add(char);
 
