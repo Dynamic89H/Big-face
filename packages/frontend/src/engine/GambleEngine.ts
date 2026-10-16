@@ -75,11 +75,17 @@ export class GambleEngine {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     const h = Math.min(height, width * 0.625);
     this.renderer.setSize(width, h);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // 4K sharp: render at native device resolution (up to 3x). Mobile gets 2x
+    // to stay smooth — still retina-sharp, won't melt the GPU.
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (window.innerWidth < 768 && 'ontouchstart' in window);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 2 : 3));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
+    // Sharper output: sRGB color space for accurate, vivid colors
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(this.renderer.domElement);
 
     this.buildLights();
@@ -167,7 +173,7 @@ export class GambleEngine {
     this.keyLight = new THREE.SpotLight(0xffd9a0, 220, 40, Math.PI / 5, 0.3, 1.2);
     this.keyLight.position.set(0, 14, 0);
     this.keyLight.castShadow = true;
-    this.keyLight.shadow.mapSize.set(2048, 2048);
+    this.keyLight.shadow.mapSize.set(4096, 4096);
     this.keyLight.shadow.bias = -0.0005;
     this.scene.add(this.keyLight);
     this.scene.add(this.keyLight.target);
