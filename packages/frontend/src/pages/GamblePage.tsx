@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, lazy, Suspense } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { gambleApi, ApiError } from '../api/client';
 import { celebrate } from '../components/Celebration';
 import { sfx, haptic } from '../utils/sfx';
@@ -6,12 +6,6 @@ import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import Avatar from '../components/Avatar';
-
-// Lazy-load the 3D table — Three.js only loads when you visit Gamble Face
-const RealTableScene = lazy(() => import('../components/RealTableScene'));
-const CeeloMatch = lazy(() => import('../components/CeeloMatch'));
-import type { RealTableSceneHandle } from '../components/RealTableScene';
-import type { GraphicsQuality } from '../engine/GambleEngine';
 import { useActorEngine, ActorSpeech, ACTOR_VOICES } from '../components/ActorEngine';
 
 interface Game {
@@ -245,10 +239,17 @@ export default function GamblePage() {
           width: '100%', minHeight: 200, display: 'flex',
           alignItems: 'center', justifyContent: 'center',
           background: 'radial-gradient(ellipse at center, #1a7a3a 0%, #0d5c2e 50%, #084a24 100%)',
-          borderRadius: 16, border: '3px solid #d4af37',
+          borderRadius: 16,
+          border: '4px solid transparent',
+          backgroundClip: 'padding-box',
+          position: 'relative',
           fontSize: '4rem', padding: '2rem',
-          boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)',
+          boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5), 0 0 30px rgba(212,175,55,0.3)',
         }}>
+          <div style={{
+            position: 'absolute', inset: -4, borderRadius: 20, zIndex: -1,
+            background: 'linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)',
+          }} />
           🎲🎲
         </div>
       </div>
