@@ -32,6 +32,15 @@ html, body {
   min-height: 100%;
   /* Dark base — never white. The Big Face Engine renders the live 3D world on top. */
   background: var(--bg);
+  /* Smooth scrolling on mobile — momentum + no scroll chaining jank */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+}
+
+/* Scrollable areas get momentum scrolling on iOS/Android */
+.messages, .room-list .rooms, .emoji-grid, .page, [data-scroll] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Legacy CSS layers — disabled now that the engine handles the background.

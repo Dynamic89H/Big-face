@@ -30,8 +30,13 @@ export class BigFaceEngine {
   init(canvas: HTMLCanvasElement, staticMode = false): void {
     if (this.renderer) return;
 
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Mobile perf: lower pixel ratio and fewer stars on phones
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (window.innerWidth < 768 && 'ontouchstart' in window);
+    this.isMobile = isMobile;
+
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: true });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.1;
@@ -44,6 +49,7 @@ export class BigFaceEngine {
 
     this.buildEnvironment(staticMode);
     this.handleResize();
+    this.handleVisibility();
     if (staticMode) {
       // Single still frame — no animation loop, no motion.
       this.renderer.render(this.scene, this.camera);
@@ -51,6 +57,22 @@ export class BigFaceEngine {
       this.start();
     }
   }
+
+  private isMobile = false;
+
+  /** Pause rendering when the tab/app is hidden — saves battery & CPU. */
+  private handleVisibility(): void {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.wasPausedBeforeHide = this.paused;
+        this.pause();
+      } else if (!this.wasPausedBeforeHide) {
+        this.resume();
+      }
+    });
+  }
+
+  private wasPausedBeforeHide = false;
 
   /** The living 3D environment — black starfield with shooting stars. */
   private buildEnvironment(staticMode = false): void {
@@ -65,8 +87,9 @@ export class BigFaceEngine {
     key.position.set(3, 4, 5);
     this.scene.add(key);
 
-    // --- Starfield: 1500 stars with ROUND soft sprites (not blocky) ---
-    const starCount = 1500;
+    // --- Starfield: 1500 stars on desktop, 700 on mobile (perf) ---
+    // ROUND soft sprites, not blocky.
+    const starCount = this.isMobile ? 700 : 1500;
 
     // Generate a soft circular star sprite (no more Lego squares)
     const makeStarSprite = (): THREE.Texture => {
@@ -229,16 +252,21 @@ export class BigFaceEngine {
   }
 
   private start(): void {
-    const loop = () => {
+    let lastFrame = 0;
+    // Mobile: cap at 30fps — halves GPU load, still looks smooth for a background
+    const frameInterval = this.isMobile ? 1000 / 30 : 0;
+    const loop = (now: number) => {
       if (this.disposed) return;
       this.raf = requestAnimationFrame(loop);
       if (this.paused) return; // Skip render when paused — saves CPU/GPU
+      if (frameInterval && now - lastFrame < frameInterval) return;
+      lastFrame = now;
       const dt = Math.min(this.clock.getDelta(), 0.05);
       const t = this.clock.elapsedTime;
       for (const fn of this.updatables) fn(dt, t);
       this.renderer.render(this.scene, this.camera);
     };
-    loop();
+    this.raf = requestAnimationFrame(loop);
   }
 
   private paused = false;
