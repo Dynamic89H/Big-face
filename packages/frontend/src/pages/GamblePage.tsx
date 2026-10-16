@@ -46,6 +46,7 @@ function Dice({ value, rolling }: { value: number; rolling: boolean }) {
 export default function GamblePage() {
   usePageTitle('Gamble Face');
   const { user } = useAuth();
+  const [tab, setTab] = useState<'story' | 'dice' | 'history'>('story');
   const [games, setGames] = useState<Game[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -262,19 +263,30 @@ export default function GamblePage() {
         </div>
       </div>
 
-      {/* Cee-lo Story Mode */}
-      <Suspense fallback={<div className="card" style={{ padding: '1rem' }}>🎲 Loading story mode...</div>}>
-        <CeeloMatch onExit={() => {}} />
-      </Suspense>
-
-      {/* Table chat */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <h4 style={{ margin: '0 0 0.6rem' }}>💬 Table Talk</h4>
-        <p className="form-note" style={{ fontSize: '0.85rem' }}>
-          Chat with other players while you game. Tap a character to make them talk!
-        </p>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+        {([
+          ['story', '📖 Story'],
+          ['dice', '🎲 Quick Dice'],
+          ['history', '📜 History'],
+        ] as const).map(([key, label]) => (
+          <button key={key} onClick={() => setTab(key)}
+            className={`btn ${tab === key ? '' : 'btn-ghost'}`}
+            style={{ flex: 1, padding: '0.8rem' }}>
+            {label}
+          </button>
+        ))}
       </div>
 
+      {tab === 'story' && (
+        <Suspense fallback={<div className="card" style={{ padding: '1rem' }}>🎲 Loading story mode...</div>}>
+          <CeeloMatch onExit={() => setTab('dice')} />
+        </Suspense>
+      )}
+
+      {tab === 'dice' && (
+      <>
+      {/* Quick dice game (original 1v1) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', position: 'relative' }}>
         <img
           src="/probus-lion.webp"
@@ -407,9 +419,11 @@ export default function GamblePage() {
           </div>
         ))}
       </div>
+      </>
+      )}
 
       {/* History — win/loss scorecard */}
-      {history.length > 0 && (
+      {tab === 'history' && history.length > 0 && (
         <>
           <h2>📜 Your Scorecard</h2>
           {(() => {
@@ -476,7 +490,6 @@ export default function GamblePage() {
           </div>
         </>
       )}
-
       <p className="form-note" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
         ⚠️ Play responsibly. Only bet what you can afford to lose.
       </p>
