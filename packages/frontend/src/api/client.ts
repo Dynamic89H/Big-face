@@ -267,6 +267,7 @@ export const gambleApi = {
   create: (betTokens: number) => post<{ game: { id: string } }>('/gamble', { betTokens }),
   join: (id: string) => post<any>(`/gamble/${id}/join`, {}),
   cancel: (id: string) => post<{ ok: boolean }>(`/gamble/${id}/cancel`, {}),
+  soloRoll: (betTokens: number) => post<{ playerRoll: number; houseRoll: number; won: boolean; payout: number }>('/gamble/solo', { betTokens }),
 };
 
 // --- Cee-lo Match Mode ---

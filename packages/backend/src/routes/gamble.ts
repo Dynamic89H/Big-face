@@ -177,6 +177,57 @@ router.post(
   })
 );
 
+// Solo roll — player vs the house. Instant, no waiting for opponents.
+router.post(
+  '/solo',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const schema = z.object({ betTokens: z.number().int().min(MIN_BET).max(MAX_BET) });
+    const { betTokens: bet } = schema.parse(req.body);
+    const userId = req.user!.id;
+
+    const { rows: bal } = await pool.query(
+      'SELECT token_balance FROM users WHERE id = $1', [userId]
+    );
+    if (Number(bal[0]?.token_balance || 0) < bet) {
+      throw new HttpError(400, 'Insufficient token balance');
+    }
+
+    // Take the bet
+    await addTokens(userId, -bet, 'dice_bet_escrow', { reference: `solo:${Date.now()}` });
+
+    // Roll!
+    const playerRoll = 1 + Math.floor(Math.random() * 6);
+    let houseRoll = 1 + Math.floor(Math.random() * 6);
+    while (houseRoll === playerRoll) {
+      houseRoll = 1 + Math.floor(Math.random() * 6);
+    }
+
+    const won = playerRoll > houseRoll;
+    const pot = bet * 2;
+    const platformCut = Math.floor((pot * PLATFORM_CUT_PCT) / 100);
+    const payout = won ? pot - platformCut : 0;
+
+    if (won) {
+      await addTokens(userId, payout, 'dice_win', { reference: `solo:${Date.now()}` });
+      await awardXp(userId, 30, 'dice_solo_win').catch(() => undefined);
+      const { publishWin } = await import('./engagement');
+      await publishWin(userId, 'gamble', payout, `${bet} token solo dice`).catch(() => undefined);
+    } else {
+      await awardXp(userId, 10, 'dice_solo_play').catch(() => undefined);
+    }
+
+    // House cut
+    await recordPlatformRevenue('dice_margin', won ? platformCut : bet, {
+      userId,
+      reference: `solo:${Date.now()}`,
+      grossCents: bet,
+    });
+
+    res.json({ playerRoll, houseRoll, won, payout });
+  })
+);
+
 // Cancel a waiting game (refund escrow).
 router.post(
   '/:id/cancel',

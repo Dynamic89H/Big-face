@@ -61,6 +61,48 @@ export default function GamblePage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [musicOn, setMusicOn] = useState(false);
   const musicRef = useRef<HTMLAudioElement | null>(null);
+  const [soloRolling, setSoloRolling] = useState(false);
+  const [soloDice, setSoloDice] = useState<[number, number] | null>(null);
+
+  /** Solo dice — press and roll against the house. Instant. */
+  const soloRoll = async () => {
+    const bet = parseInt(betAmount, 10);
+    if (!bet || bet < 100 || bet > 25000) {
+      setMsg('⚠️ Bet must be between 100 and 25,000 tokens.');
+      return;
+    }
+    setSoloRolling(true);
+    setSoloDice(null);
+    setResult(null);
+    setMsg(null);
+    sfx.spin();
+    // Animate dice for 1.2s
+    const rollInterval = setInterval(() => {
+      setSoloDice([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]);
+    }, 100);
+    try {
+      const r = await gambleApi.soloRoll(bet);
+      setTimeout(() => {
+        clearInterval(rollInterval);
+        setSoloDice([r.playerRoll, r.houseRoll]);
+        setSoloRolling(false);
+        if (r.won) {
+          sfx.bigWin();
+          haptic([40, 40, 80]);
+          celebrate(`🏆 You won ${r.payout.toLocaleString()} tokens!`, true);
+          setMsg(`🏆 You rolled ${r.playerRoll} vs house ${r.houseRoll} — won ${r.payout.toLocaleString()} tokens!`);
+        } else {
+          sfx.error();
+          setMsg(`You rolled ${r.playerRoll} vs house ${r.houseRoll}. House wins this one.`);
+        }
+        load();
+      }, 1200);
+    } catch (e) {
+      clearInterval(rollInterval);
+      setSoloRolling(false);
+      setMsg(e instanceof ApiError ? `⚠️ ${e.message}` : 'Could not roll.');
+    }
+  };
 
   // Background music toggle.
   const toggleMusic = () => {
@@ -325,6 +367,38 @@ export default function GamblePage() {
           <button className="btn btn-ghost btn-sm" onClick={() => setResult(null)}>Close</button>
         </div>
       )}
+
+      {/* Solo dice — press and play instantly vs the house */}
+      <div className="card" style={{ marginBottom: '1.2rem', borderColor: 'var(--gold)' }}>
+        <h3>🎲 Solo Roll — You vs the House</h3>
+        <p className="form-note">No waiting. Press the dice, roll instantly, win or lose.</p>
+        {(soloDice || soloRolling) && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', margin: '1rem 0' }}>
+            <div style={{ textAlign: 'center' }}>
+              <Dice value={soloDice?.[0] || 1} rolling={soloRolling} />
+              <div className="form-note">You</div>
+            </div>
+            <div style={{ fontSize: '2rem', alignSelf: 'center' }}>VS</div>
+            <div style={{ textAlign: 'center' }}>
+              <Dice value={soloDice?.[1] || 1} rolling={soloRolling} />
+              <div className="form-note">House 🦁</div>
+            </div>
+          </div>
+        )}
+        <form onSubmit={(e) => { e.preventDefault(); soloRoll(); }} style={{ display: 'flex', gap: '0.5rem' }}>
+          <select className="select" value={betAmount} onChange={(e) => setBetAmount(e.target.value)} style={{ flex: 1 }}>
+            <option value="100">100 tokens ($1)</option>
+            <option value="500">500 tokens ($5)</option>
+            <option value="1000">1,000 tokens ($10)</option>
+            <option value="5000">5,000 tokens ($50)</option>
+            <option value="10000">10,000 tokens ($100)</option>
+            <option value="25000">25,000 tokens ($250) 🔥</option>
+          </select>
+          <button className="btn" type="submit" disabled={soloRolling} style={{ fontSize: '1.2rem' }}>
+            {soloRolling ? '🎲 Rolling…' : '🎲 ROLL'}
+          </button>
+        </form>
+      </div>
 
       {/* Create game */}
       <div className="card" style={{ marginBottom: '1.2rem' }}>
