@@ -2,10 +2,19 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { gambleApi, ApiError } from '../api/client';
 import { celebrate } from '../components/Celebration';
 import AmbientDice from '../components/AmbientDice';
+import DiceTableScene from '../components/DiceTableScene';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import Avatar from '../components/Avatar';
+
+// The 4 characters at the dice table
+const TABLE_PLAYERS = [
+  { id: 'street-king', name: 'Street King', img: '/characters/media-generation-rapper-street-king-0-f5b96626-0370-4c7d-8d6f-7ed3159cfbb6.webp', talking: false, celebrating: false },
+  { id: 'queen', name: 'Queen', img: '/characters/media-generation-rapper-queen-0-3b2682fd-d633-4c29-bcb8-f0c31dd471ea.webp', talking: false, celebrating: false },
+  { id: 'luxury-boss', name: 'Luxury Boss', img: '/characters/media-generation-rapper-luxury-boss-0-b07d0949-89b4-4f11-b08b-32d732e210f6.webp', talking: false, celebrating: false },
+  { id: 'diva', name: 'Diva', img: '/characters/media-generation-rapper-diva-0-c7cb8095-2098-4023-9727-805fb5a46aeb.webp', talking: false, celebrating: false },
+];
 
 interface Game {
   id: string; betTokens: number; status: string;
@@ -181,9 +190,17 @@ export default function GamblePage() {
         @keyframes diceShake { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
       `}</style>
 
-      {/* Live ambient dice rolling in the background */}
+      {/* Live 3D dice table with characters */}
       <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
-        <AmbientDice width={800} height={220} />
+        <DiceTableScene
+          players={TABLE_PLAYERS}
+          width={800}
+          height={500}
+          onPlayerClick={(id) => {
+            const p = TABLE_PLAYERS.find((x) => x.id === id);
+            if (p) setMsg(`💬 ${p.name} says: "Good luck at the table!"`);
+          }}
+        />
         <div style={{
           position: 'absolute', top: 12, left: 16,
           display: 'flex', alignItems: 'center',
@@ -192,6 +209,14 @@ export default function GamblePage() {
         }}>
           <span className="live-dot" /> LIVE
         </div>
+      </div>
+
+      {/* Table chat */}
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <h4 style={{ margin: '0 0 0.6rem' }}>💬 Table Talk</h4>
+        <p className="form-note" style={{ fontSize: '0.85rem' }}>
+          Chat with other players while you game. Tap a character to make them talk!
+        </p>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', position: 'relative' }}>

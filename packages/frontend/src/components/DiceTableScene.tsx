@@ -1,0 +1,77 @@
+import { useEffect, useRef } from 'react';
+import { TableEngine, type TableCharacter } from '../engine/TableEngine';
+
+interface DiceTableSceneProps {
+  players: Array<{ id: string; name: string; img: string }>;
+  width?: number;
+  height?: number;
+  onPlayerClick?: (id: string) => void;
+}
+
+/**
+ * DiceTableScene — powered by TableEngine.
+ * Your realistic characters around the dice table, alive and entertaining.
+ */
+export default function DiceTableScene({ players, width = 800, height = 500, onPlayerClick }: DiceTableSceneProps) {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const engineRef = useRef<TableEngine | null>(null);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+
+    const engine = new TableEngine(mount, width, Math.min(height, width * 0.625));
+    engineRef.current = engine;
+
+    if (onPlayerClick) engine.onClick(onPlayerClick);
+
+    // Add all players to the table
+    players.forEach((p, i) => {
+      engine.addCharacter({
+        id: p.id, name: p.name, img: p.img,
+        state: 'idle', seatIndex: i,
+      });
+    });
+
+    // Ambient life — characters randomly talk
+    const lifeInterval = setInterval(() => {
+      if (players.length > 0 && Math.random() > 0.4) {
+        const p = players[Math.floor(Math.random() * players.length)];
+        const phrases = ['💬', '🎲 Let\'s go!', '💰 Big money!', '🔥 I feel lucky'];
+        engine.say(p.id, phrases[Math.floor(Math.random() * phrases.length)]);
+      }
+    }, 7000);
+
+    return () => {
+      clearInterval(lifeInterval);
+      engine.dispose();
+      engineRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width]);
+
+  // Expose engine for parent control
+  useEffect(() => {
+    (mountRef.current as any)?.__engine && ((mountRef.current as any).__engine = engineRef.current);
+  });
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div
+        ref={mountRef}
+        style={{
+          width, height: Math.min(height, width * 0.625),
+          margin: '0 auto', cursor: 'pointer',
+          borderRadius: 20, overflow: 'hidden',
+          background: 'radial-gradient(ellipse at 50% 40%, rgba(201,162,39,0.12), transparent 70%)',
+        }}
+      />
+      <p className="form-note" style={{ marginTop: '0.5rem' }}>
+        👆 Tap a character to make them talk • They're alive, not stuck
+      </p>
+    </div>
+  );
+}
+
+// Re-export for parent components to control the engine
+export type { TableCharacter };
