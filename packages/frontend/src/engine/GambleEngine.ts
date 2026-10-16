@@ -930,10 +930,29 @@ export class GambleEngine {
         char.lookAt(0, 1.2, 0);
         // Character-specific styling to match approved lineup
         const charStyles: Record<string, CharacterOutfit> = {
-          'The Boss': { skin: 0x6b4a35, shirt: 0x1a1a1a, pants: 0x1a1a1a, hat: 'bandana', hatColor: 0xcc2222, chain: true, glasses: 'sunglasses', bracelet: true },
-          'Diva': { skin: 0x5d3d2a, shirt: 0xcc1133, pants: 0xcc1133, chain: true, earrings: true, hairstyle: 'long', hairColor: 0x0a0a0a },
-          'Dread Artist': { skin: 0x6b4a35, shirt: 0xf0f0f0, pants: 0x2a2a2a, chain: true, hairstyle: 'dreads', hairColor: 0x1a1a1a, bracelet: true },
-          'Enforcer': { skin: 0x5d3d2a, shirt: 0x111111, pants: 0x111111, chain: true, hairstyle: 'fade', watch: true },
+          'The Boss': {
+            skin: 0x6b4a35, shirt: 0x111111, pants: 0x1a1a1a, shoes: 0xffffff,
+            hat: 'bandana', hatColor: 0xcc2222,
+            chain: true, glasses: 'sunglasses', bracelet: true, watch: true,
+            hairstyle: 'fade', hairColor: 0x0a0a0a,
+          },
+          'Diva': {
+            skin: 0x5d3d2a, shirt: 0xcc1133, pants: 0xcc1133, shoes: 0xd4af37,
+            chain: true, earrings: true, bracelet: true,
+            hairstyle: 'long', hairColor: 0x0a0a0a,
+          },
+          'Dread Artist': {
+            skin: 0x6b4a35, shirt: 0xf0f0f0, pants: 0x2a2a2a, shoes: 0xffffff,
+            hat: 'beanie', hatColor: 0x111111,
+            chain: true, bracelet: true,
+            hairstyle: 'dreads', hairColor: 0x1a1a1a,
+          },
+          'Enforcer': {
+            skin: 0x5d3d2a, shirt: 0x111111, pants: 0x111111, shoes: 0x111111,
+            hat: 'none',
+            chain: true, glasses: 'shades', watch: true,
+            hairstyle: 'fade', hairColor: 0x0a0a0a,
+          },
         };
         const outfit = charStyles[name] || { skin: 0x6b4a35, shirt: 0x333333, pants: 0x333333 };
         // Store outfit for runtime changes
