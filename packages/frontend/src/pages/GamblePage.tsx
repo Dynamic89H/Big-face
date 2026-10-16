@@ -3,6 +3,7 @@ import { gambleApi, ApiError } from '../api/client';
 import { celebrate } from '../components/Celebration';
 import AmbientDice from '../components/AmbientDice';
 import DiceTableScene from '../components/DiceTableScene';
+import GTATableScene from '../components/GTATableScene';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -190,17 +191,9 @@ export default function GamblePage() {
         @keyframes diceShake { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
       `}</style>
 
-      {/* Live 3D dice table with characters */}
+      {/* GTA cutscene style 3D dice table */}
       <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
-        <DiceTableScene
-          players={TABLE_PLAYERS}
-          width={800}
-          height={500}
-          onPlayerClick={(id) => {
-            const p = TABLE_PLAYERS.find((x) => x.id === id);
-            if (p) setMsg(`💬 ${p.name} says: "Good luck at the table!"`);
-          }}
-        />
+        <GTATableScene width={800} height={500} />
         <div style={{
           position: 'absolute', top: 12, left: 16,
           display: 'flex', alignItems: 'center',
