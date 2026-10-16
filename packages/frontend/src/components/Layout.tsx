@@ -42,6 +42,7 @@ const NAV: { to: string; key: string; icon: string }[] = [
   { to: '/vault', key: 'nav_vault', icon: '💰' },
   { to: '/vision', key: 'nav_vision', icon: '🌟' },
   { to: '/ranks', key: 'nav_ranks', icon: '🎖️' },
+  { to: '/seasons', key: 'nav_seasons', icon: '🗓️' },
   { to: '/settings', key: 'nav_settings', icon: '⚙️' },
   { to: '/factory', key: 'nav_factory', icon: '🏭' },
   { to: '/character-studio', key: 'nav_creator', icon: '🎨' },

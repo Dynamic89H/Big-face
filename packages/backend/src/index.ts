@@ -39,6 +39,7 @@ import vaultRouter from './routes/vault';
 import visionRouter from './routes/vision';
 import ranksRouter from './routes/ranks';
 import pulseRouter from './routes/pulse';
+import seasonsRouter from './routes/seasons';
 import adminRouter from './routes/admin';
 import reportsRouter from './routes/reports';
 import videoRouter from './routes/video';
@@ -92,6 +93,7 @@ app.use('/api/vault', vaultRouter);
 app.use('/api/vision', visionRouter);
 app.use('/api/ranks', ranksRouter);
 app.use('/api/pulse', pulseRouter);
+app.use('/api/seasons', seasonsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api', videoRouter); // /rooms/:id/video/start, /video/sessions/:id/end
