@@ -8,6 +8,7 @@ import DailyRewardBanner from './DailyRewardBanner';
 import WinFeedTicker from './WinFeedTicker';
 import SpinWheel from './SpinWheel';
 import WelcomeFlow from './WelcomeFlow';
+import GiftRain from './GiftRain';
 import Avatar, { facePhotoOf } from './Avatar';
 import { GIFT_EMOJI } from './GiftDialog';
 import WhatIsBigFace from './WhatIsBigFace';
@@ -229,6 +230,7 @@ export default function Layout() {
       {/* Engagement engine — every page, every position */}
       <WinFeedTicker />
       <SpinWheel />
+      <GiftRain />
     </div>
   );
 }

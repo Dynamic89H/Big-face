@@ -20,6 +20,14 @@ export const GIFT_CATALOG = [
   { key: 'clap', label: 'Applause', tokenCost: 30 },
   { key: 'star', label: 'Star', tokenCost: 40 },
   { key: 'crown', label: 'Crown', tokenCost: 50 },
+  // Love set (20-80)
+  { key: 'cupid', label: 'Cupid', tokenCost: 20 },
+  { key: 'ring', label: 'Ring', tokenCost: 60 },
+  { key: 'tulip', label: 'Tulip', tokenCost: 35 },
+  // Party set (30-120)
+  { key: 'party', label: 'Party', tokenCost: 30 },
+  { key: 'confetti', label: 'Confetti', tokenCost: 45 },
+  { key: 'disco', label: 'Disco Ball', tokenCost: 120 },
   // Mid (75-250)
   { key: 'diamond', label: 'Diamond', tokenCost: 75 },
   { key: 'throne', label: 'Throne', tokenCost: 100 },
@@ -27,9 +35,14 @@ export const GIFT_CATALOG = [
   { key: 'rocket', label: 'Rocket', tokenCost: 150 },
   { key: 'moneygun', label: 'Money Gun', tokenCost: 200 },
   { key: 'starshower', label: 'Star Shower', tokenCost: 250 },
-  // Premium (500-1000)
+  // Wild set (150-300)
+  { key: 'panther', label: 'Panther', tokenCost: 150 },
+  { key: 'eagle', label: 'Eagle', tokenCost: 180 },
+  { key: 'tiger', label: 'Tiger', tokenCost: 300 },
+  // Premium (400-1000)
   { key: 'champagne', label: 'Champagne', tokenCost: 400 },
   { key: 'sports_car', label: 'Sports Car', tokenCost: 500 },
+  { key: 'watch', label: 'Luxury Watch', tokenCost: 600 },
   { key: 'mansion', label: 'Mansion', tokenCost: 750 },
   { key: 'legend', label: 'Legend', tokenCost: 1000 },
   // Whale (2500+)
@@ -130,6 +143,17 @@ router.post(
 
     const shaped = toGift(giftRow, senderRes.rows[0], receiverRes.rows[0]);
     emitToUser(body.receiverId, 'gift:received', { gift: shaped });
+
+    // GIFT RAIN: whale gifts (1000+) rain across everyone's screen
+    if (gift.tokenCost >= 1000) {
+      const { emitToAll } = await import('../sockets');
+      emitToAll('gift:rain', {
+        giftKey: gift.key,
+        giftLabel: gift.label,
+        senderName: senderRes.rows[0].display_name || senderRes.rows[0].username,
+        receiverName: receiverRes.rows[0].display_name || receiverRes.rows[0].username,
+      });
+    }
 
     // Dweezy's 20% cut on every gift — recorded, never lost.
     const platformCut = gift.tokenCost - receiverCut;
