@@ -151,4 +151,25 @@ router.post(
   })
 );
 
+const deleteAccountSchema = z.object({
+  password: z.string().min(1),
+  confirm: z.literal('DELETE'),
+});
+
+router.delete(
+  '/account',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const body = deleteAccountSchema.parse(req.body);
+    const userId = req.user!.id;
+    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    if (!rows.length) throw new HttpError(404, 'User not found');
+    const ok = await bcrypt.compare(body.password, rows[0].password_hash);
+    if (!ok) throw new HttpError(401, 'Password is incorrect');
+    // ON DELETE CASCADE wipes all user data across tables
+    await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+    res.json({ ok: true });
+  })
+);
+
 export default router;

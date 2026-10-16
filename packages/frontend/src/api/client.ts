@@ -95,7 +95,8 @@ const post = <T>(path: string, body?: unknown): Promise<T> =>
   request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) });
 const patch = <T>(path: string, body: unknown): Promise<T> =>
   request<T>(path, { method: 'PATCH', body: JSON.stringify(body) });
-const del = <T>(path: string): Promise<T> => request<T>(path, { method: 'DELETE' });
+const del = <T>(path: string, body?: unknown): Promise<T> =>
+  request<T>(path, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined });
 
 // --- Auth ---
 export interface SignupInput {
@@ -114,6 +115,8 @@ export const authApi = {
   me: () => get<{ user: User }>('/auth/me'),
   changePassword: (currentPassword: string, newPassword: string) =>
     post<{ ok: boolean }>('/auth/change-password', { currentPassword, newPassword }),
+  deleteAccount: (password: string) =>
+    del<{ ok: boolean }>('/auth/account', { password, confirm: 'DELETE' }),
 };
 
 // --- Users ---

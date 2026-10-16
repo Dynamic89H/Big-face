@@ -85,6 +85,34 @@ export default function SettingsPage() {
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pwBusy, setPwBusy] = useState(false);
   const [showPw, setShowPw] = useState([false, false, false]);
+  const [delStep, setDelStep] = useState<0 | 1 | 2>(0);
+  const [delPw, setDelPw] = useState('');
+  const [delConfirm, setDelConfirm] = useState('');
+  const [delMsg, setDelMsg] = useState<string | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
+
+  const deleteAccount = async () => {
+    setDelMsg(null);
+    if (delConfirm !== 'DELETE') {
+      setDelMsg('Type DELETE in the box to confirm.');
+      return;
+    }
+    if (!delPw) {
+      setDelMsg('Enter your password to confirm.');
+      return;
+    }
+    setDelBusy(true);
+    try {
+      const { authApi } = await import('../api/client');
+      await authApi.deleteAccount(delPw);
+      logout();
+      navigate('/signup');
+    } catch (e: any) {
+      setDelMsg(e.message);
+    } finally {
+      setDelBusy(false);
+    }
+  };
 
   const changePassword = async () => {
     setPwMsg(null);
@@ -306,6 +334,72 @@ export default function SettingsPage() {
           >
             🚪 Log Out
           </button>
+        </div>
+
+        {/* Danger zone — delete account */}
+        <div style={{
+          marginTop: '1.5rem', padding: '1rem',
+          border: '1px solid #cc0000', borderRadius: 'var(--radius-sm)',
+          background: 'rgba(204,0,0,0.06)',
+        }}>
+          <h4 style={{ margin: '0 0 0.5rem', color: '#ff8080' }}>⚠️ Danger Zone</h4>
+          {delStep === 0 && (
+            <>
+              <p className="form-note" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                Delete your account, name, password and all data. This cannot be undone.
+              </p>
+              <button
+                className="btn btn-block"
+                style={{ background: 'transparent', borderColor: '#cc0000', color: '#ff8080' }}
+                onClick={() => setDelStep(1)}
+              >
+                🗑️ Delete My Account
+              </button>
+            </>
+          )}
+          {delStep === 1 && (
+            <>
+              <p className="form-note" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                This will <strong>permanently</strong> delete your name, password, and everything
+                tied to this account. Type <strong>DELETE</strong> and enter your password.
+              </p>
+              {delMsg && (
+                <div style={{ color: '#ff8080', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                  {delMsg}
+                </div>
+              )}
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder='Type DELETE to confirm'
+                  value={delConfirm}
+                  onChange={(e) => setDelConfirm(e.target.value)}
+                  autoComplete="off"
+                />
+                <PwField index={0} placeholder="Your password" value={delPw}
+                  onChange={setDelPw} autoComplete="current-password"
+                  showPw={showPw} setShowPw={setShowPw} />
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ flex: 1 }}
+                    onClick={() => { setDelStep(0); setDelMsg(null); setDelPw(''); setDelConfirm(''); }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn"
+                    style={{ flex: 1, background: '#cc0000', borderColor: '#cc0000' }}
+                    onClick={deleteAccount}
+                    disabled={delBusy}
+                  >
+                    {delBusy ? 'Deleting...' : 'Delete Forever'}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
