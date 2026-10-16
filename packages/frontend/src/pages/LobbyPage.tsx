@@ -44,22 +44,38 @@ export default function LobbyPage() {
 
   return (
     <div className="page">
-      {/* Hero */}
+      {/* Hero — premium Big Face entrance */}
       <div style={{
-        textAlign: 'center', padding: '2.5rem 1rem', marginBottom: '1.5rem',
-        background: 'linear-gradient(160deg, rgba(201,162,39,0.12), rgba(0,240,255,0.06))',
-        borderRadius: 24, border: '1px solid rgba(201,162,39,0.25)',
+        textAlign: 'center', padding: '3rem 1.5rem', marginBottom: '2rem',
+        background: 'linear-gradient(160deg, rgba(201,162,39,0.15), rgba(0,240,255,0.08), rgba(139,92,246,0.06))',
+        borderRadius: 28, border: '1px solid rgba(201,162,39,0.3)',
+        boxShadow: '0 0 60px rgba(201,162,39,0.1), 0 0 100px rgba(0,240,255,0.05), inset 0 1px 0 rgba(255,255,255,0.1)',
+        position: 'relative', overflow: 'hidden',
       }}>
-        <h1 style={{
-          fontSize: '2.2rem', margin: 0,
-          background: 'linear-gradient(135deg, #ffd700, #ffaa00)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        {/* Animated shine sweep */}
+        <div style={{
+          position: 'absolute', top: 0, left: '-100%', width: '60%', height: '100%',
+          background: 'linear-gradient(105deg, transparent, rgba(255,255,255,0.08), transparent)',
+          transform: 'skewX(-20deg)', animation: 'heroShine 4s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
+        <style>{`@keyframes heroShine { 0% { left: -100%; } 50%, 100% { left: 150%; } }`}</style>
+        <h1 className="shine-text" style={{
+          fontSize: '2.8rem', margin: 0, fontWeight: 900, letterSpacing: '-0.02em',
         }}>
           🏛️ The Lobby
         </h1>
-        <p className="form-note" style={{ fontSize: '1rem', margin: '0.5rem 0 0' }}>
+        <p style={{ fontSize: '1.05rem', margin: '0.75rem 0 0', color: 'var(--text)', opacity: 0.85 }}>
           Where Big Face hangs out. Pick a room or start your own.
         </p>
+        <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+          <button className="btn glow-gold" onClick={() => navigate('/gamble')}>
+            🎲 Gamble Face
+          </button>
+          <button className="btn btn-ghost" onClick={() => navigate('/battles')}>
+            ⚔️ Battles
+          </button>
+        </div>
       </div>
 
       {/* Who's here — real characters */}
