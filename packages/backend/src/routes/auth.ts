@@ -98,6 +98,25 @@ router.post(
     // Welcome bonus: 50,000 starter tokens with fanfare
     const { addTokens } = await import('../services/tokens');
     await addTokens(user.id, 50000, 'bonus', { reference: 'welcome_bonus' });
+
+    // Notify the owner (Dweezy) that someone new joined
+    try {
+      const { pushToUser } = await import('../services/push');
+      // Find the owner: earliest-created user (the first account = Big Face owner)
+      const { rows: owners } = await pool.query(
+        `SELECT id FROM users ORDER BY created_at ASC LIMIT 1`
+      );
+      if (owners.length && owners[0].id !== user.id) {
+        await pushToUser(owners[0].id, {
+          title: '🎉 New player joined Big Face!',
+          body: `${user.displayName} (@${user.username}) just signed up.`,
+          url: '/friends',
+        }).catch(() => undefined);
+      }
+    } catch {
+      /* owner notification is best-effort */
+    }
+
     res.status(201).json({ token: signToken(user.id), user: toUser(user) });
   })
 );
