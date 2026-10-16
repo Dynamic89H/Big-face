@@ -95,8 +95,7 @@ export interface AICharacter {
   lines: Record<string, string[]>;
 }
 
-export const CHARACTERS: Record<string, AICharacter> = {
-  boss: {
+export const CHARACTERS: Record<string, AICharacter> = {  boss: {
     key: 'boss', name: 'The Boss', aggression: 0.8,
     lines: {
       win: ["Too easy.", "That's why I'm the Boss.", "Sit down."],
@@ -137,6 +136,80 @@ export const CHARACTERS: Record<string, AICharacter> = {
 function pickLine(char: AICharacter, event: string): string {
   const lines = char.lines[event] || char.lines.taunt;
   return lines[Math.floor(Math.random() * lines.length)];
+}
+
+// ============ MOB STORY CHAPTERS ============
+
+export interface StoryChapter {
+  id: number;
+  title: string;
+  subtitle: string;
+  /** Player level required to unlock */
+  minLevel: number;
+  /** Character keys available as opponents in this chapter */
+  opponents: string[];
+  /** Suggested buy-ins */
+  buyIns: number[];
+  intro: string;
+  bossFight?: string; // character key for the chapter boss
+}
+
+export const STORY_CHAPTERS: StoryChapter[] = [
+  {
+    id: 1,
+    title: 'The Corner',
+    subtitle: 'Everybody starts somewhere',
+    minLevel: 1,
+    opponents: ['dread'],
+    buyIns: [500, 1000],
+    intro: 'Back-alley dice under a flickering streetlight. Dread Artist runs this corner — beat him and word gets around.',
+  },
+  {
+    id: 2,
+    title: 'The Club',
+    subtitle: 'You got noticed',
+    minLevel: 6,
+    opponents: ['dread', 'diva'],
+    buyIns: [1000, 2500],
+    intro: 'Someone saw you cleaning up on the corner. Now you\'re inside — velvet ropes, loud music, and Diva waiting at the table.',
+  },
+  {
+    id: 3,
+    title: 'The Casino',
+    subtitle: 'Serious people, serious money',
+    minLevel: 11,
+    opponents: ['diva', 'dread', 'enforcer'],
+    buyIns: [2500, 5000],
+    intro: 'The real tables. No more street rules — the Enforcer collects debts here, and he doesn\'t like losing.',
+  },
+  {
+    id: 4,
+    title: 'The Penthouse',
+    subtitle: 'The big leagues',
+    minLevel: 16,
+    opponents: ['boss', 'diva', 'dread', 'enforcer'],
+    buyIns: [5000, 10000],
+    intro: 'Top floor. City lights below, sharks at the table. All four of them. Survive this and there\'s only one name left.',
+  },
+  {
+    id: 5,
+    title: "The Boss's Table",
+    subtitle: 'Dethrone the king',
+    minLevel: 21,
+    opponents: ['boss'],
+    buyIns: [10000, 25000],
+    intro: 'Heads up. Just you and the Boss. He built this table. Take everything he has and the city is yours.',
+    bossFight: 'boss',
+  },
+];
+
+/** Get the highest chapter unlocked for a player level */
+export function chapterForLevel(level: number): StoryChapter {
+  let current = STORY_CHAPTERS[0];
+  for (const ch of STORY_CHAPTERS) {
+    if (level >= ch.minLevel) current = ch;
+  }
+  return current;
 }
 
 // ============ ROUTES ============
@@ -392,6 +465,26 @@ router.get(
         status: match.status, playerAbility: match.player_ability,
         characters: match.opponents.map((o: string) => ({ key: o, name: CHARACTERS[o].name })),
       },
+    });
+  })
+);
+
+/** Get story chapters with unlock status for the player */
+router.get(
+  '/story',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { rows: [user] } = await pool.query(
+      'SELECT level FROM users WHERE id = $1', [req.user!.id]
+    );
+    const level = Number(user?.level || 1);
+    res.json({
+      chapters: STORY_CHAPTERS.map((ch) => ({
+        ...ch,
+        unlocked: level >= ch.minLevel,
+        current: chapterForLevel(level).id === ch.id,
+      })),
+      playerLevel: level,
     });
   })
 );

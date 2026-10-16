@@ -1,0 +1,239 @@
+/**
+ * Cee-lo Match Mode — 3-dice street dice vs AI characters.
+ * Setup → bet → roll → settle → next round.
+ */
+import { useState } from 'react';
+import { ceeloApi } from '../api/client';
+
+const CHARACTER_META: Record<string, { name: string; emoji: string; ability: string; abilityDesc: string }> = {
+  boss: { name: 'The Boss', emoji: '👑', ability: 'Weight', abilityDesc: 'Double the pot once per match. Others match or fold.' },
+  diva: { name: 'Diva', emoji: '💎', ability: 'Golden Touch', abilityDesc: 'Re-roll one dead roll for free, once per match.' },
+  dread: { name: 'Dread Artist', emoji: '🎨', ability: 'Read', abilityDesc: 'See opponent tendencies before betting, once per match.' },
+  enforcer: { name: 'Enforcer', emoji: '💪', ability: 'All In', abilityDesc: 'Bet everything on one roll. Hit it big or go home.' },
+};
+
+const DICE_EMOJI = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+interface RoundResult {
+  round: number;
+  banker: string;
+  newBanker: string;
+  bets: Record<string, number>;
+  rolls: Record<string, [number, number, number]>;
+  hands: Record<string, string>;
+  results: Record<string, number>;
+  stacks: Record<string, number>;
+  pot: number;
+  heater: number;
+  heat: number;
+  playerWon: boolean;
+  matchOver: boolean;
+  talk: { who: string; line: string }[];
+}
+
+export default function CeeloMatch({ onExit }: { onExit: () => void }) {
+  const [phase, setPhase] = useState<'setup' | 'playing'>('setup');
+  const [opponents, setOpponents] = useState<string[]>(['boss']);
+  const [buyIn, setBuyIn] = useState(1000);
+  const [ability, setAbility] = useState<string>('');
+  const [matchId, setMatchId] = useState('');
+  const [stacks, setStacks] = useState<Record<string, number>>({});
+  const [banker, setBanker] = useState('player');
+  const [roundNum, setRoundNum] = useState(1);
+  const [heater, setHeater] = useState(0);
+  const [bet, setBet] = useState(100);
+  const [lastRound, setLastRound] = useState<RoundResult | null>(null);
+  const [rolling, setRolling] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const toggleOpponent = (key: string) => {
+    setOpponents((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : prev.length < 3 ? [...prev, key] : prev
+    );
+  };
+
+  const startMatch = async () => {
+    try {
+      const res = await ceeloApi.startMatch(opponents, buyIn, ability || undefined);
+      setMatchId(res.match.id);
+      setStacks(res.match.stacks);
+      setBanker(res.match.banker);
+      setRoundNum(1);
+      setHeater(0);
+      setLastRound(null);
+      setPhase('playing');
+      setMsg(res.message);
+    } catch (e: any) {
+      setMsg(e.message || 'Could not start match');
+    }
+  };
+
+  const playRound = async () => {
+    setRolling(true);
+    setMsg(null);
+    try {
+      const res: RoundResult = await ceeloApi.playRound(matchId, bet);
+      setLastRound(res);
+      setStacks(res.stacks);
+      setBanker(res.newBanker);
+      setRoundNum(res.round + 1);
+      setHeater(res.heater);
+      if (res.matchOver) {
+        setMsg(res.stacks.player > 0 ? 'Match over — you cashed out!' : 'Match over — you got cleaned out.');
+      }
+    } catch (e: any) {
+      setMsg(e.message || 'Round failed');
+    }
+    setRolling(false);
+  };
+
+  const nameOf = (key: string) => key === 'player' ? 'You' : CHARACTER_META[key]?.name || key;
+  const emojiOf = (key: string) => key === 'player' ? '😎' : CHARACTER_META[key]?.emoji || '🎲';
+
+  if (phase === 'setup') {
+    return (
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1rem' }}>
+        <h2 style={{ marginTop: 0 }}>🎲 Cee-lo Match</h2>
+        <p className="form-note">3-dice street dice. Banker sets the bar, everyone rolls to beat it. Win with 4-5-6 or trips to steal the banker seat.</p>
+
+        <h3>Pick your opponents (1-3)</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+          {Object.entries(CHARACTER_META).map(([key, meta]) => (
+            <button
+              key={key}
+              onClick={() => toggleOpponent(key)}
+              className={`btn ${opponents.includes(key) ? '' : 'btn-ghost'}`}
+              style={{ padding: '0.8rem', textAlign: 'left' }}
+            >
+              <div style={{ fontSize: '1.5rem' }}>{meta.emoji}</div>
+              <div style={{ fontWeight: 700 }}>{meta.name}</div>
+              <div className="form-note" style={{ fontSize: '0.75rem' }}>{meta.ability}: {meta.abilityDesc}</div>
+            </button>
+          ))}
+        </div>
+
+        <h3>Buy-in (tokens)</h3>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+          {[500, 1000, 2500, 5000].map((amt) => (
+            <button key={amt} onClick={() => setBuyIn(amt)}
+              className={`btn btn-sm ${buyIn === amt ? '' : 'btn-ghost'}`}>
+              {amt.toLocaleString()}
+            </button>
+          ))}
+        </div>
+
+        <h3>Your corner-man ability (pick one to borrow)</h3>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          <button onClick={() => setAbility('')}
+            className={`btn btn-sm ${!ability ? '' : 'btn-ghost'}`}>None</button>
+          {Object.entries(CHARACTER_META).map(([key, meta]) => (
+            <button key={key} onClick={() => setAbility(key)}
+              className={`btn btn-sm ${ability === key ? '' : 'btn-ghost'}`}
+              title={meta.abilityDesc}>
+              {meta.emoji} {meta.ability}
+            </button>
+          ))}
+        </div>
+
+        <button onClick={startMatch} className="btn" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}>
+          🃏 Start Match — {buyIn.toLocaleString()} tokens
+        </button>
+        {msg && <p className="form-note" style={{ marginTop: '0.5rem' }}>{msg}</p>}
+      </div>
+    );
+  }
+
+  const allPlayers = ['player', ...opponents];
+
+  return (
+    <div className="card" style={{ padding: '1.5rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h2 style={{ margin: 0 }}>🎲 Cee-lo — Round {roundNum}</h2>
+        <button onClick={onExit} className="btn btn-sm btn-ghost">Exit</button>
+      </div>
+
+      {heater > 1 && (
+        <div style={{
+          background: 'linear-gradient(90deg, #ff6b00, #ffaa00)', color: '#000',
+          padding: '0.5rem 1rem', borderRadius: 8, fontWeight: 800,
+          marginBottom: '1rem', textAlign: 'center',
+        }}>
+          🔥 HEATER x{heater} — +{5 * (heater - 1)}% on wins!
+        </div>
+      )}
+
+      {/* Players at the table */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {allPlayers.map((p) => (
+          <div key={p} className="card" style={{
+            flex: 1, minWidth: 100, padding: '0.6rem', textAlign: 'center',
+            border: banker === p ? '2px solid var(--gold)' : undefined,
+            opacity: stacks[p] <= 0 ? 0.4 : 1,
+          }}>
+            <div style={{ fontSize: '1.5rem' }}>{emojiOf(p)}</div>
+            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{nameOf(p)}</div>
+            {banker === p && <div style={{ color: 'var(--gold)', fontSize: '0.75rem', fontWeight: 800 }}>🃏 BANKER</div>}
+            <div className="form-note">{(stacks[p] || 0).toLocaleString()} tokens</div>
+            {stacks[p] <= 0 && <div style={{ color: '#ff8080', fontSize: '0.75rem' }}>OUT</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Last round results */}
+      {lastRound && (
+        <div style={{ marginBottom: '1rem' }}>
+          {allPlayers.map((p) => {
+            const dice = lastRound.rolls[p];
+            const hand = lastRound.hands[p];
+            const outcome = lastRound.results[p];
+            if (!dice) return null;
+            return (
+              <div key={p} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '0.4rem 0', borderBottom: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                <span>{emojiOf(p)} {nameOf(p)}</span>
+                <span style={{ fontSize: '1.3rem' }}>
+                  {dice.map((d) => DICE_EMOJI[d - 1]).join(' ')}
+                </span>
+                <span style={{ fontWeight: 700, color: outcome === 1 ? 'var(--green)' : outcome === -1 ? '#ff8080' : undefined }}>
+                  {hand} {outcome === 1 ? '✅' : outcome === -1 ? '❌' : '➖'}
+                </span>
+              </div>
+            );
+          })}
+          {lastRound.heat > 0 && (
+            <div style={{ color: '#ffaa00', fontSize: '0.85rem', marginTop: '0.3rem' }}>
+              🌡️ {lastRound.heat} dead roll{lastRound.heat > 1 ? 's' : ''} this round — heat rising!
+            </div>
+          )}
+          {/* Trash talk */}
+          {lastRound.talk.map((t, i) => (
+            <div key={i} style={{
+              background: 'rgba(255,255,255,0.05)', borderRadius: 8,
+              padding: '0.4rem 0.8rem', marginTop: '0.3rem', fontSize: '0.9rem',
+            }}>
+              <strong>{t.who}:</strong> <em>"{t.line}"</em>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Betting */}
+      {!lastRound?.matchOver && stacks.player > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <input
+            type="number" value={bet} min={10} max={stacks.player}
+            onChange={(e) => setBet(Math.max(10, parseInt(e.target.value) || 10))}
+            style={{ flex: 1, padding: '0.8rem', borderRadius: 8, border: '1px solid var(--gold)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '1rem' }}
+          />
+          <button onClick={playRound} disabled={rolling} className="btn" style={{ padding: '0.8rem 1.5rem' }}>
+            {rolling ? '🎲 Rolling...' : '🎲 Roll'}
+          </button>
+        </div>
+      )}
+
+      {msg && <p className="form-note" style={{ marginTop: '0.5rem', fontWeight: 700 }}>{msg}</p>}
+    </div>
+  );
+}

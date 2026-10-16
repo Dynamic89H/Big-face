@@ -269,6 +269,16 @@ export const gambleApi = {
   cancel: (id: string) => post<{ ok: boolean }>(`/gamble/${id}/cancel`, {}),
 };
 
+// --- Cee-lo Match Mode ---
+export const ceeloApi = {
+  startMatch: (opponents: string[], buyIn: number, playerAbility?: string) =>
+    post<any>('/ceelo/match', { opponents, buyIn, playerAbility }),
+  playRound: (matchId: string, bet: number) =>
+    post<any>('/ceelo/round', { matchId, bet }),
+  getMatch: (id: string) => get<any>(`/ceelo/match/${id}`),
+  rivalries: () => get<any>('/ceelo/rivalries'),
+};
+
 // --- Push Notifications ---
 export const pushApi = {
   vapidKey: () => get<{ publicKey: string }>('/push/vapid-key'),
