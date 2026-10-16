@@ -401,17 +401,71 @@ export default function GamblePage() {
         ))}
       </div>
 
-      {/* History */}
+      {/* History — win/loss scorecard */}
       {history.length > 0 && (
         <>
-          <h2>📜 Your History</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {history.slice(0, 10).map((h) => (
-              <div key={h.id} className="card" style={{ padding: '0.6rem', display: 'flex', justifyContent: 'space-between' }}>
-                <span>{h.won ? '🏆 Won' : '😞 Lost'} — {DICE_FACES[h.hostRoll]} vs {DICE_FACES[h.opponentRoll]}</span>
-                <span className="form-note">{h.potTokens.toLocaleString()} pot</span>
+          <h2>📜 Your Scorecard</h2>
+          {(() => {
+            const won = history.filter((h) => h.won);
+            const lost = history.filter((h) => !h.won);
+            // Winner takes pot minus 10% house cut; loser loses their bet
+            const totalWon = won.reduce((s, h) => s + Math.floor(h.potTokens * 0.9), 0);
+            const totalLost = lost.reduce((s, h) => s + h.betTokens, 0);
+            const net = totalWon - totalLost;
+            return (
+              <div className="card" style={{
+                padding: '1rem', marginBottom: '1rem', display: 'flex',
+                justifyContent: 'space-around', textAlign: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--green)' }}>
+                    +{totalWon.toLocaleString()}
+                  </div>
+                  <div className="form-note">Won ({won.length})</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ff8080' }}>
+                    −{totalLost.toLocaleString()}
+                  </div>
+                  <div className="form-note">Lost ({lost.length})</div>
+                </div>
+                <div>
+                  <div style={{
+                    fontSize: '1.4rem', fontWeight: 800,
+                    color: net >= 0 ? 'var(--gold)' : '#ff8080',
+                  }}>
+                    {net >= 0 ? '+' : '−'}{Math.abs(net).toLocaleString()}
+                  </div>
+                  <div className="form-note">Net</div>
+                </div>
               </div>
-            ))}
+            );
+          })()}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {history.slice(0, 10).map((h) => {
+              const amount = h.won ? Math.floor(h.potTokens * 0.9) : h.betTokens;
+              return (
+                <div key={h.id} className="card" style={{
+                  padding: '0.6rem 0.8rem', display: 'flex',
+                  justifyContent: 'space-between', alignItems: 'center',
+                  borderLeft: `3px solid ${h.won ? 'var(--green)' : '#cc0000'}`,
+                }}>
+                  <span>
+                    {h.won ? '🏆' : '😞'}{' '}
+                    {DICE_FACES[h.hostRoll]} vs {DICE_FACES[h.opponentRoll]}
+                    <span className="form-note" style={{ marginLeft: '0.5rem' }}>
+                      {new Date(h.finishedAt).toLocaleDateString()}
+                    </span>
+                  </span>
+                  <span style={{
+                    fontWeight: 700,
+                    color: h.won ? 'var(--green)' : '#ff8080',
+                  }}>
+                    {h.won ? '+' : '−'}{amount.toLocaleString()}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </>
       )}
