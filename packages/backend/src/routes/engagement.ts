@@ -92,11 +92,11 @@ router.post(
     await addTokens(req.user!.id, prize, 'daily_spin', { reference: `spin:${streak}` });
     await awardXp(req.user!.id, 10, 'daily_spin').catch(() => undefined);
 
-    // Publish to win feed
+    // Publish to win feed (non-critical — don't fail the spin if this breaks)
     await pool.query(
       `INSERT INTO win_feed (user_id, kind, amount_tokens, detail) VALUES ($1, 'spin', $2, $3)`,
       [req.user!.id, prize + jackpotWon, jackpotWon > 0 ? `JACKPOT! ${streak} day streak` : `${streak} day streak`]
-    );
+    ).catch(() => undefined);
     // Feed the Vault
     const { contributeToVault } = await import('./vault');
     await contributeToVault(req.user!.id, prize, 'spin').catch(() => undefined);

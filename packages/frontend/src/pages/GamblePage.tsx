@@ -82,7 +82,7 @@ function Dice({ value, rolling }: { value: number; rolling: boolean }) {
 export default function GamblePage() {
   usePageTitle('Gamble Face');
   const { user } = useAuth();
-  const [tab, setTab] = useState<'story' | 'dice' | 'history'>('story');
+  const [tab, setTab] = useState<'story' | 'dice' | 'history'>('dice');
   const [games, setGames] = useState<Game[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

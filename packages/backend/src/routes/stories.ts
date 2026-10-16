@@ -12,6 +12,7 @@ router.get(
   '/',
   requireAuth,
   asyncHandler(async (req, res) => {
+    try {
     // Clean up expired stories
     await pool.query('DELETE FROM stories WHERE expires_at < now()').catch(() => undefined);
 
@@ -49,6 +50,10 @@ router.get(
     }
 
     res.json({ groups: Object.values(grouped) });
+    } catch (e) {
+      // If stories table isn't ready, return empty instead of 500
+      res.json({ groups: [] });
+    }
   })
 );
 
