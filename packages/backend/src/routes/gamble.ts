@@ -209,7 +209,7 @@ router.post(
 
     // Scripted first win: new players always win their first 3 solo rolls
     const { rows: rollCount } = await pool.query(
-      `SELECT COUNT(*)::int AS c FROM wallet_transactions WHERE user_id = $1 AND kind = 'dice_bet_escrow'`,
+      `SELECT COUNT(*)::int AS c FROM token_transactions WHERE user_id = $1 AND kind = 'dice_bet_escrow'`,
       [userId]
     );
     const isNewPlayer = (rollCount[0]?.c || 0) <= 3;
