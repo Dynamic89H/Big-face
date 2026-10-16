@@ -227,4 +227,24 @@ router.post(
   })
 );
 
+// ============ WELCOME BONUS ============
+// One-time 1,000 token bonus for new users
+router.post(
+  '/welcome-bonus',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    // Check if already claimed
+    const { rows } = await pool.query(
+      `SELECT 1 FROM token_transactions WHERE user_id = $1 AND kind = 'bonus' AND reference = 'welcome' LIMIT 1`,
+      [req.user!.id]
+    );
+    if (rows[0]) {
+      res.json({ ok: true, alreadyClaimed: true });
+      return;
+    }
+    await addTokens(req.user!.id, 1000, 'bonus', { reference: 'welcome' });
+    res.json({ ok: true, amount: 1000 });
+  })
+);
+
 export default router;

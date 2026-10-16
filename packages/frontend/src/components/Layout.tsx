@@ -7,6 +7,7 @@ import RedCarpetBanner from './RedCarpetBanner';
 import DailyRewardBanner from './DailyRewardBanner';
 import WinFeedTicker from './WinFeedTicker';
 import SpinWheel from './SpinWheel';
+import WelcomeFlow from './WelcomeFlow';
 import Avatar, { facePhotoOf } from './Avatar';
 import { GIFT_EMOJI } from './GiftDialog';
 import WhatIsBigFace from './WhatIsBigFace';
@@ -60,6 +61,13 @@ export default function Layout() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showExplainer, setShowExplainer] = useState(false);
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try {
+      return !localStorage.getItem('bigface.welcomed');
+    } catch {
+      return false;
+    }
+  });
   const { supported, permission, subscribed, subscribe } = usePushNotifications();
 
   // Show "What is Big Face" explainer once for new users.
@@ -139,6 +147,16 @@ export default function Layout() {
       style={{ '--accent': user.profileColor || '#0066FF' } as CSSProperties}
     >
       {showExplainer && <WhatIsBigFace onClose={closeExplainer} />}
+      {showWelcome && (
+        <WelcomeFlow
+          onDone={() => {
+            try {
+              localStorage.setItem('bigface.welcomed', '1');
+            } catch {}
+            setShowWelcome(false);
+          }}
+        />
+      )}
       {showNotifPrompt && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)',
