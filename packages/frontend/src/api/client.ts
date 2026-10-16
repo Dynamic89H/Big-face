@@ -112,6 +112,8 @@ export const authApi = {
   login: (identifier: string, password: string) =>
     post<{ token: string; user: User; dailyReward: { streak: number; xp: number } | null }>('/auth/login', { identifier, password }),
   me: () => get<{ user: User }>('/auth/me'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    post<{ ok: boolean }>('/auth/change-password', { currentPassword, newPassword }),
 };
 
 // --- Users ---

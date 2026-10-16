@@ -130,4 +130,25 @@ router.get(
   })
 );
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6).max(128),
+});
+
+router.post(
+  '/change-password',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const body = changePasswordSchema.parse(req.body);
+    const userId = req.user!.id;
+    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    if (!rows.length) throw new HttpError(404, 'User not found');
+    const ok = await bcrypt.compare(body.currentPassword, rows[0].password_hash);
+    if (!ok) throw new HttpError(401, 'Current password is incorrect');
+    const newHash = await bcrypt.hash(body.newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, userId]);
+    res.json({ ok: true });
+  })
+);
+
 export default router;

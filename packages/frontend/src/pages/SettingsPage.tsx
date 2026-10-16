@@ -43,6 +43,38 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [saved, setSaved] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pwBusy, setPwBusy] = useState(false);
+
+  const changePassword = async () => {
+    setPwMsg(null);
+    if (!pwCurrent || !pwNew || !pwConfirm) {
+      setPwMsg({ ok: false, text: 'Fill in all three fields.' });
+      return;
+    }
+    if (pwNew.length < 6) {
+      setPwMsg({ ok: false, text: 'New password must be at least 6 characters.' });
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwMsg({ ok: false, text: "New passwords don't match." });
+      return;
+    }
+    setPwBusy(true);
+    try {
+      const { authApi } = await import('../api/client');
+      await authApi.changePassword(pwCurrent, pwNew);
+      setPwMsg({ ok: true, text: '✅ Password changed!' });
+      setPwCurrent(''); setPwNew(''); setPwConfirm('');
+    } catch (e: any) {
+      setPwMsg({ ok: false, text: e.message });
+    } finally {
+      setPwBusy(false);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -194,6 +226,48 @@ export default function SettingsPage() {
         <p className="form-note" style={{ marginBottom: '1rem' }}>
           Logged in as <strong>{user?.displayName || user?.username}</strong>
         </p>
+
+        {/* Change password */}
+        <h4 style={{ margin: '0 0 0.75rem' }}>🔑 Change Password</h4>
+        {pwMsg && (
+          <div className="card" style={{
+            marginBottom: '0.75rem', padding: '0.75rem', textAlign: 'center',
+            borderColor: pwMsg.ok ? 'var(--gold)' : '#cc0000',
+            background: pwMsg.ok ? 'rgba(201,162,39,0.1)' : 'rgba(204,0,0,0.1)',
+          }}>
+            {pwMsg.text}
+          </div>
+        )}
+        <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1rem' }}>
+          <input
+            type="password"
+            className="input"
+            placeholder="Current password"
+            value={pwCurrent}
+            onChange={(e) => setPwCurrent(e.target.value)}
+            autoComplete="current-password"
+          />
+          <input
+            type="password"
+            className="input"
+            placeholder="New password (min 6 characters)"
+            value={pwNew}
+            onChange={(e) => setPwNew(e.target.value)}
+            autoComplete="new-password"
+          />
+          <input
+            type="password"
+            className="input"
+            placeholder="Confirm new password"
+            value={pwConfirm}
+            onChange={(e) => setPwConfirm(e.target.value)}
+            autoComplete="new-password"
+          />
+          <button className="btn btn-block" onClick={changePassword} disabled={pwBusy}>
+            {pwBusy ? 'Changing...' : 'Change Password'}
+          </button>
+        </div>
+
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           <button className="btn btn-ghost btn-block" onClick={() => navigate('/profile/edit')}>
             ✏️ Edit Profile
