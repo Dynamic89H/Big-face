@@ -57,6 +57,8 @@ export default function SpinWheel() {
           if (data.jackpot > 0) {
             sfx.jackpot();
             haptic([50, 50, 50, 50, 200]);
+            document.body.classList.add('fx-shake', 'fx-gold-flash');
+            setTimeout(() => document.body.classList.remove('fx-shake', 'fx-gold-flash'), 900);
           } else if (data.prize >= 1000) {
             sfx.bigWin();
             haptic([30, 30, 60]);

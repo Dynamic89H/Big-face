@@ -103,6 +103,8 @@ export default function GamblePage() {
         engineRef.current?.celebrate();
         sfx.bigWin();
         haptic([40, 40, 80]);
+        document.body.classList.add('fx-shake');
+        setTimeout(() => document.body.classList.remove('fx-shake'), 600);
       } else {
         engineRef.current?.setMood('lose');
         setTimeout(() => engineRef.current?.setMood('idle'), 4000);
