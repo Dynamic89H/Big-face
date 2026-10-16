@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type CharacterState = 'idle' | 'talking' | 'celebrating' | 'thinking' | 'leaving' | 'joining';
+export type CharacterState = 'idle' | 'talking' | 'celebrating' | 'thinking' | 'leaving' | 'joining' | 'shocked' | 'hyped';
 
 export interface TableCharacter {
   id: string;
@@ -8,6 +8,7 @@ export interface TableCharacter {
   img: string;
   state: CharacterState;
   seatIndex: number;
+  personality?: 'hype' | 'chill' | 'trash-talker' | 'diva' | 'boss';
 }
 
 interface EngineCharacter {
@@ -238,6 +239,68 @@ export class TableEngine {
     return results;
   }
 
+  // Story mode — live entertainment sequences
+  playStory(scene: 'intro' | 'betting' | 'rolling' | 'win' | 'lose', winnerId?: string) {
+    const chars = Array.from(this.characters.values());
+
+    if (scene === 'intro') {
+      // Everyone hypes up
+      chars.forEach((char, i) => {
+        setTimeout(() => {
+          this.setState(char.data.id, 'hyped');
+          const intros: Record<string, string[]> = {
+            'hype': ["LET'S GOOO! 🔥", "We 'bout to eat! 💰"],
+            'chill': ["Easy money 😎", "Let's see... 🎲"],
+            'trash-talker': ["Y'all ain't ready 😤", "Watch and learn 👑"],
+            'diva': ["The queen is here ✨", "Try to keep up 💅"],
+            'boss': ["Big bets only 💎", "This is my table 🏛️"],
+          };
+          const lines = intros[char.data.personality || 'chill'];
+          this.say(char.data.id, lines[Math.floor(Math.random() * lines.length)]);
+          setTimeout(() => this.setState(char.data.id, 'idle'), 3000);
+        }, i * 800);
+      });
+    } else if (scene === 'betting') {
+      chars.forEach((char) => {
+        this.setState(char.data.id, 'thinking');
+        setTimeout(() => this.setState(char.data.id, 'idle'), 2500);
+      });
+    } else if (scene === 'rolling') {
+      // Everyone watches — shocked anticipation
+      chars.forEach((char) => this.setState(char.data.id, 'shocked'));
+      this.rollDice();
+    } else if (scene === 'win' && winnerId) {
+      const winner = this.characters.get(winnerId);
+      if (winner) {
+        this.setState(winnerId, 'celebrating');
+        const winLines: Record<string, string[]> = {
+          'hype': ["THAT'S WHAT I'M TALKING ABOUT! 🏆", "TOO EASY! 💰"],
+          'chill': ["Told y'all 😌", "Light work 💸"],
+          'trash-talker': ["Y'all saw that? 😤", "King shit 👑"],
+          'diva': ["Obviously ✨", "Queen takes all 💅"],
+          'boss': ["That's business 💎", "The house always wins 🏛️"],
+        };
+        const lines = winLines[winner.data.personality || 'chill'];
+        this.say(winnerId, lines[Math.floor(Math.random() * lines.length)]);
+      }
+      // Losers react
+      chars.forEach((char) => {
+        if (char.data.id !== winnerId) {
+          this.setState(char.data.id, 'shocked');
+          setTimeout(() => this.setState(char.data.id, 'idle'), 3000);
+        }
+      });
+      setTimeout(() => {
+        if (winner) this.setState(winnerId, 'idle');
+      }, 5000);
+    } else if (scene === 'lose') {
+      chars.forEach((char) => {
+        this.setState(char.data.id, 'shocked');
+        setTimeout(() => this.setState(char.data.id, 'idle'), 2000);
+      });
+    }
+  }
+
   private seatAngle(index: number): number {
     const total = Math.max(this.characters.size, 4);
     return (index / total) * Math.PI * 2 - Math.PI / 2;
@@ -314,6 +377,16 @@ export class TableEngine {
       } else if (state === 'thinking') {
         // Slow head tilt
         char.group.rotation.z = Math.sin(t * 1.2) * 0.1;
+      } else if (state === 'hyped') {
+        // Bouncing with excitement
+        yOffset += Math.abs(Math.sin(t * 10)) * 0.25;
+        scalePulse = 1 + Math.sin(t * 10) * 0.03;
+        char.group.rotation.z = Math.sin(t * 10) * 0.05;
+      } else if (state === 'shocked') {
+        // Frozen, leaning in — tension
+        scalePulse = 1.05;
+        char.group.rotation.x = -0.1;
+        yOffset += Math.sin(t * 20) * 0.01; // micro tremble
       } else {
         char.group.rotation.x = 0;
         char.group.rotation.z *= 0.9;

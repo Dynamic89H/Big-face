@@ -25,13 +25,19 @@ export default function DiceTableScene({ players, width = 800, height = 500, onP
 
     if (onPlayerClick) engine.onClick(onPlayerClick);
 
-    // Add all players to the table
+    // Add all players to the table with personalities
+    const personalities: Array<'hype' | 'chill' | 'trash-talker' | 'diva' | 'boss'> =
+      ['trash-talker', 'diva', 'boss', 'hype'];
     players.forEach((p, i) => {
       engine.addCharacter({
         id: p.id, name: p.name, img: p.img,
         state: 'idle', seatIndex: i,
+        personality: personalities[i % personalities.length],
       });
     });
+
+    // Opening story — the show begins
+    setTimeout(() => engine.playStory('intro'), 1500);
 
     // Ambient life — characters randomly talk
     const lifeInterval = setInterval(() => {
