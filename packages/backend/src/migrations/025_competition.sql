@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS throne_reigns (
   ends_at TIMESTAMPTZ NOT NULL DEFAULT now() + interval '7 days',
   votes INTEGER NOT NULL DEFAULT 0
 );
-CREATE INDEX IF NOT EXISTS idx_throne_active ON throne_reigns(ends_at) WHERE ends_at > now();
+CREATE INDEX IF NOT EXISTS idx_throne_active ON throne_reigns(ends_at);
 
 CREATE TABLE IF NOT EXISTS throne_votes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS shoutouts (
   ends_at TIMESTAMPTZ NOT NULL DEFAULT now() + interval '1 hour',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS idx_shoutouts_active ON shoutouts(ends_at) WHERE ends_at > now();
+CREATE INDEX IF NOT EXISTS idx_shoutouts_active ON shoutouts(ends_at);
 
 -- Predictions: bet on live events
 CREATE TABLE IF NOT EXISTS predictions (
