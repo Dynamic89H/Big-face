@@ -76,6 +76,8 @@ export default function GamblePage() {
     return () => musicRef.current?.pause();
   }, []);
 
+  const [hotGames, setHotGames] = useState<any[]>([]);
+
   const load = async () => {
     try {
       const [{ games: g }, { games: h }] = await Promise.all([
@@ -84,6 +86,16 @@ export default function GamblePage() {
       ]);
       setGames(g);
       setHistory(h);
+      // Load hot games
+      try {
+        const res = await fetch('/api/gamble/hot', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setHotGames(data.games || []);
+        }
+      } catch {}
     } catch {
       /* ignore */
     } finally {
@@ -319,6 +331,35 @@ export default function GamblePage() {
           </button>
         </form>
       </div>
+
+      {/* Hot games — spectator mode */}
+      {hotGames.length > 0 && (
+        <>
+          <h2>🔥 Hot Tables — Biggest Recent Games</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.5rem' }}>
+            {hotGames.map((g) => (
+              <div key={g.id} className="card pattern-gold" style={{ padding: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>
+                      {g.host.displayName} vs {g.opponentName || '?'}
+                    </div>
+                    <div className="form-note" style={{ fontSize: '0.8rem' }}>
+                      🎲 {g.hostRoll} vs {g.opponentRoll} • Winner: {g.winnerName}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: 'var(--gold)', fontWeight: 800 }}>
+                      🪙 {g.pot.toLocaleString()}
+                    </div>
+                    <div className="form-note" style={{ fontSize: '0.75rem' }}>pot</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Open games */}
       <h2>🔴 Open Tables</h2>

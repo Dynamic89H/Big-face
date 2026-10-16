@@ -100,4 +100,53 @@ router.delete(
   })
 );
 
+// Reply to a story
+router.post(
+  '/:id/reply',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { message } = req.body;
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      throw new HttpError(400, 'Message required');
+    }
+    if (message.length > 280) throw new HttpError(400, 'Reply too long');
+
+    const { rows: story } = await pool.query(
+      'SELECT user_id FROM stories WHERE id = $1',
+      [req.params.id]
+    );
+    if (!story[0]) throw new HttpError(404, 'Story not found');
+
+    const { rows } = await pool.query(
+      `INSERT INTO story_replies (story_id, user_id, message) VALUES ($1, $2, $3) RETURNING id, created_at`,
+      [req.params.id, req.user!.id, message.trim()]
+    );
+
+    // Notify story owner
+    const { emitToUser } = await import('../sockets');
+    emitToUser(story[0].user_id, 'story:reply', {
+      storyId: req.params.id,
+      fromUserId: req.user!.id,
+      message: message.trim(),
+    });
+
+    res.json({ ok: true, replyId: rows[0].id });
+  })
+);
+
+// Get replies for own story
+router.get(
+  '/:id/replies',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT sr.*, u.display_name, u.username
+       FROM story_replies sr JOIN users u ON u.id = sr.user_id
+       WHERE sr.story_id = $1 ORDER BY sr.created_at ASC`,
+      [req.params.id]
+    );
+    res.json({ replies: rows });
+  })
+);
+
 export default router;

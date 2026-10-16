@@ -32,6 +32,35 @@ router.get(
   })
 );
 
+// Hot games — biggest recent finished games for spectators
+router.get(
+  '/hot',
+  requireAuth,
+  asyncHandler(async (_req, res) => {
+    const { rows } = await pool.query(
+      `SELECT g.*, uh.display_name AS host_name, uh.profile_color AS host_color,
+              uo.display_name AS opponent_name, uw.display_name AS winner_name
+       FROM dice_games g
+       JOIN users uh ON uh.id = g.host_id
+       LEFT JOIN users uo ON uo.id = g.opponent_id
+       LEFT JOIN users uw ON uw.id = g.winner_id
+       WHERE g.status = 'finished'
+       ORDER BY g.bet_tokens DESC LIMIT 10`
+    );
+    res.json({ games: rows.map((r) => ({
+      id: r.id,
+      betTokens: Number(r.bet_tokens),
+      pot: Number(r.bet_tokens) * 2 * 0.9,
+      host: { displayName: r.host_name, profileColor: r.host_color },
+      opponentName: r.opponent_name,
+      winnerName: r.winner_name,
+      hostRoll: r.host_roll,
+      opponentRoll: r.opponent_roll,
+      createdAt: r.created_at,
+    })) });
+  })
+);
+
 // Create a game (host puts up the bet).
 router.post(
   '/',

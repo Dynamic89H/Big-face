@@ -15,6 +15,12 @@ interface RankData {
   currentIndex: number;
   next: Rank | null;
   level: number;
+  xpProgress: {
+    current: number;
+    needed: number;
+    remaining: number;
+    percent: number;
+  } | null;
 }
 
 interface Leader {
@@ -103,6 +109,27 @@ export default function RanksPage() {
           {data.next && (
             <div className="form-note" style={{ marginTop: '0.75rem' }}>
               Next: {data.next.icon} {data.next.name} at Level {data.next.minLevel}
+            </div>
+          )}
+          {data.xpProgress && (
+            <div style={{ marginTop: '1rem', textAlign: 'left' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.4rem' }}>
+                <span style={{ color: 'var(--gold)', fontWeight: 700 }}>
+                  {data.xpProgress.remaining.toLocaleString()} XP to {data.next?.name}
+                </span>
+                <span className="form-note">{data.xpProgress.percent}%</span>
+              </div>
+              <div style={{
+                height: 10, borderRadius: 5, background: 'rgba(255,255,255,0.1)',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%', width: `${data.xpProgress.percent}%`,
+                  background: 'linear-gradient(90deg, #ffd700, #ff8c00)',
+                  borderRadius: 5, transition: 'width 0.5s ease',
+                  boxShadow: '0 0 10px rgba(255,215,0,0.5)',
+                }} />
+              </div>
             </div>
           )}
         </div>

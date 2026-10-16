@@ -183,6 +183,40 @@ export default function StoriesPage() {
                 {current.caption}
               </p>
             )}
+            {/* Reply */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              <input
+                type="text"
+                placeholder="Reply to story..."
+                maxLength={280}
+                id="story-reply-input"
+                style={{
+                  flex: 1, padding: '0.7rem 1rem', borderRadius: 20,
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.1)', color: 'white',
+                  fontSize: '0.9rem', outline: 'none',
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const input = e.target as HTMLInputElement;
+                    const msg = input.value.trim();
+                    if (msg) {
+                      fetch(`/api/stories/${current.id}/reply`, {
+                        method: 'POST',
+                        headers: {
+                          Authorization: `Bearer ${localStorage.getItem('token')}`,
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: msg }),
+                      });
+                      input.value = '';
+                      input.placeholder = 'Sent! ✓';
+                      setTimeout(() => { input.placeholder = 'Reply to story...'; }, 2000);
+                    }
+                  }
+                }}
+              />
+            </div>
             {/* Nav */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
               <button
