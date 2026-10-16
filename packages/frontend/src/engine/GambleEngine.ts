@@ -851,12 +851,12 @@ export class GambleEngine {
     const loader = new GLTFLoader();
     loader.setMeshoptDecoder(MeshoptDecoder);
     // Character definitions: model file, seat angle, name
-    // Using optimized models (meshopt + webp, ~500KB each)
+    // Microsoft Rocketbox photorealistic humans (MIT license)
     const seats: { model: string; angle: number; name: string }[] = [
-      { model: '/models/xbot-opt.glb', angle: 0.6, name: 'The Boss' },
-      { model: '/models/michelle-opt.glb', angle: 2.2, name: 'Diva' },
-      { model: '/models/soldier-opt.glb', angle: 3.8, name: 'Dread Artist' },
-      { model: '/models/xbot-opt.glb', angle: 5.4, name: 'Enforcer' },
+      { model: '/models/Male_Adult_12.glb', angle: 0.6, name: 'The Boss' },
+      { model: '/models/Female_Party_02.glb', angle: 2.2, name: 'Diva' },
+      { model: '/models/Male_Adult_18.glb', angle: 3.8, name: 'Dread Artist' },
+      { model: '/models/Male_Adult_12.glb', angle: 5.4, name: 'Enforcer' },
     ];
 
     // Chair for each seat
@@ -1011,20 +1011,26 @@ export class GambleEngine {
       return;
     }
     const { bones } = chars[charIndex];
-    // Find right arm bones (Mixamo naming)
-    const shoulder = bones['mixamorig:RightShoulder'] || bones['mixamorig:LeftShoulder'];
-    const arm = bones['mixamorig:RightArm'] || bones['mixamorig:LeftArm'];
-    const forearm = bones['mixamorig:RightForeArm'] || bones['mixamorig:LeftForeArm'];
-    const hand = bones['mixamorig:RightHand'] || bones['mixamorig:LeftHand'];
+    // Find arm bones — supports Mixamo (mixamorig:) and Bip01 (Rocketbox) naming
+    const findBone = (names: string[]) => {
+      for (const n of names) {
+        if (bones[n]) return bones[n];
+      }
+      return null;
+    };
+    const shoulder = findBone(['mixamorig:RightShoulder', 'mixamorig:LeftShoulder', 'Bip01 R Clavicle', 'Bip01 L Clavicle']);
+    const arm = findBone(['mixamorig:RightArm', 'mixamorig:LeftArm', 'Bip01 R UpperArm', 'Bip01 L UpperArm']);
+    const forearm = findBone(['mixamorig:RightForeArm', 'mixamorig:LeftForeArm', 'Bip01 R Forearm', 'Bip01 L Forearm']);
+    const hand = findBone(['mixamorig:RightHand', 'mixamorig:LeftHand', 'Bip01 R Hand', 'Bip01 L Hand']);
     if (!shoulder || !arm || !forearm || !hand) {
       onRelease();
       return;
     }
-    // Collect finger bones for grab animation
+    // Collect finger bones for grab animation (Mixamo has them, Bip01 doesn't)
     const fingers: THREE.Object3D[] = [];
-    const side = bones['mixamorig:RightHand'] ? 'Right' : 'Left';
+    const side = bones['mixamorig:RightHand'] ? 'Right' : bones['Bip01 R Hand'] ? 'R' : 'Left';
     Object.entries(bones).forEach(([name, bone]) => {
-      if (name.includes(`${side}Hand`) && (name.includes('Index') || name.includes('Middle') || name.includes('Ring') || name.includes('Pinky') || name.includes('Thumb'))) {
+      if ((name.includes(`${side}Hand`) || name.includes(` ${side} `)) && (name.includes('Index') || name.includes('Middle') || name.includes('Ring') || name.includes('Pinky') || name.includes('Thumb') || name.includes('Finger'))) {
         fingers.push(bone);
       }
     });

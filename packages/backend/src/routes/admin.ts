@@ -43,6 +43,25 @@ router.post(
   })
 );
 
+// Daily push notification broadcast — service-key auth (for cron).
+// Sends today's rotating message to all push-subscribed users, localized
+// per user. The cron VM has no DATABASE_URL, so this endpoint lets the
+// scheduler trigger the broadcast on Railway where env is injected.
+router.post(
+  '/daily-push',
+  asyncHandler(async (req, res) => {
+    const apiKey = req.header('x-admin-key');
+    const expected = process.env.ADMIN_API_KEY;
+    if (!expected || apiKey !== expected) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+    const { sendDailyPush } = await import('../jobs/dailyPush');
+    const result = await sendDailyPush();
+    res.json({ ok: true, ...result });
+  })
+);
+
 // Delete a user account by email — service-key auth (for account resets).
 // Wipes the user row; ON DELETE CASCADE cleans up their data across tables.
 router.delete(
