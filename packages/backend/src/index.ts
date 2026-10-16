@@ -32,6 +32,7 @@ import earningsRouter from './routes/earnings';
 import throneRouter from './routes/throne';
 import engagementRouter from './routes/engagement';
 import shopRouter from './routes/shop';
+import competitionRouter from './routes/competition';
 import adminRouter from './routes/admin';
 import reportsRouter from './routes/reports';
 import videoRouter from './routes/video';
@@ -78,6 +79,7 @@ app.use('/api/earnings', earningsRouter);
 app.use('/api/throne', throneRouter);
 app.use('/api/engagement', engagementRouter);
 app.use('/api/shop', shopRouter);
+app.use('/api/competition', competitionRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api', videoRouter); // /rooms/:id/video/start, /video/sessions/:id/end
