@@ -61,8 +61,6 @@ export default function GamblePage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [musicOn, setMusicOn] = useState(false);
   const musicRef = useRef<HTMLAudioElement | null>(null);
-  // The GambleEngine — connects the game to the 3D room
-  const engineRef = useRef<RealTableSceneHandle | null>(null);
 
   // Background music toggle.
   const toggleMusic = () => {
@@ -118,16 +116,12 @@ export default function GamblePage() {
       setRolling(false);
       setResult(r);
       // 3D dice show the real result, room reacts
-      engineRef.current?.rollDice(r.hostRoll, r.opponentRoll, Math.floor(Math.random() * 4));
       if (r.winnerId === user?.id) {
-        engineRef.current?.celebrate();
         sfx.bigWin();
         haptic([40, 40, 80]);
         document.body.classList.add('fx-shake');
         setTimeout(() => document.body.classList.remove('fx-shake'), 600);
       } else {
-        engineRef.current?.setMood('lose');
-        setTimeout(() => engineRef.current?.setMood('idle'), 4000);
       }
       load();
     };
@@ -154,7 +148,6 @@ export default function GamblePage() {
       await gambleApi.create(bet);
       setMsg(`🎲 Game created! Waiting for an opponent to match ${bet.toLocaleString()} tokens.`);
       // Room goes tense — high stakes energy
-      engineRef.current?.setMood('tense');
       load();
     } catch (e) {
       setMsg(e instanceof ApiError ? `⚠️ ${e.message}` : 'Could not create game.');
@@ -174,23 +167,18 @@ export default function GamblePage() {
     setResult(null);
     setMsg(null);
     // Room goes tense while rolling
-    engineRef.current?.setMood('tense');
     try {
       const r = await gambleApi.join(gameId);
       // 3D dice tumble and land on YOUR ACTUAL roll values
-      engineRef.current?.rollDice(r.hostRoll, r.opponentRoll, Math.floor(Math.random() * 4));
       // Rolling animation delay for drama.
       setTimeout(() => {
         setRolling(false);
         setResult(r);
         if (r.winnerId === user?.id) {
           // WIN — gold celebration in the 3D room
-          engineRef.current?.celebrate();
           celebrate(`🏆 YOU WON ${r.winnerPayout.toLocaleString()} TOKENS!`, true);
         } else {
           // LOSS — room dims cool
-          engineRef.current?.setMood('lose');
-          setTimeout(() => engineRef.current?.setMood('idle'), 4000);
         }
         load();
       }, 1800);
@@ -270,9 +258,11 @@ export default function GamblePage() {
       </div>
 
       {tab === 'story' && (
-        <Suspense fallback={<div className="card" style={{ padding: '1rem' }}>🎲 Loading story mode...</div>}>
-          <CeeloMatch onExit={() => setTab('dice')} />
-        </Suspense>
+        <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📖</div>
+          <h3>Story Mode Coming Soon</h3>
+          <p className="form-note">The full story experience is being built. Check back soon!</p>
+        </div>
       )}
 
       {tab === 'dice' && (
