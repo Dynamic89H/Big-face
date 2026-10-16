@@ -17,6 +17,7 @@ import LifestylePage from './pages/LifestylePage';
 import ShopPage from './pages/ShopPage';
 import CompetitionPage from './pages/CompetitionPage';
 import SocialPage from './pages/SocialPage';
+import StoriesPage from './pages/StoriesPage';
 import { BattlesPage, BattleRoomPage } from './pages/BattlePage';
 import CrewsPage from './pages/CrewsPage';
 import ArtistsPage from './pages/ArtistsPage';
@@ -100,6 +101,7 @@ export default function App() {
             <Route path="shop" element={<ShopPage />} />
             <Route path="competition" element={<CompetitionPage />} />
             <Route path="social" element={<SocialPage />} />
+            <Route path="stories" element={<StoriesPage />} />
             <Route path="battles" element={<BattlesPage />} />
             <Route path="battles/:id" element={<BattleRoomPage />} />
             <Route path="crews" element={<CrewsPage />} />
