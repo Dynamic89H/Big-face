@@ -4,6 +4,7 @@ import { celebrate } from '../components/Celebration';
 import AmbientDice from '../components/AmbientDice';
 import DiceTableScene from '../components/DiceTableScene';
 import GTATableScene from '../components/GTATableScene';
+import RealTableScene from '../components/RealTableScene';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -191,9 +192,9 @@ export default function GamblePage() {
         @keyframes diceShake { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
       `}</style>
 
-      {/* GTA cutscene style 3D dice table */}
+      {/* Your 4 characters as real 3D models at the table */}
       <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
-        <GTATableScene width={800} height={500} />
+        <RealTableScene width={800} height={500} />
         <div style={{
           position: 'absolute', top: 12, left: 16,
           display: 'flex', alignItems: 'center',
