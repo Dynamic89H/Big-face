@@ -82,14 +82,14 @@ export default function RanksPage() {
   return (
     <div className="page" style={{ maxWidth: 700, margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 className="shine-text" style={{ fontSize: '2.2rem', margin: '0 0 0.5rem' }}>
+        <h1 className="pattern-royal">
           🏆 Ranks
         </h1>
-        <p className="form-note">The come up. Grind your way to Legend.</p>
+        <p className="pattern-royal-sub">The come up. Grind your way to Legend.</p>
       </div>
 
       {data && (
-        <div className="card glow-gold" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+        <div className="pattern-gold pattern-elev-3" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '0.5rem' }}>
             YOUR RANK
           </div>

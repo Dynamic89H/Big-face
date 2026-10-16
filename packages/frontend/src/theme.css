@@ -852,3 +852,94 @@ input[type="password"].input {
   bottom: 10%;
   animation: sparkle-rise 1.4s ease-out forwards;
 }
+
+/* ============================================================
+   BIG FACE VISUAL PATTERN SYSTEM
+   Each layer has its own pattern, in order. This is what makes
+   Big Face look like Big Face — no other app looks like this.
+   ============================================================ */
+
+/* LAYER 1 — COSMOS (background)
+   Deep space. The starfield engine handles this. Fallback below. */
+.pattern-cosmos {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(139, 92, 246, 0.15), transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(0, 240, 255, 0.08), transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 47, 214, 0.05), transparent 60%),
+    var(--bg);
+}
+
+/* LAYER 2 — GLASS (cards)
+   Frosted glass panels. The base layer for all content. */
+.pattern-glass {
+  background: var(--panel);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* LAYER 3 — GOLD (premium)
+   Gold accents for rewards, ranks, VIP. The money layer. */
+.pattern-gold {
+  background: linear-gradient(135deg, rgba(255, 201, 77, 0.15), rgba(255, 201, 77, 0.05));
+  border: 1px solid rgba(255, 201, 77, 0.4);
+  border-radius: var(--radius);
+  box-shadow: 0 0 24px rgba(255, 201, 77, 0.15), var(--shadow);
+}
+.pattern-gold-text {
+  background: linear-gradient(135deg, #ffd700, #ffaa00, #ffd700);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+
+/* LAYER 4 — NEON (live/interactive)
+   Cyan/pink glows for live states, active elements. The energy layer. */
+.pattern-neon {
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: var(--radius);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2), inset 0 0 20px rgba(0, 240, 255, 0.05);
+}
+.pattern-neon-pink {
+  border: 1px solid rgba(255, 47, 214, 0.3);
+  border-radius: var(--radius);
+  box-shadow: 0 0 20px rgba(255, 47, 214, 0.2), inset 0 0 20px rgba(255, 47, 214, 0.05);
+}
+.pattern-live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ff0000;
+  box-shadow: 0 0 8px #ff0000;
+  animation: live-pulse 1.5s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+/* LAYER 5 — ROYAL (headers)
+   Crown treatment for page titles. The authority layer. */
+.pattern-royal {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff, var(--gold), #ffffff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+.pattern-royal-sub {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-top: 0.4rem;
+  letter-spacing: 0.02em;
+}
+
+/* LAYER 6 — DEPTH (elevation)
+   Ordered shadows for visual hierarchy. */
+.pattern-elev-1 { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+.pattern-elev-2 { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
+.pattern-elev-3 { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 32px rgba(139, 92, 246, 0.1); }
