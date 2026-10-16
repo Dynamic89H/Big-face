@@ -189,18 +189,43 @@ router.post(
     const { rows: bal } = await pool.query(
       'SELECT token_balance FROM users WHERE id = $1', [userId]
     );
-    if (Number(bal[0]?.token_balance || 0) < bet) {
+    const balance = Number(bal[0]?.token_balance || 0);
+
+    // Broke-state rescue: at 0 tokens, give 2,000 on the house instead of a dead end
+    if (balance < MIN_BET) {
+      await addTokens(userId, 2000, 'bonus', { reference: 'broke_rescue' });
+      // Continue with the roll using the rescue tokens
+    }
+
+    const { rows: balAfter } = await pool.query(
+      'SELECT token_balance FROM users WHERE id = $1', [userId]
+    );
+    if (Number(balAfter[0]?.token_balance || 0) < bet) {
       throw new HttpError(400, 'Insufficient token balance');
     }
 
     // Take the bet
     await addTokens(userId, -bet, 'dice_bet_escrow', { reference: `solo:${Date.now()}` });
 
+    // Scripted first win: new players always win their first 3 solo rolls
+    const { rows: rollCount } = await pool.query(
+      `SELECT COUNT(*)::int AS c FROM wallet_transactions WHERE user_id = $1 AND kind = 'dice_bet_escrow'`,
+      [userId]
+    );
+    const isNewPlayer = (rollCount[0]?.c || 0) <= 3;
+
     // Roll!
     const playerRoll = 1 + Math.floor(Math.random() * 6);
-    let houseRoll = 1 + Math.floor(Math.random() * 6);
-    while (houseRoll === playerRoll) {
+    let houseRoll: number;
+    if (isNewPlayer) {
+      // Guaranteed win: house rolls lower
+      houseRoll = Math.max(1, playerRoll - 1 - Math.floor(Math.random() * 2));
+      if (houseRoll >= playerRoll) houseRoll = Math.max(1, playerRoll - 1);
+    } else {
       houseRoll = 1 + Math.floor(Math.random() * 6);
+      while (houseRoll === playerRoll) {
+        houseRoll = 1 + Math.floor(Math.random() * 6);
+      }
     }
 
     const won = playerRoll > houseRoll;

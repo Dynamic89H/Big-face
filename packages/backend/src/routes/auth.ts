@@ -95,6 +95,9 @@ router.post(
        ON CONFLICT DO NOTHING`,
       [user.id]
     );
+    // Welcome bonus: 50,000 starter tokens with fanfare
+    const { addTokens } = await import('../services/tokens');
+    await addTokens(user.id, 50000, 'bonus', { reference: 'welcome_bonus' });
     res.status(201).json({ token: signToken(user.id), user: toUser(user) });
   })
 );
