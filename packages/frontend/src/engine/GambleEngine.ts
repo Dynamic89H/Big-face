@@ -266,9 +266,9 @@ export class GambleEngine {
     underGlow.position.set(0, 0.4, 0);
     this.scene.add(underGlow);
 
-    // Accent lights — gold and warm amber alternating
+    // Accent lights — vibrant casino colors: magenta, cyan, gold, purple
     const accentData: [number, number][] = [
-      [0xffb366, 0.4], [0xffd700, 1.9], [0xffb366, 3.5], [0xffd700, 5.1],
+      [0xff2fb3, 0.4], [0xffd700, 1.9], [0x00e5ff, 3.5], [0x9d4dff, 5.1],
     ];
     accentData.forEach(([color, angle]) => {
       const light = new THREE.PointLight(color, 40, 26, 1.5);
@@ -483,14 +483,14 @@ export class GambleEngine {
       this.scene.add(signGlow);
     });
 
-    // Neon floor strips
-    const stripBlueMat = new THREE.MeshBasicMaterial({ color: 0x2266ff });
-    const stripGoldMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+    // Neon floor strips — vibrant casino rainbow
+    const stripColors = [0xff2fb3, 0x00e5ff, 0xffd700, 0x9d4dff];
+    const stripMats = stripColors.map((c) => new THREE.MeshBasicMaterial({ color: c }));
     for (let i = 0; i < 16; i++) {
       const angle = (i / 16) * Math.PI * 2;
       const strip = new THREE.Mesh(
         new THREE.BoxGeometry(1.8, 0.04, 0.12),
-        i % 2 === 0 ? stripBlueMat : stripGoldMat
+        stripMats[i % 4]
       );
       strip.position.set(Math.cos(angle) * 10.5, 0.03, Math.sin(angle) * 10.5);
       strip.lookAt(0, 0.03, 0);
@@ -633,15 +633,15 @@ export class GambleEngine {
     const feltCanvas = document.createElement('canvas');
     feltCanvas.width = feltCanvas.height = 512;
     const fctx = feltCanvas.getContext('2d')!;
-    // Deep emerald base
+    // Deep rich casino green — saturated, won't wash out
     const grad = fctx.createRadialGradient(256, 256, 50, 256, 256, 256);
-    grad.addColorStop(0, '#0f6b35');
-    grad.addColorStop(1, '#084a22');
+    grad.addColorStop(0, '#0a5c2e');
+    grad.addColorStop(1, '#053a1c');
     fctx.fillStyle = grad;
     fctx.fillRect(0, 0, 512, 512);
-    // Felt texture
+    // Felt texture — deeper green fibers
     for (let i = 0; i < 8000; i++) {
-      fctx.fillStyle = `rgba(${10 + Math.random() * 30},${80 + Math.random() * 40},${30 + Math.random() * 20},0.15)`;
+      fctx.fillStyle = `rgba(${5 + Math.random() * 20},${70 + Math.random() * 35},${20 + Math.random() * 15},0.18)`;
       fctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
     }
     // Gold inlay ring — VIP luxury detail
@@ -694,11 +694,13 @@ export class GambleEngine {
     this.setDieFace(this.die1, 6);
     this.setDieFace(this.die2, 4);
 
-    // Chips
-    this.makeChipStack(table, 0xcc0000, 8, 1.8, 1.2);
-    this.makeChipStack(table, 0x111111, 6, -1.7, 1.3);
-    this.makeChipStack(table, 0x0066cc, 10, 0.2, -2.0);
-    this.makeChipStack(table, 0xd4af37, 7, 2.0, -0.9);
+    // Chips — real casino colors with denominations
+    this.makeChipStack(table, 0xcc0000, 8, 1.8, 1.2, '100');
+    this.makeChipStack(table, 0x111111, 6, -1.7, 1.3, '1K');
+    this.makeChipStack(table, 0x0066cc, 10, 0.2, -2.0, '50');
+    this.makeChipStack(table, 0xd4af37, 7, 2.0, -0.9, '500');
+    this.makeChipStack(table, 0x00aa44, 5, -2.2, -0.5, '25');
+    this.makeChipStack(table, 0x7b2ff7, 4, 1.2, 2.1, '5K');
 
     this.scene.add(table);
   }
@@ -766,18 +768,54 @@ export class GambleEngine {
     die.rotation.z += (Math.random() - 0.5) * 0.15;
   }
 
-  private makeChipStack(table: THREE.Group, color: number, count: number, x: number, z: number): void {
+  private makeChipStack(table: THREE.Group, color: number, count: number, x: number, z: number, denom: string = ''): void {
+    // Real casino chip texture: edge spots + center inlay with denomination
+    const chipCanvas = document.createElement('canvas');
+    chipCanvas.width = chipCanvas.height = 128;
+    const cctx = chipCanvas.getContext('2d')!;
+    const baseColor = `#${color.toString(16).padStart(6, '0')}`;
+
+    // Base
+    cctx.fillStyle = baseColor;
+    cctx.fillRect(0, 0, 128, 128);
+    // Edge spots — 8 white rectangles around the rim (classic casino pattern)
+    cctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const sx = 64 + Math.cos(angle) * 52;
+      const sy = 64 + Math.sin(angle) * 52;
+      cctx.save();
+      cctx.translate(sx, sy);
+      cctx.rotate(angle);
+      cctx.fillRect(-6, -14, 12, 28);
+      cctx.restore();
+    }
+    // Center inlay — cream circle with gold ring
+    cctx.fillStyle = '#f5f0e1';
+    cctx.beginPath(); cctx.arc(64, 64, 34, 0, Math.PI * 2); cctx.fill();
+    cctx.strokeStyle = '#d4af37'; cctx.lineWidth = 3;
+    cctx.beginPath(); cctx.arc(64, 64, 34, 0, Math.PI * 2); cctx.stroke();
+    // Denomination text
+    if (denom) {
+      cctx.fillStyle = '#1a1a1a';
+      cctx.font = 'bold 22px Arial';
+      cctx.textAlign = 'center'; cctx.textBaseline = 'middle';
+      cctx.fillText(denom, 64, 64);
+    }
+    const chipTex = new THREE.CanvasTexture(chipCanvas);
+    chipTex.colorSpace = THREE.SRGBColorSpace;
+
+    const chipMat = new THREE.MeshStandardMaterial({ map: chipTex, roughness: 0.35 });
+    const sideMat = new THREE.MeshStandardMaterial({ color, roughness: 0.4 });
+
     for (let i = 0; i < count; i++) {
+      // Cylinder with textured top/bottom, solid color side
       const chip = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.22, 0.22, 0.045, 24),
-        new THREE.MeshStandardMaterial({ color, roughness: 0.4 })
+        new THREE.CylinderGeometry(0.22, 0.22, 0.045, 32),
+        [sideMat, chipMat, chipMat]
       );
-      const edge = new THREE.Mesh(
-        new THREE.TorusGeometry(0.17, 0.028, 8, 24),
-        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 })
-      );
-      edge.rotation.x = Math.PI / 2;
-      chip.add(edge);
+      // Slight random rotation for realism
+      chip.rotation.y = Math.random() * Math.PI * 2;
       chip.position.set(x, 1.66 + i * 0.05, z);
       chip.castShadow = true;
       table.add(chip);
