@@ -156,6 +156,8 @@ export const friendsApi = {
 // --- Rooms ---
 export const roomsApi = {
   list: () => get<{ rooms: RoomSummary[] }>('/rooms'),
+  publicRooms: () => get<{ rooms: RoomSummary[] }>('/rooms/public'),
+  kick: (roomId: string, userId: string) => post<{ ok: boolean }>(`/rooms/${roomId}/kick`, { userId }),
   create: (input: { name: string; description?: string; memberIds?: string[] }) =>
     post<{ room: Room }>('/rooms', input),
   get: (id: string) => get<{ room: Room; members: User[] }>(`/rooms/${id}`),

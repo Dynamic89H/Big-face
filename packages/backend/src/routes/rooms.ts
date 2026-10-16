@@ -14,6 +14,26 @@ async function requireMember(roomId: string, userId: string): Promise<void> {
   if (!mem.rows.length) throw new HttpError(403, 'Not a member of this room');
 }
 
+// GET /api/rooms/public — public rooms anyone can join.
+router.get(
+  '/public',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const me = req.user!.id;
+    const { rows } = await pool.query(
+      `SELECT r.*,
+        (SELECT COUNT(*)::int FROM room_members rm WHERE rm.room_id = r.id) AS member_count,
+        (SELECT COUNT(*)::int FROM messages m WHERE m.room_id = r.id AND m.created_at > now() - interval '24 hours') AS recent_messages,
+        EXISTS(SELECT 1 FROM room_members rm WHERE rm.room_id = r.id AND rm.user_id = $1) AS joined
+       FROM rooms r
+       WHERE r.is_public = TRUE AND r.is_dm = FALSE
+       ORDER BY recent_messages DESC, member_count DESC`,
+      [me]
+    );
+    res.json({ rooms: rows.map((r: any) => toRoom(r, r.member_count, null)) });
+  })
+);
+
 router.get(
   '/',
   requireAuth,
@@ -172,6 +192,34 @@ router.post(
       req.user!.id,
     ]);
     res.status(204).end();
+  })
+);
+
+// POST /api/rooms/:id/kick — host removes someone from their room.
+router.post(
+  '/:id/kick',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const me = req.user!.id;
+    const targetId = String(req.body?.userId ?? '');
+    if (!targetId || targetId === me) {
+      res.status(400).json({ error: 'Invalid user.' });
+      return;
+    }
+    // Only the room creator (host) can kick.
+    const { rows: room } = await pool.query(
+      'SELECT created_by FROM rooms WHERE id = $1', [req.params.id]
+    );
+    if (!room.length) throw new HttpError(404, 'Room not found');
+    if (room[0].created_by !== me) {
+      res.status(403).json({ error: 'Only the host can remove people.' });
+      return;
+    }
+    await pool.query(
+      'DELETE FROM room_members WHERE room_id = $1 AND user_id = $2',
+      [req.params.id, targetId]
+    );
+    res.json({ ok: true });
   })
 );
 

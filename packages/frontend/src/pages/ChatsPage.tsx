@@ -14,6 +14,7 @@ export default function ChatsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  const [publicRooms, setPublicRooms] = useState<RoomSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,12 +34,26 @@ export default function ChatsPage() {
     setLoading(true);
     setError(null);
     try {
-      const { rooms } = await roomsApi.list();
+      const [{ rooms }, { rooms: pub }] = await Promise.all([
+        roomsApi.list(),
+        roomsApi.publicRooms().catch(() => ({ rooms: [] as RoomSummary[] })),
+      ]);
       setRooms(rooms);
+      setPublicRooms(pub);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not load your chats.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const joinPublicRoom = async (roomId: string) => {
+    try {
+      await roomsApi.join(roomId);
+      await load();
+      navigate(`/chats/${roomId}`);
+    } catch {
+      /* join failed */
     }
   };
 
@@ -142,7 +157,8 @@ export default function ChatsPage() {
       )}
 
       {!loading && !error && sortedRooms.length > 0 && (
-        <div className="card" style={{ padding: '0.6rem' }}>
+        <div className="card" style={{ padding: '0.6rem', marginBottom: '1.2rem' }}>
+          <h3 style={{ margin: '0.4rem 0.6rem 0.6rem', fontSize: '0.95rem' }}>💬 My Chats</h3>
           {sortedRooms.map((r) => (
             <div key={r.id} className="room-item" onClick={() => navigate(`/chats/${r.id}`)} role="button" tabIndex={0}
               onKeyDown={(e) => e.key === 'Enter' && navigate(`/chats/${r.id}`)}>
@@ -154,6 +170,36 @@ export default function ChatsPage() {
                 </div>
               </div>
               {r.unreadCount > 0 && <span className="unread-badge">{r.unreadCount}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && !error && publicRooms.length > 0 && (
+        <div className="card" style={{ padding: '0.6rem', borderColor: 'var(--gold)' }}>
+          <h3 style={{ margin: '0.4rem 0.6rem 0.2rem', fontSize: '0.95rem' }}>🌍 Public Rooms — meet new people</h3>
+          <p className="form-note" style={{ margin: '0 0.6rem 0.6rem' }}>
+            Jump in, start talking. Hosts can remove anyone they don't want in their room.
+          </p>
+          {publicRooms.map((r) => (
+            <div key={r.id} className="room-item">
+              <Avatar displayName={r.name} profileColor="#0096ff" size="sm" />
+              <div className="info" style={{ flex: 1 }}>
+                <div className="name">{r.name}</div>
+                <div className="preview">
+                  {(r as any).member_count || 0} members
+                  {(r as any).joined ? ' · you\'re in' : ''}
+                </div>
+              </div>
+              {(r as any).joined ? (
+                <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/chats/${r.id}`)}>
+                  Open
+                </button>
+              ) : (
+                <button className="btn btn-sm" onClick={() => joinPublicRoom(r.id)}>
+                  Join
+                </button>
+              )}
             </div>
           ))}
         </div>
