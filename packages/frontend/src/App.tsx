@@ -20,6 +20,7 @@ import SocialPage from './pages/SocialPage';
 import StoriesPage from './pages/StoriesPage';
 import VaultPage from './pages/VaultPage';
 import VisionPage from './pages/VisionPage';
+import SettingsPage from './pages/SettingsPage';
 import { BattlesPage, BattleRoomPage } from './pages/BattlePage';
 import CrewsPage from './pages/CrewsPage';
 import ArtistsPage from './pages/ArtistsPage';
@@ -106,6 +107,7 @@ export default function App() {
             <Route path="stories" element={<StoriesPage />} />
             <Route path="vault" element={<VaultPage />} />
             <Route path="vision" element={<VisionPage />} />
+            <Route path="settings" element={<SettingsPage />} />
             <Route path="battles" element={<BattlesPage />} />
             <Route path="battles/:id" element={<BattleRoomPage />} />
             <Route path="crews" element={<CrewsPage />} />
