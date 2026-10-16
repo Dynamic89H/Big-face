@@ -24,8 +24,10 @@ export class BigFaceEngine {
     return BigFaceEngine.instance;
   }
 
-  /** Initialize the engine on a canvas. Called once at app boot. */
-  init(canvas: HTMLCanvasElement): void {
+  /** Initialize the engine on a canvas. Called once at app boot.
+   *  @param staticMode — render one still frame of the starfield, no animation
+   *  (for Reduce Motion: keeps the premium look with zero movement). */
+  init(canvas: HTMLCanvasElement, staticMode = false): void {
     if (this.renderer) return;
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -40,13 +42,18 @@ export class BigFaceEngine {
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
     this.camera.position.set(0, 1.5, 8);
 
-    this.buildEnvironment();
+    this.buildEnvironment(staticMode);
     this.handleResize();
-    this.start();
+    if (staticMode) {
+      // Single still frame — no animation loop, no motion.
+      this.renderer.render(this.scene, this.camera);
+    } else {
+      this.start();
+    }
   }
 
   /** The living 3D environment — black starfield with shooting stars. */
-  private buildEnvironment(): void {
+  private buildEnvironment(staticMode = false): void {
     // --- Pure black space ---
     this.scene.background = new THREE.Color(0x000000);
     this.scene.fog = null;
@@ -112,6 +119,8 @@ export class BigFaceEngine {
     });
     const stars = new THREE.Points(starGeo, starMat);
     this.scene.add(stars);
+
+    if (staticMode) return; // No animation — single still frame of the starfield
 
     // Twinkle — subtle opacity pulse
     this.onUpdate((_dt, t) => {

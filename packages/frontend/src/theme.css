@@ -30,8 +30,8 @@ html, body {
   color: var(--text);
   font-family: var(--font);
   min-height: 100%;
-  /* Transparent — the Big Face Engine renders the live 3D world behind everything */
-  background: transparent;
+  /* Dark base — never white. The Big Face Engine renders the live 3D world on top. */
+  background: var(--bg);
 }
 
 /* Legacy CSS layers — disabled now that the engine handles the background.

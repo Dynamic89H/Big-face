@@ -43,6 +43,29 @@ router.post(
   })
 );
 
+// Delete a user account by email — service-key auth (for account resets).
+// Wipes the user row; ON DELETE CASCADE cleans up their data across tables.
+router.delete(
+  '/delete-user-by-email',
+  asyncHandler(async (req, res) => {
+    const apiKey = req.header('x-admin-key');
+    const expected = process.env.ADMIN_API_KEY;
+    if (!expected || apiKey !== expected) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+    const schema = z.object({ email: z.string().email() });
+    const { email } = schema.parse(req.body);
+    const { rows } = await pool.query('SELECT id, username FROM users WHERE email = $1', [email]);
+    if (!rows.length) {
+      res.status(404).json({ error: 'No account found for that email' });
+      return;
+    }
+    await pool.query('DELETE FROM users WHERE id = $1', [rows[0].id]);
+    res.json({ ok: true, deleted: rows[0].username });
+  })
+);
+
 router.use(requireAuth, requireAdmin);
 
 const crownWeekSchema = z.object({
