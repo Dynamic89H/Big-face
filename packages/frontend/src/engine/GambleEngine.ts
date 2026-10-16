@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { BigFaceResolution } from './BigFaceResolution.js';
 
 export type GambleMood = 'idle' | 'tense' | 'win' | 'lose';
 export type GraphicsQuality = 'low' | 'medium' | 'high' | 'ultra' | 'max8k';
@@ -39,6 +40,7 @@ export class GambleEngine {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
+  private resolution!: BigFaceResolution;
   private clock = new THREE.Clock();
   private raf = 0;
   private disposed = false;
@@ -117,6 +119,9 @@ export class GambleEngine {
     this.renderer.shadowMap.enabled = !isMobile;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    // Big Face resolution engine — auto-detects device, auto-tunes if slow
+    this.resolution = new BigFaceResolution(this.renderer);
+    this.resolution.apply(BigFaceResolution.detect());
     this.renderer.toneMappingExposure = 1.15;
     // Sharper output: sRGB color space for accurate, vivid colors
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -135,7 +140,8 @@ export class GambleEngine {
     this.buildRoom();
     this.buildTable();
     this.buildSeats();
-    this.buildDust();
+    // Dust disabled — was killing mobile performance
+    // this.buildDust();
     this.buildConfetti();
     this.setupZoom();
     this.animate();
@@ -1471,6 +1477,9 @@ export class GambleEngine {
     this.raf = requestAnimationFrame(this.animate);
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const t = this.clock.elapsedTime;
+
+    // Big Face resolution engine — auto-tune if running slow
+    if (this.resolution) this.resolution.autoTune();
 
     // Character animations
     const mixers = (this as any).charMixers as THREE.AnimationMixer[] | undefined;
