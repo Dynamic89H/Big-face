@@ -6,6 +6,7 @@ import { requireAuth } from '../middleware/auth';
 import { addTokens } from '../services/tokens';
 import { emitToAll, emitToUser } from '../sockets';
 import { contributeToVault } from './vault';
+import { recordPlatformRevenue } from '../services/platformRevenue';
 
 const router = Router();
 
@@ -87,9 +88,10 @@ router.post(
     ]);
     if (Number(user[0].token_balance) < amount) throw new HttpError(400, 'Not enough tokens');
 
-    // 80% to streamer, 10% platform, 10% to Vault
-    const streamerCut = Math.floor(amount * 0.8);
-    const vaultCut = Math.floor(amount * 0.1);
+    // 50% to streamer, 40% platform (Dweezy), 10% to Vault
+    const streamerCut = Math.floor(amount * 0.5);
+    const platformCut = Math.floor(amount * 0.4);
+    const vaultCut = amount - streamerCut - platformCut;
 
     await addTokens(req.user!.id, -amount, 'gift_sent', { reference: `tip:${req.params.id}` });
     await addTokens(stream[0].host_id, streamerCut, 'gift_received', {
@@ -106,6 +108,13 @@ router.post(
     );
 
     await contributeToVault(req.user!.id, vaultCut, 'tip').catch(() => undefined);
+
+    // Dweezy's 40% cut on every tip
+    await recordPlatformRevenue('tip_margin', platformCut, {
+      userId: stream[0].host_id,
+      reference: `tip:${req.params.id}`,
+      grossCents: amount,
+    }).catch(() => undefined);
     emitToUser(stream[0].host_id, 'vision:tip', {
       streamId: req.params.id,
       amount: streamerCut,
