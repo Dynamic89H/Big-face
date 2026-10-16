@@ -5,6 +5,7 @@ import type { User, RoomSummary } from '../types';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import Avatar, { facePhotoOf } from '../components/Avatar';
+import Pulse from '../components/Pulse';
 
 /**
  * Lobby — the real social hub of Big Face.
@@ -49,6 +50,7 @@ export default function LobbyPage() {
 
   return (
     <div className="page">
+      <Pulse />
       {/* Pull-to-refresh indicator */}
       {pullDistance > 0 && (
         <div style={{
