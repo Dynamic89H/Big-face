@@ -1,19 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { gambleApi, ApiError } from '../api/client';
 import { celebrate } from '../components/Celebration';
-import RealTableScene from '../components/RealTableScene';
+import RealTableScene, { type RealTableSceneHandle } from '../components/RealTableScene';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import Avatar from '../components/Avatar';
-
-// The 4 characters at the dice table
-const TABLE_PLAYERS = [
-  { id: 'street-king', name: 'Street King', img: '/characters/media-generation-rapper-street-king-0-f5b96626-0370-4c7d-8d6f-7ed3159cfbb6.webp', talking: false, celebrating: false },
-  { id: 'queen', name: 'Queen', img: '/characters/media-generation-rapper-queen-0-3b2682fd-d633-4c29-bcb8-f0c31dd471ea.webp', talking: false, celebrating: false },
-  { id: 'luxury-boss', name: 'Luxury Boss', img: '/characters/media-generation-rapper-luxury-boss-0-b07d0949-89b4-4f11-b08b-32d732e210f6.webp', talking: false, celebrating: false },
-  { id: 'diva', name: 'Diva', img: '/characters/media-generation-rapper-diva-0-c7cb8095-2098-4023-9727-805fb5a46aeb.webp', talking: false, celebrating: false },
-];
 
 interface Game {
   id: string; betTokens: number; status: string;
@@ -57,6 +49,8 @@ export default function GamblePage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [musicOn, setMusicOn] = useState(false);
   const musicRef = useRef<HTMLAudioElement | null>(null);
+  // The GambleEngine — connects the game to the 3D room
+  const engineRef = useRef<RealTableSceneHandle | null>(null);
 
   // Background music toggle.
   const toggleMusic = () => {
@@ -99,6 +93,14 @@ export default function GamblePage() {
     const onFinish = (r: GameResult) => {
       setRolling(false);
       setResult(r);
+      // 3D dice show the real result, room reacts
+      engineRef.current?.rollDice(r.hostRoll, r.opponentRoll);
+      if (r.winnerId === user?.id) {
+        engineRef.current?.celebrate();
+      } else {
+        engineRef.current?.setMood('lose');
+        setTimeout(() => engineRef.current?.setMood('idle'), 4000);
+      }
       load();
     };
     socket.on('gamble:finished', onFinish);
@@ -123,6 +125,8 @@ export default function GamblePage() {
     try {
       await gambleApi.create(bet);
       setMsg(`🎲 Game created! Waiting for an opponent to match ${bet.toLocaleString()} tokens.`);
+      // Room goes tense — high stakes energy
+      engineRef.current?.setMood('tense');
       load();
     } catch (e) {
       setMsg(e instanceof ApiError ? `⚠️ ${e.message}` : 'Could not create game.');
@@ -141,17 +145,27 @@ export default function GamblePage() {
     setRolling(true);
     setResult(null);
     setMsg(null);
+    // Room goes tense while rolling
+    engineRef.current?.setMood('tense');
     try {
       const r = await gambleApi.join(gameId);
+      // 3D dice tumble and land on YOUR ACTUAL roll values
+      engineRef.current?.rollDice(r.hostRoll, r.opponentRoll);
       // Rolling animation delay for drama.
       setTimeout(() => {
         setRolling(false);
         setResult(r);
         if (r.winnerId === user?.id) {
+          // WIN — gold celebration in the 3D room
+          engineRef.current?.celebrate();
           celebrate(`🏆 YOU WON ${r.winnerPayout.toLocaleString()} TOKENS!`, true);
+        } else {
+          // LOSS — room dims cool
+          engineRef.current?.setMood('lose');
+          setTimeout(() => engineRef.current?.setMood('idle'), 4000);
         }
         load();
-      }, 1500);
+      }, 1800);
     } catch (e) {
       setRolling(false);
       setMsg(e instanceof ApiError ? `⚠️ ${e.message}` : 'Could not join game.');
@@ -191,7 +205,7 @@ export default function GamblePage() {
 
       {/* Your 4 characters as real 3D models at the table - BIG */}
       <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
-        <RealTableScene width={1200} height={700} />
+        <RealTableScene ref={engineRef} width={1200} height={700} />
         <div style={{
           position: 'absolute', top: 12, left: 16,
           display: 'flex', alignItems: 'center',
