@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usersApi, roomsApi } from '../api/client';
 import type { User, RoomSummary } from '../types';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import Avatar, { facePhotoOf } from '../components/Avatar';
 
 /**
@@ -17,22 +18,26 @@ export default function LobbyPage() {
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [lb, rm] = await Promise.all([
-          usersApi.leaderboard(12),
-          roomsApi.list(),
-        ]);
-        setOnlineUsers(lb.entries.map((e: any) => e.user).filter(Boolean).slice(0, 8));
-        setRooms(rm.rooms?.slice(0, 6) || []);
-      } catch {
-        /* offline */
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const refresh = useCallback(async () => {
+    try {
+      const [lb, rm] = await Promise.all([
+        usersApi.leaderboard(12),
+        roomsApi.list(),
+      ]);
+      setOnlineUsers(lb.entries.map((e: any) => e.user).filter(Boolean).slice(0, 8));
+      setRooms(rm.rooms?.slice(0, 6) || []);
+    } catch {
+      /* offline */
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  const { pulling, pullDistance } = usePullToRefresh(refresh);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   if (loading) {
     return (
@@ -44,6 +49,17 @@ export default function LobbyPage() {
 
   return (
     <div className="page">
+      {/* Pull-to-refresh indicator */}
+      {pullDistance > 0 && (
+        <div style={{
+          textAlign: 'center', padding: '0.5rem',
+          transform: `translateY(${Math.min(pullDistance - 20, 40)}px)`,
+          opacity: Math.min(pullDistance / 60, 1),
+          fontSize: '1.5rem',
+        }}>
+          {pulling ? '🔄' : '⬇️'}
+        </div>
+      )}
       {/* Hero — premium Big Face entrance */}
       <div style={{
         textAlign: 'center', padding: '3rem 1.5rem', marginBottom: '2rem',

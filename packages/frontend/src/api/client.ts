@@ -65,6 +65,32 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 const get = <T>(path: string): Promise<T> => request<T>(path);
+
+// === API response cache — keeps Big Face feeling instant ===
+// Caches GET responses for 45 seconds. Busts automatically on POST/PATCH/DELETE.
+const cache = new Map<string, { data: unknown; at: number }>();
+const CACHE_TTL = 45000;
+
+export function getCached<T>(path: string): Promise<T> {
+  const hit = cache.get(path);
+  if (hit && Date.now() - hit.at < CACHE_TTL) {
+    return Promise.resolve(hit.data as T);
+  }
+  return get<T>(path).then((data) => {
+    cache.set(path, { data, at: Date.now() });
+    return data;
+  });
+}
+
+export function bustCache(prefix?: string): void {
+  if (!prefix) {
+    cache.clear();
+    return;
+  }
+  for (const key of cache.keys()) {
+    if (key.startsWith(prefix)) cache.delete(key);
+  }
+}
 const post = <T>(path: string, body?: unknown): Promise<T> =>
   request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) });
 const patch = <T>(path: string, body: unknown): Promise<T> =>

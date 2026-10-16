@@ -58,6 +58,7 @@ function PublicOnly({ children }: { children: ReactNode }) {
 import { lazy, Suspense } from 'react';
 import Celebration from './components/Celebration';
 import ErrorBoundary from './components/ErrorBoundary';
+import OfflineBanner from './components/OfflineBanner';
 
 // Lazy-load 3D engines — keeps initial bundle lean, loads Three.js only when needed
 const EngineCanvas = lazy(() => import('./components/EngineCanvas'));
@@ -66,6 +67,7 @@ export default function App() {
   return (
     <ErrorBoundary>
     <BrowserRouter>
+      <OfflineBanner />
       <Suspense fallback={null}>
         <EngineCanvas />
       </Suspense>
