@@ -143,8 +143,8 @@ export class GambleEngine {
     // VIP ROOM REMODEL: Warm luxury base with dramatic accents
     // Research: VIP rooms use warm dimmable lighting, chandeliers, spotlighting on tables
 
-    // Warmer ambient — inviting, not cold
-    this.ambient = new THREE.AmbientLight(0x3a2a1a, 1.3);
+    // Warmer ambient — inviting, not cold. Raised so walls read, not black holes.
+    this.ambient = new THREE.AmbientLight(0x4a3620, 1.8);
     this.scene.add(this.ambient);
 
     // Warm ceiling wash (was cold blue)
@@ -265,31 +265,77 @@ export class GambleEngine {
       });
     }
 
-    // Chandelier
+    // GRAND CHANDELIER — the room's crown jewel. Multi-tier crystal, hangs low
+    // enough to dominate the frame (y=8), warm golden glow.
     const chandelier = new THREE.Group();
-    const chandRing = new THREE.Mesh(
-      new THREE.TorusGeometry(1.8, 0.12, 12, 48),
-      new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.2 })
-    );
-    chandelier.add(chandRing);
-    for (let i = 0; i < 12; i++) {
-      const angle = (i / 12) * Math.PI * 2;
-      const bulb = new THREE.Mesh(
-        new THREE.SphereGeometry(0.12, 12, 12),
-        new THREE.MeshBasicMaterial({ color: 0xffeebb })
-      );
-      bulb.position.set(Math.cos(angle) * 1.8, -0.25, Math.sin(angle) * 1.8);
-      chandelier.add(bulb);
-    }
-    chandelier.position.y = 11;
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.25 });
+    const crystalMat = new THREE.MeshStandardMaterial({
+      color: 0xfff8e7, metalness: 0.1, roughness: 0.05,
+      emissive: 0xffedb8, emissiveIntensity: 0.9, transparent: true, opacity: 0.95,
+    });
+
+    // Hanging chain
+    const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 4, 8), goldMat);
+    chain.position.y = 2.5;
+    chandelier.add(chain);
+
+    // Three tiers — wide at bottom, narrow at top
+    const tiers: [number, number, number][] = [
+      [2.6, 0, 16],    // bottom tier: radius, y-offset, bulb count
+      [1.8, 0.9, 12],  // middle tier
+      [1.0, 1.7, 8],   // top tier
+    ];
+    tiers.forEach(([radius, yOff, bulbs]) => {
+      // Gold ring for this tier
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.09, 12, 64), goldMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = yOff;
+      chandelier.add(ring);
+      // Crystal bulbs around the ring
+      for (let i = 0; i < bulbs; i++) {
+        const angle = (i / bulbs) * Math.PI * 2;
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), crystalMat);
+        bulb.position.set(Math.cos(angle) * radius, yOff - 0.22, Math.sin(angle) * radius);
+        chandelier.add(bulb);
+        // Crystal droplet below each bulb
+        const drop = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.25, 8), crystalMat);
+        drop.position.set(Math.cos(angle) * radius, yOff - 0.45, Math.sin(angle) * radius);
+        drop.rotation.x = Math.PI;
+        chandelier.add(drop);
+      }
+      // Support arms from center column to ring
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2;
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, radius, 8), goldMat);
+        arm.position.set(Math.cos(angle) * radius / 2, yOff + 0.1, Math.sin(angle) * radius / 2);
+        arm.rotation.z = Math.PI / 2;
+        arm.rotation.y = -angle;
+        chandelier.add(arm);
+      }
+    });
+    // Center column
+    const column = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 2.2, 12), goldMat);
+    column.position.y = 0.8;
+    chandelier.add(column);
+    // Crown top
+    const crown = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), crystalMat);
+    crown.position.y = 2.0;
+    chandelier.add(crown);
+
+    chandelier.position.y = 8;
     this.scene.add(chandelier);
-    const chandLight = new THREE.PointLight(0xffd9a0, 120, 30, 1.5);
-    chandLight.position.y = 10.4;
+    // Strong warm light radiating from the chandelier
+    const chandLight = new THREE.PointLight(0xffd9a0, 200, 35, 1.4);
+    chandLight.position.y = 7.4;
     this.scene.add(chandLight);
 
     // Pillars
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.4, metalness: 0.3 });
     const pillarGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.25 });
+    const sconceGlowMat = new THREE.MeshStandardMaterial({
+      color: 0xffedb8, emissive: 0xffc86e, emissiveIntensity: 1.2,
+      transparent: true, opacity: 0.95,
+    });
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2;
       const px = Math.cos(angle) * 18;
@@ -304,6 +350,33 @@ export class GambleEngine {
         band.position.set(px, y, pz);
         this.scene.add(band);
       });
+      // Wall sconce — visible glowing fixture on each pillar, facing inward
+      const sconceGroup = new THREE.Group();
+      const sconceBase = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 0.5, 8), pillarGoldMat);
+      sconceGroup.add(sconceBase);
+      const sconceShade = new THREE.Mesh(
+        new THREE.ConeGeometry(0.35, 0.5, 12, 1, true),
+        new THREE.MeshStandardMaterial({
+          color: 0xd4af37, metalness: 0.9, roughness: 0.3, side: THREE.DoubleSide,
+        })
+      );
+      sconceShade.position.y = 0.45;
+      sconceGroup.add(sconceShade);
+      const sconceBulb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), sconceGlowMat);
+      sconceBulb.position.y = 0.35;
+      sconceGroup.add(sconceBulb);
+      // Position on pillar surface, facing the table
+      const inwardAngle = Math.atan2(-pz, -px);
+      sconceGroup.position.set(px + Math.cos(inwardAngle) * 1.0, 5.5, pz + Math.sin(inwardAngle) * 1.0);
+      sconceGroup.rotation.y = -inwardAngle + Math.PI / 2;
+      sconceGroup.rotation.z = Math.PI / 2 - 0.3; // tilt upward
+      this.scene.add(sconceGroup);
+      // Small warm light from each sconce
+      const sconceLight = new THREE.PointLight(0xffc86e, 25, 12, 1.6);
+      sconceLight.position.set(
+        px + Math.cos(inwardAngle) * 1.6, 5.8, pz + Math.sin(inwardAngle) * 1.6
+      );
+      this.scene.add(sconceLight);
     }
 
     // BIG FACE signs (2 walls)
