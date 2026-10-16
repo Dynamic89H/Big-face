@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties, Suspense } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useLang, LANGS, type Lang } from '../i18n/LangContext';
@@ -181,7 +181,13 @@ export default function Layout() {
       </aside>
 
       <main className="main">
-        <Outlet />
+        <Suspense fallback={
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--gold)' }}>
+            ✨ Loading...
+          </div>
+        }>
+          <Outlet />
+        </Suspense>
       </main>
 
       <nav className="bottom-nav">{navLinks('nav-link')}</nav>

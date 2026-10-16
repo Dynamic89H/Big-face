@@ -9,7 +9,7 @@ import ChatRoomPage from './pages/ChatRoomPage';
 import VideoPage from './pages/VideoPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import HallOfFamePage from './pages/HallOfFamePage';
-import AvatarStudioPage from './pages/AvatarStudioPage';
+const AvatarStudioPage = lazy(() => import('./pages/AvatarStudioPage'));
 import ThroneRoomPage from './pages/ThroneRoomPage';
 import FameTrackerPage from './pages/FameTrackerPage';
 import FriendsPage from './pages/FriendsPage';
@@ -55,13 +55,20 @@ function PublicOnly({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-import EngineCanvas from './components/EngineCanvas';
+import { lazy, Suspense } from 'react';
 import Celebration from './components/Celebration';
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Lazy-load 3D engines — keeps initial bundle lean, loads Three.js only when needed
+const EngineCanvas = lazy(() => import('./components/EngineCanvas'));
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
-      <EngineCanvas />
+      <Suspense fallback={null}>
+        <EngineCanvas />
+      </Suspense>
       <Celebration />
       <LangProvider>
       <AuthProvider>
@@ -112,5 +119,6 @@ export default function App() {
       </AuthProvider>
       </LangProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }

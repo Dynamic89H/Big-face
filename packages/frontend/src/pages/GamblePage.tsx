@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, lazy, Suspense } from 'react';
 import { gambleApi, ApiError } from '../api/client';
 import { celebrate } from '../components/Celebration';
-import RealTableScene, { type RealTableSceneHandle } from '../components/RealTableScene';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import Avatar from '../components/Avatar';
+
+// Lazy-load the 3D table — Three.js only loads when you visit Gamble Face
+const RealTableScene = lazy(() => import('../components/RealTableScene'));
+import type { RealTableSceneHandle } from '../components/RealTableScene';
 
 interface Game {
   id: string; betTokens: number; status: string;
@@ -205,7 +208,18 @@ export default function GamblePage() {
 
       {/* Your 4 characters as real 3D models at the table - BIG */}
       <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
-        <RealTableScene ref={engineRef} width={1200} height={700} />
+        <Suspense fallback={
+          <div style={{
+            width: '100%', height: 400, display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            background: 'linear-gradient(160deg, #1a0f2e, #0d0d1a)',
+            borderRadius: 16, color: 'var(--gold)',
+          }}>
+            🎲 Loading the casino...
+          </div>
+        }>
+          <RealTableScene ref={engineRef} width={1200} height={700} />
+        </Suspense>
         <div style={{
           position: 'absolute', top: 12, left: 16,
           display: 'flex', alignItems: 'center',
