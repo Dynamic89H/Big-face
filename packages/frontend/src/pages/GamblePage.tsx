@@ -10,6 +10,7 @@ import Avatar from '../components/Avatar';
 // Lazy-load the 3D table — Three.js only loads when you visit Gamble Face
 const RealTableScene = lazy(() => import('../components/RealTableScene'));
 import type { RealTableSceneHandle } from '../components/RealTableScene';
+import { useActorEngine, ActorSpeech } from '../components/ActorEngine';
 
 interface Game {
   id: string; betTokens: number; status: string;
@@ -49,6 +50,16 @@ export default function GamblePage() {
   const [betAmount, setBetAmount] = useState('1000');
   const [creating, setCreating] = useState(false);
   const [result, setResult] = useState<GameResult | null>(null);
+
+  // Character Actor Engine — dealers talk trash, celebrate, play mind games
+  const { currentLine } = useActorEngine({
+    actors: [
+      { id: 'boss', name: 'The Boss', personality: 'street_king', equipped: {} },
+      { id: 'diva', name: 'Diva', personality: 'queen', equipped: {} },
+    ],
+    gameState: result ? (result.won ? 'won' : 'lost') : 'waiting',
+    winnerId: result?.won ? 'boss' : undefined,
+  });
   const [rolling, setRolling] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [musicOn, setMusicOn] = useState(false);
@@ -211,6 +222,8 @@ export default function GamblePage() {
       boxShadow: '0 0 40px rgba(138,43,226,0.3), inset 0 0 60px rgba(0,0,0,0.5)',
       position: 'relative', overflow: 'hidden',
     }}>
+      {/* Character speech — actors talk during games */}
+      <ActorSpeech line={currentLine} />
       {/* Animated digital background */}
       <div style={{
         position: 'absolute', inset: 0, opacity: 0.1, pointerEvents: 'none',
