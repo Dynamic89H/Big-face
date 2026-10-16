@@ -41,10 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await refreshUser();
           getSocket();
         } catch {
-          // Stale/invalid token — drop it and fall through to logged out.
+          // Stale/invalid token (e.g. account deleted) — nuke all local
+          // session data so the user lands on signup fresh, not half-logged-in.
           setToken(null);
           destroySocket();
           setUser(null);
+          try {
+            Object.keys(localStorage)
+              .filter((k) => k.startsWith('bigface.'))
+              .forEach((k) => localStorage.removeItem(k));
+          } catch {
+            /* storage unavailable */
+          }
         }
       }
       setLoading(false);
