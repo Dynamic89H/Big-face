@@ -1,43 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { CharacterModelBuilder, type CharacterModelConfig } from '../engine/CharacterModelBuilder';
 
-interface Character {
-  id: string;
-  name: string;
-  img: string;
-  description: string;
-  skinTone: number;
-  defaultShirt: number;
-  defaultPants: number;
-}
-
-const CHARACTERS: Character[] = [
+const CHARACTERS: CharacterModelConfig[] = [
   {
     id: 'boss', name: 'The Boss',
-    img: '/characters/media-generation-boss-tupac-style-0-5d243a54-3920-4154-9dba-d15d08166707.webp',
-    description: 'Tupac-style. Bandana, all black, gold medallion, rings, left ear earring.',
-    skinTone: 0x6b4226, defaultShirt: 0x1a1a1a, defaultPants: 0x1a1a1a,
+    faceImg: '/characters/media-generation-boss-tupac-style-0-5d243a54-3920-4154-9dba-d15d08166707.webp',
+    skinTone: 0x6b4226, shirtColor: 0x1a1a1a, pantsColor: 0x1a1a1a,
+    build: 'athletic', height: 1.0,
   },
   {
     id: 'diva', name: 'The Baddest Diva',
-    img: '/characters/media-generation-baddest-diva-0-4dd8b93e-0a39-47e6-9c40-5047e631e9c7.webp',
-    description: 'Darker brown skin, long hair, hips, full lips. The baddest.',
-    skinTone: 0x5c3a1e, defaultShirt: 0x8b0000, defaultPants: 0x1a1a1a,
+    faceImg: '/characters/media-generation-baddest-diva-0-4dd8b93e-0a39-47e6-9c40-5047e631e9c7.webp',
+    skinTone: 0x5c3a1e, shirtColor: 0x8b0000, pantsColor: 0x1a1a1a,
+    build: 'curvy', height: 0.98,
   },
   {
     id: 'dreads', name: 'Dread Artist',
-    img: '/characters/media-generation-dread-tattoo-artist-0-1b72bd66-621d-4fab-becb-588d28bcae1f.webp',
-    description: 'Long dreads, tattoos, silver chain. Artistic vibe.',
-    skinTone: 0x6b4226, defaultShirt: 0xf5f5f5, defaultPants: 0x2a2a3a,
+    faceImg: '/characters/media-generation-dread-tattoo-artist-0-1b72bd66-621d-4fab-becb-588d28bcae1f.webp',
+    skinTone: 0x6b4226, shirtColor: 0xf5f5f5, pantsColor: 0x2a2a3a,
+    build: 'slim', height: 1.02,
   },
   {
     id: 'enforcer', name: 'The Enforcer',
-    img: '/characters/media-generation-muscle-fade-enforcer-0-4d0117a0-7509-4292-956f-7761c017424a.webp',
-    description: 'Built with muscles, fade haircut, gold rope chain.',
-    skinTone: 0x6b4226, defaultShirt: 0x1a1a1a, defaultPants: 0x2a2a2a,
+    faceImg: '/characters/media-generation-muscle-fade-enforcer-0-4d0117a0-7509-4292-956f-7761c017424a.webp',
+    skinTone: 0x6b4226, shirtColor: 0x1a1a1a, pantsColor: 0x2a2a2a,
+    build: 'muscular', height: 1.05,
   },
 ];
+
+const DESCRIPTIONS: Record<string, string> = {
+  boss: 'Tupac-style. Bandana, all black, gold medallion, rings, left ear earring.',
+  diva: 'Darker brown skin, long hair, hips, full lips. The baddest.',
+  dreads: 'Long dreads, tattoos, silver chain. Artistic vibe.',
+  enforcer: 'Built with muscles, fade haircut, gold rope chain.',
+};
 
 const SHIRT_COLORS = [
   { name: 'Black', value: 0x1a1a1a },
@@ -48,200 +46,99 @@ const SHIRT_COLORS = [
   { name: 'Purple', value: 0x4a0a4a },
 ];
 
-const CHAIN_OPTIONS = [
-  { name: 'Gold Medallion', value: 'medallion' },
-  { name: 'Cuban Link', value: 'cuban' },
-  { name: 'Rope Chain', value: 'rope' },
-  { name: 'None', value: 'none' },
-];
-
 /**
- * Creation Room — design your character in 3D.
- * Pick a base, customize the fit, see them live.
+ * Creation Room — your 4 characters as detailed 3D models.
+ * They breathe, talk (jaw moves, teeth show), gesture, and walk.
  */
 export default function CreationRoomPage() {
   usePageTitle('Creation Room');
   const mountRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState(CHARACTERS[0]);
   const [shirtColor, setShirtColor] = useState(SHIRT_COLORS[0].value);
-  const [chain, setChain] = useState('medallion');
-  const sceneRef = useRef<{
-    scene: THREE.Scene;
-    character: THREE.Group | null;
-    updateChain: (type: string) => void;
-    updateShirt: (color: number) => void;
-  } | null>(null);
+  const builderRef = useRef<CharacterModelBuilder | null>(null);
+  const currentModelRef = useRef<THREE.Group | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
 
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a12);
+    scene.background = new THREE.Color(0x0a0a14);
+    sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(45, 600 / 500, 0.1, 100);
-    camera.position.set(0, 2, 5);
-    camera.lookAt(0, 1.5, 0);
+    const camera = new THREE.PerspectiveCamera(42, 600 / 520, 0.1, 100);
+    camera.position.set(0, 1.8, 4.5);
+    camera.lookAt(0, 1.4, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(600, 500);
+    renderer.setSize(600, 520);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
     mount.appendChild(renderer.domElement);
 
     // Studio lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const key = new THREE.SpotLight(0xffffff, 100, 20, Math.PI / 6, 0.3);
-    key.position.set(3, 6, 4);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const key = new THREE.SpotLight(0xfff2e0, 120, 25, Math.PI / 6, 0.4);
+    key.position.set(4, 7, 5);
     key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
     scene.add(key);
-    const fill = new THREE.PointLight(0x8888ff, 20, 15);
-    fill.position.set(-4, 3, 2);
+    const fill = new THREE.PointLight(0x8899ff, 25, 20);
+    fill.position.set(-5, 3, 3);
     scene.add(fill);
-    const rim = new THREE.PointLight(0xffd700, 30, 15);
-    rim.position.set(0, 4, -4);
-    scene.add(rim);
+    const rimLight = new THREE.PointLight(0xffd700, 40, 20);
+    rimLight.position.set(0, 5, -5);
+    scene.add(rimLight);
 
     // Floor
     const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(8, 32),
-      new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.4, metalness: 0.5 })
+      new THREE.CircleGeometry(10, 48),
+      new THREE.MeshStandardMaterial({ color: 0x0d0d16, roughness: 0.3, metalness: 0.6 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Turntable platform
+    // Gold turntable
     const platform = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.2, 1.4, 0.15, 32),
-      new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.8, roughness: 0.3 })
+      new THREE.CylinderGeometry(1.1, 1.3, 0.12, 40),
+      new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.85, roughness: 0.25 })
     );
-    platform.position.y = 0.075;
+    platform.position.y = 0.06;
     platform.receiveShadow = true;
     scene.add(platform);
 
-    const loader = new THREE.TextureLoader();
-    let character: THREE.Group | null = null;
-    let shirtMat: THREE.MeshStandardMaterial | null = null;
-    let chainGroup: THREE.Group | null = null;
+    const builder = new CharacterModelBuilder();
+    builderRef.current = builder;
 
-    const buildCharacter = (char: Character, shirt: number, chainType: string) => {
-      if (character) scene.remove(character);
-      character = new THREE.Group();
-
-      const skinMat = new THREE.MeshStandardMaterial({ color: char.skinTone, roughness: 0.6 });
-      shirtMat = new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.7 });
-      const pantsMat = new THREE.MeshStandardMaterial({ color: char.defaultPants, roughness: 0.8 });
-
-      // Legs
-      [-0.22, 0.22].forEach((x) => {
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 1, 12), pantsMat);
-        leg.position.set(x, 0.65, 0);
-        leg.castShadow = true;
-        character!.add(leg);
-        const shoe = new THREE.Mesh(
-          new THREE.BoxGeometry(0.26, 0.14, 0.42),
-          new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4 })
-        );
-        shoe.position.set(x, 0.07, 0.07);
-        shoe.castShadow = true;
-        character!.add(shoe);
-      });
-
-      // Torso
-      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.33, 1, 16), shirtMat);
-      torso.position.y = 1.65;
-      torso.castShadow = true;
-      character!.add(torso);
-
-      // Arms
-      [-1, 1].forEach((side) => {
-        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.9, 10), shirtMat!);
-        arm.position.set(side * 0.52, 1.6, 0);
-        arm.rotation.z = side * 0.12;
-        arm.castShadow = true;
-        character!.add(arm);
-        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 10), skinMat);
-        hand.position.set(side * 0.58, 1.12, 0);
-        hand.castShadow = true;
-        character!.add(hand);
-      });
-
-      // Head with face texture
-      loader.load(char.img, (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace;
-        const head = new THREE.Mesh(
-          new THREE.SphereGeometry(0.3, 24, 24),
-          new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5 })
-        );
-        head.scale.set(0.85, 1.1, 0.9);
-        head.position.y = 2.5;
-        head.castShadow = true;
-        character!.add(head);
-      });
-      // Placeholder
-      const placeholder = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), skinMat);
-      placeholder.scale.set(0.85, 1.1, 0.9);
-      placeholder.position.y = 2.5;
-      character!.add(placeholder);
-      setTimeout(() => {
-        if (character && character.children.length > 8) {
-          character.remove(placeholder);
-        }
-      }, 2000);
-
-      // Chain
-      chainGroup = new THREE.Group();
-      if (chainType !== 'none') {
-        const chainMat = new THREE.MeshStandardMaterial({
-          color: chainType === 'medallion' ? 0xffd700 : 0xc0c0c0,
-          metalness: 1, roughness: 0.25,
-        });
-        const chainMesh = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.03, 8, 24), chainMat);
-        chainMesh.position.y = 2.05;
-        chainMesh.rotation.x = Math.PI / 2 - 0.2;
-        chainGroup.add(chainMesh);
-        if (chainType === 'medallion') {
-          const medallion = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.09, 0.09, 0.03, 20),
-            new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 1, roughness: 0.15 })
-          );
-          medallion.position.set(0, 1.88, 0.26);
-          medallion.rotation.x = Math.PI / 2 - 0.3;
-          chainGroup.add(medallion);
-        }
+    const showCharacter = (config: CharacterModelConfig, shirt: number) => {
+      if (currentModelRef.current) {
+        scene.remove(currentModelRef.current);
       }
-      character.add(chainGroup);
-
-      character.position.y = 0.15;
-      scene.add(character);
+      const model = builder.build({ ...config, shirtColor: shirt });
+      scene.add(model);
+      currentModelRef.current = model;
+      // Make them talk to show off
+      builder.setTalking(config.id, true);
+      setTimeout(() => builder.setTalking(config.id, false), 4000);
     };
 
-    buildCharacter(selected, shirtColor, chain);
+    showCharacter(selected, shirtColor);
 
-    sceneRef.current = {
-      scene,
-      character,
-      updateChain: (type: string) => buildCharacter(selected, shirtColor, type),
-      updateShirt: (color: number) => {
-        if (shirtMat) shirtMat.color.setHex(color);
-      },
-    };
-
-    // Slow rotation (turntable)
     const clock = new THREE.Clock();
     let raf = 0;
     const animate = () => {
       raf = requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
-      if (character) {
-        character.rotation.y = t * 0.4;
-        // Breathing
-        character.position.y = 0.15 + Math.sin(t * 1.5) * 0.02;
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const t = clock.elapsedTime;
+      builder.update(dt);
+      if (currentModelRef.current) {
+        currentModelRef.current.rotation.y = t * 0.35;
       }
-      // Orbit camera slightly
-      camera.position.x = Math.sin(t * 0.2) * 1.5;
-      camera.lookAt(0, 1.5, 0);
+      camera.position.x = Math.sin(t * 0.15) * 1.2;
+      camera.lookAt(0, 1.4, 0);
       renderer.render(scene, camera);
     };
     animate();
@@ -254,102 +151,101 @@ export default function CreationRoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Rebuild when character changes
-  useEffect(() => {
-    if (sceneRef.current) {
-      sceneRef.current.updateChain(chain);
-      sceneRef.current.updateShirt(shirtColor);
+  const handleSelect = (char: CharacterModelConfig) => {
+    setSelected(char);
+    if (builderRef.current && sceneRef.current && currentModelRef.current) {
+      sceneRef.current.remove(currentModelRef.current);
+      const model = builderRef.current.build({ ...char, shirtColor });
+      sceneRef.current.add(model);
+      currentModelRef.current = model;
+      builderRef.current.setTalking(char.id, true);
+      setTimeout(() => builderRef.current?.setTalking(char.id, false), 4000);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected.id]);
-
-  const handleShirtChange = (color: number) => {
-    setShirtColor(color);
-    sceneRef.current?.updateShirt(color);
   };
 
-  const handleChainChange = (type: string) => {
-    setChain(type);
-    sceneRef.current?.updateChain(type);
+  const handleShirt = (color: number) => {
+    setShirtColor(color);
+    if (builderRef.current && sceneRef.current && currentModelRef.current) {
+      sceneRef.current.remove(currentModelRef.current);
+      const model = builderRef.current.build({ ...selected, shirtColor: color });
+      sceneRef.current.add(model);
+      currentModelRef.current = model;
+    }
+  };
+
+  const makeTalk = () => {
+    builderRef.current?.setTalking(selected.id, true);
+    setTimeout(() => builderRef.current?.setTalking(selected.id, false), 3000);
+  };
+
+  const makeGesture = (type: 'wave' | 'celebrate' | 'point' | 'shrug') => {
+    builderRef.current?.gesture(selected.id, type);
+  };
+
+  const makeWalk = () => {
+    builderRef.current?.setWalking(selected.id, true);
+    setTimeout(() => builderRef.current?.setWalking(selected.id, false), 3000);
   };
 
   return (
     <div className="page">
       <h1>🎨 Creation Room</h1>
       <p className="form-note" style={{ marginBottom: '1.5rem' }}>
-        Design your character in 3D. Pick a base, customize the fit.
+        Your 4 characters as real 3D models. They breathe, talk, gesture, and move.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        {/* 3D Preview */}
-        <div>
-          <div
-            ref={mountRef}
-            style={{
-              width: 600, maxWidth: '100%', height: 500,
-              borderRadius: 20, overflow: 'hidden',
-              background: '#0a0a12',
-            }}
-          />
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem' }}>
+        <div
+          ref={mountRef}
+          style={{ width: 600, maxWidth: '100%', height: 520, borderRadius: 20, overflow: 'hidden' }}
+        />
 
-        {/* Customization */}
         <div>
-          <h3>Choose Your Character</h3>
-          <div style={{ display: 'grid', gap: '0.8rem', marginBottom: '1.5rem' }}>
+          <h3>Your Characters</h3>
+          <div style={{ display: 'grid', gap: '0.6rem', marginBottom: '1.2rem' }}>
             {CHARACTERS.map((char) => (
               <div
                 key={char.id}
-                onClick={() => setSelected(char)}
+                onClick={() => handleSelect(char)}
                 className="card"
                 style={{
-                  display: 'flex', gap: '1rem', alignItems: 'center',
-                  cursor: 'pointer', padding: '0.8rem',
+                  display: 'flex', gap: '0.8rem', alignItems: 'center',
+                  cursor: 'pointer', padding: '0.7rem',
                   border: selected.id === char.id ? '2px solid var(--gold)' : undefined,
                 }}
               >
-                <img
-                  src={char.img}
-                  alt={char.name}
-                  style={{ width: 60, height: 60, borderRadius: 12, objectFit: 'cover' }}
-                />
+                <img src={char.faceImg} alt={char.name}
+                  style={{ width: 52, height: 52, borderRadius: 10, objectFit: 'cover' }} />
                 <div>
-                  <div style={{ fontWeight: 700 }}>{char.name}</div>
-                  <div className="form-note" style={{ fontSize: '0.8rem' }}>{char.description}</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{char.name}</div>
+                  <div className="form-note" style={{ fontSize: '0.75rem' }}>{DESCRIPTIONS[char.id]}</div>
                 </div>
               </div>
             ))}
           </div>
 
-          <h3>Shirt Color</h3>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          <h3>Shirt</h3>
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
             {SHIRT_COLORS.map((c) => (
-              <button
-                key={c.name}
-                onClick={() => handleShirtChange(c.value)}
+              <button key={c.name} onClick={() => handleShirt(c.value)}
+                title={c.name}
                 style={{
-                  width: 44, height: 44, borderRadius: '50%',
+                  width: 38, height: 38, borderRadius: '50%',
                   background: `#${c.value.toString(16).padStart(6, '0')}`,
                   border: shirtColor === c.value ? '3px solid var(--gold)' : '2px solid rgba(255,255,255,0.2)',
                   cursor: 'pointer',
-                }}
-                title={c.name}
-              />
+                }} />
             ))}
           </div>
 
-          <h3>Chain</h3>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {CHAIN_OPTIONS.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => handleChainChange(c.value)}
-                className={chain === c.value ? 'btn-primary' : 'btn-secondary'}
-                style={{ padding: '0.5rem 1rem' }}
-              >
-                {c.name}
-              </button>
-            ))}
+          <h3>Make Them Move</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <button className="btn-secondary" onClick={makeTalk}>🗣️ Talk</button>
+            <button className="btn-secondary" onClick={makeWalk}>🚶 Walk</button>
+            <button className="btn-secondary" onClick={() => makeGesture('wave')}>👋 Wave</button>
+            <button className="btn-secondary" onClick={() => makeGesture('celebrate')}>🎉 Celebrate</button>
+            <button className="btn-secondary" onClick={() => makeGesture('point')}>👉 Point</button>
+            <button className="btn-secondary" onClick={() => makeGesture('shrug')}>🤷 Shrug</button>
           </div>
         </div>
       </div>
