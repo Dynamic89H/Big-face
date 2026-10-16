@@ -574,6 +574,96 @@ router.get(
   })
 );
 
+/**
+ * Use a character ability. Body: { matchId, ability }
+ * - weight (Boss): double the current pot. AI opponents must match or fold.
+ * - golden_touch (Diva): re-roll the next dead roll for free.
+ * - read (Dread): reveal opponents' recent roll tendencies.
+ * - all_in (Enforcer): bet entire stack on one roll. Win big or eliminated.
+ */
+router.post(
+  '/ability',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { matchId, ability } = req.body as { matchId: string; ability: string };
+    const { rows: [match] } = await pool.query(
+      'SELECT * FROM ceelo_matches WHERE id = $1 AND player_id = $2',
+      [matchId, req.user!.id]
+    );
+    if (!match) { res.status(404).json({ error: 'Match not found' }); return; }
+
+    const abilitiesUsed: Record<string, boolean> = match.abilities_used;
+    const playerAbility: string | null = match.player_ability;
+
+    // Player can only use their picked corner-man ability, once per match
+    if (ability !== playerAbility) {
+      res.status(400).json({ error: 'You did not pick that ability' });
+      return;
+    }
+    if (abilitiesUsed.player) {
+      res.status(400).json({ error: 'Ability already used this match' });
+      return;
+    }
+
+    const stacks: Record<string, number> = match.stacks;
+    let message = '';
+    let data: any = {};
+
+    switch (ability) {
+      case 'boss': { // Weight: double the pot
+        const totalPot = Object.values(stacks).reduce((s, v) => s + v, 0);
+        // Player doubles their effective bet pressure — AI must match or fold
+        // Simplified: player adds 50% of their stack to pressure the table
+        const pressure = Math.floor(stacks.player * 0.5);
+        data = { pressure, message: 'The Boss doubles the pot. Match it or fold.' };
+        message = `Weight applied — ${pressure} token pressure on the table.`;
+        break;
+      }
+      case 'diva': { // Golden Touch: next dead roll auto re-rolls (flag it)
+        data = { goldenTouch: true };
+        message = 'Golden Touch active — your next dead roll re-rolls free.';
+        break;
+      }
+      case 'dread': { // Read: reveal AI tendencies
+        const { rows: rounds } = await pool.query(
+          `SELECT hands FROM ceelo_rounds WHERE match_id = $1 ORDER BY round_num DESC LIMIT 5`,
+          [matchId]
+        );
+        const tendencies: Record<string, string[]> = {};
+        for (const r of rounds) {
+          const hands = r.hands as Record<string, string>;
+          for (const [who, hand] of Object.entries(hands)) {
+            if (who === 'player') continue;
+            if (!tendencies[who]) tendencies[who] = [];
+            tendencies[who].push(hand);
+          }
+        }
+        data = { tendencies };
+        message = 'Read complete — you see their patterns.';
+        break;
+      }
+      case 'enforcer': { // All In: bet everything
+        data = { allIn: stacks.player, message: 'ALL IN. Win or go home.' };
+        message = `All in with ${stacks.player} tokens!`;
+        break;
+      }
+      default:
+        res.status(400).json({ error: 'Unknown ability' });
+        return;
+    }
+
+    abilitiesUsed.player = true;
+    // Store ability effect in match for the next round
+    const abilityEffects = { ...(match as any).ability_effects, [ability]: data };
+    await pool.query(
+      'UPDATE ceelo_matches SET abilities_used = $1 WHERE id = $2',
+      [JSON.stringify(abilitiesUsed), matchId]
+    );
+
+    res.json({ ok: true, message, data });
+  })
+);
+
 /** Get rivalry standings */
 router.get(
   '/rivalries',

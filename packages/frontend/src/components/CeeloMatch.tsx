@@ -49,6 +49,8 @@ export default function CeeloMatch({ onExit }: { onExit: () => void }) {
   const [lastRound, setLastRound] = useState<RoundResult | null>(null);
   const [rolling, setRolling] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [abilityUsed, setAbilityUsed] = useState(false);
+  const [playerAbility, setPlayerAbility] = useState<string>('');
 
   useEffect(() => {
     ceeloApi.story().then((res) => {
@@ -76,10 +78,25 @@ export default function CeeloMatch({ onExit }: { onExit: () => void }) {
       setRoundNum(1);
       setHeater(0);
       setLastRound(null);
+      setPlayerAbility(ability);
+      setAbilityUsed(false);
       setPhase('playing');
       setMsg(res.message);
     } catch (e: any) {
       setMsg(e.message || 'Could not start match');
+    }
+  };
+
+  const useAbility = async () => {
+    if (!playerAbility || abilityUsed) return;
+    try {
+      const res = await ceeloApi.useAbility(matchId, playerAbility);
+      setAbilityUsed(true);
+      setMsg(res.message);
+      // All-in: auto-set bet to full stack
+      if (res.data?.allIn) setBet(res.data.allIn);
+    } catch (e: any) {
+      setMsg(e.message || 'Ability failed');
     }
   };
 
@@ -299,15 +316,22 @@ export default function CeeloMatch({ onExit }: { onExit: () => void }) {
 
       {/* Betting */}
       {!lastRound?.matchOver && stacks.player > 0 && (
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             type="number" value={bet} min={10} max={stacks.player}
             onChange={(e) => setBet(Math.max(10, parseInt(e.target.value) || 10))}
-            style={{ flex: 1, padding: '0.8rem', borderRadius: 8, border: '1px solid var(--gold)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '1rem' }}
+            style={{ flex: 1, minWidth: 100, padding: '0.8rem', borderRadius: 8, border: '1px solid var(--gold)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '1rem' }}
           />
           <button onClick={playRound} disabled={rolling} className="btn" style={{ padding: '0.8rem 1.5rem' }}>
             {rolling ? '🎲 Rolling...' : '🎲 Roll'}
           </button>
+          {playerAbility && !abilityUsed && (
+            <button onClick={useAbility} className="btn btn-sm"
+              style={{ padding: '0.8rem', background: 'linear-gradient(90deg, #7b2ff7, #f72fa9)', border: 'none' }}
+              title={CHARACTER_META[playerAbility]?.abilityDesc}>
+              ⚡ {CHARACTER_META[playerAbility]?.ability}
+            </button>
+          )}
         </div>
       )}
 
