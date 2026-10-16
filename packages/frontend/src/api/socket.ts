@@ -47,6 +47,13 @@ export interface ServerToClientEvents {
   'engagement:crew-battle': (payload: { battleId: string }) => void;
   'vault:update': (payload: { balance: number }) => void;
   'vault:winner': (payload: { userId: string; amount: number }) => void;
+  'vision:stream-live': (payload: { streamId: string; hostId: string; title: string }) => void;
+  'vision:stream-ended': (payload: { streamId: string }) => void;
+  'vision:stream-tip': (payload: { streamId: string; amount: number }) => void;
+  'vision:tip': (payload: { streamId: string; amount: number; message?: string }) => void;
+  'vision:space-live': (payload: { spaceId: string; title: string }) => void;
+  'vision:sale': (payload: { listingId: string; amount: number }) => void;
+  'vision:event': (payload: { eventId: string; title: string }) => void;
   'gamble:result': (payload: any) => void;
 }
 
