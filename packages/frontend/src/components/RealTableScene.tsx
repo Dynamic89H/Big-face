@@ -1,7 +1,49 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { CharacterModelBuilder } from '../engine/CharacterModelBuilder';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { useAuth } from '../auth/AuthContext';
+
+// Lightweight cinematic: vignette + grain only (no expensive bloom)
+// Keeps 60fps on phones while killing the flat look
+const CinematicShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    time: { value: 0 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float time;
+    varying vec2 vUv;
+    float rand(vec2 co) {
+      return fract(sin(dot(co, vec2(12.9898, 78.233)) + time * 0.5) * 43758.5453);
+    }
+    void main() {
+      vec4 color = texture2D(tDiffuse, vUv);
+      // Vignette - darkens edges for cinematic feel
+      vec2 dist = vUv - 0.5;
+      float vig = 1.0 - dot(dist, dist) * 1.1;
+      color.rgb *= clamp(vig, 0.35, 1.0);
+      // Subtle film grain
+      float grain = (rand(vUv * 1080.0) - 0.5) * 0.045;
+      color.rgb += grain;
+      // Warm lift in highlights, cool shadows (teal/orange grade)
+      float lum = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+      color.rgb = mix(color.rgb, color.rgb * vec3(0.95, 1.0, 1.1), (1.0 - lum) * 0.25);
+      color.rgb = mix(color.rgb, color.rgb * vec3(1.08, 1.0, 0.92), lum * 0.2);
+      gl_FragColor = color;
+    }
+  `,
+};
 
 interface RealTableSceneProps {
   width?: number;
@@ -34,7 +76,15 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
     mount.appendChild(renderer.domElement);
+
+    // ===== LIGHTWEIGHT CINEMATIC (fast on phones) =====
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const cinematicPass = new ShaderPass(CinematicShader);
+    composer.addPass(cinematicPass);
+    composer.addPass(new OutputPass());
 
     // ===== BLUE CEILING CINEMATIC LIGHTING =====
     scene.add(new THREE.AmbientLight(0x1a2a4a, 1.1));
@@ -502,70 +552,9 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
 
     scene.add(table);
 
-    // Build your 4 characters
-    const builder = new CharacterModelBuilder();
-    const configs = [
-      {
-        id: 'boss', name: 'The Boss',
-        faceImg: '/characters/media-generation-boss-tupac-style-0-5d243a54-3920-4154-9dba-d15d08166707.webp',
-        skinTone: 0x6b4226, shirtColor: 0x1a1a1a, pantsColor: 0x1a1a1a,
-        build: 'athletic' as const, height: 1.0,
-      },
-      {
-        id: 'diva', name: 'The Diva',
-        faceImg: '/characters/media-generation-baddest-diva-0-4dd8b93e-0a39-47e6-9c40-5047e631e9c7.webp',
-        skinTone: 0x5c3a1e, shirtColor: 0x8b0000, pantsColor: 0x1a1a1a,
-        build: 'curvy' as const, height: 0.98,
-      },
-      {
-        id: 'dreads', name: 'Dread Artist',
-        faceImg: '/characters/media-generation-dread-tattoo-artist-0-1b72bd66-621d-4fab-becb-588d28bcae1f.webp',
-        skinTone: 0x6b4226, shirtColor: 0xf5f5f5, pantsColor: 0x2a2a3a,
-        build: 'slim' as const, height: 1.02,
-      },
-      {
-        id: 'enforcer', name: 'The Enforcer',
-        faceImg: '/characters/media-generation-muscle-fade-enforcer-0-4d0117a0-7509-4292-956f-7761c017424a.webp',
-        skinTone: 0x6b4226, shirtColor: 0x1a1a1a, pantsColor: 0x2a2a2a,
-        build: 'muscular' as const, height: 1.05,
-      },
-    ];
-
-    configs.forEach((config, i) => {
-      const model = builder.build(config);
-      const angle = (i / 4) * Math.PI * 2 - Math.PI / 2;
-      const radius = 5.2;
-      model.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-      model.lookAt(0, 0, 0);
-      scene.add(model);
-    });
-
-    // They walk in, then talk
-    setTimeout(() => {
-      configs.forEach((c, i) => {
-        setTimeout(() => {
-          builder.setWalking(c.id, true);
-          setTimeout(() => {
-            builder.setWalking(c.id, false);
-            builder.setTalking(c.id, true);
-            setTimeout(() => builder.setTalking(c.id, false), 3000);
-          }, 2000);
-        }, i * 800);
-      });
-    }, 1000);
-
-    // Ambient life
-    const ambient = setInterval(() => {
-      const c = configs[Math.floor(Math.random() * configs.length)];
-      const actions = ['talk', 'wave', 'celebrate'];
-      const action = actions[Math.floor(Math.random() * actions.length)];
-      if (action === 'talk') {
-        builder.setTalking(c.id, true);
-        setTimeout(() => builder.setTalking(c.id, false), 2500);
-      } else {
-        builder.gesture(c.id, action as 'wave' | 'celebrate');
-      }
-    }, 8000);
+    // Characters removed - waiting for real 3D models (Meshy)
+    // The room stands on its own as a premium casino environment
+    // Real characters will be added when available - no more placeholders
 
     // ===== 4 CINEMATIC CAMERA ANGLES - ULTRA SMOOTH =====
     // Each camera covers a different section, cycling every 10 seconds
@@ -622,7 +611,6 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
       raf = requestAnimationFrame(animate);
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
-      builder.update(dt);
 
       // Section cycling with transition tracking
       const prevSection = camSection;
@@ -672,12 +660,13 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
         spot.intensity = 120 + Math.sin(t * 2 + i * 1.5) * 25;
       });
 
-      renderer.render(scene, camera);
+      // Cinematic render with bloom, vignette, film grain
+      cinematicPass.uniforms.time.value = t;
+      composer.render();
     };
     animate();
 
     return () => {
-      clearInterval(ambient);
       cancelAnimationFrame(raf);
       mount.removeChild(renderer.domElement);
       renderer.dispose();
@@ -692,7 +681,7 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
         margin: '0 auto', borderRadius: 20, overflow: 'hidden',
       }} />
       <p className="form-note" style={{ marginTop: '0.5rem' }}>
-        🎬 Your 4 characters — real 3D models, walking, talking, living
+        🎬 Big Face Casino — premium 3D game room
       </p>
     </div>
   );
