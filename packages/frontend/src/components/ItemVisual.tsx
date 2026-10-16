@@ -41,6 +41,8 @@ function imageFor(slot: string, style: Record<string, unknown>, name: string): s
       return '/gear/hat-snapback.webp';
     case 'watch':
       return '/gear/watch-gold.webp';
+    case 'glasses':
+      return '/gear/glasses-aviator.webp';
     default:
       return null;
   }
