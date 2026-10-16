@@ -13,7 +13,7 @@ export default function SignupPage() {
     email: '',
     password: '',
     displayName: '',
-    gender: 'female',
+    gender: '',
     referralCode: '',
   });
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +67,8 @@ export default function SignupPage() {
           </div>
           <div className="field">
             <label htmlFor="su-gender">Gender</label>
-            <select id="su-gender" className="select" value={form.gender} onChange={set('gender')}>
+            <select id="su-gender" className="select" value={form.gender} onChange={set('gender')} required>
+              <option value="" disabled>Select gender</option>
               {GENDERS.map((g) => (
                 <option key={g} value={g}>{g[0].toUpperCase() + g.slice(1)}</option>
               ))}
