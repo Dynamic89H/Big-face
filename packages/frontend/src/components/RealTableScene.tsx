@@ -23,7 +23,7 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x060608);
-    scene.fog = new THREE.Fog(0x060608, 18, 35);
+    scene.fog = new THREE.Fog(0x060608, 30, 60);
 
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -85,10 +85,10 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     scene.add(rim);
 
     // ===== GRAND CASINO ROOM =====
-    // Massive floor
+    // Massive floor with reflection
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(40, 64),
-      new THREE.MeshStandardMaterial({ color: 0x0c0c14, roughness: 0.2, metalness: 0.85 })
+      new THREE.MeshStandardMaterial({ color: 0x0c0c14, roughness: 0.15, metalness: 0.9 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
@@ -103,6 +103,30 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     carpet.position.y = 0.01;
     carpet.receiveShadow = true;
     scene.add(carpet);
+
+    // ===== WALLS - dark luxury with gold trim =====
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.85 });
+    const wallGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.25 });
+    // 8 wall segments forming octagon room
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const nextAngle = ((i + 1) / 8) * Math.PI * 2;
+      const r = 22;
+      const x1 = Math.cos(angle) * r, z1 = Math.sin(angle) * r;
+      const x2 = Math.cos(nextAngle) * r, z2 = Math.sin(nextAngle) * r;
+      const wallLen = Math.hypot(x2 - x1, z2 - z1);
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(wallLen, 18, 0.5), wallMat);
+      wall.position.set((x1 + x2) / 2, 9, (z1 + z2) / 2);
+      wall.lookAt(0, 9, 0);
+      scene.add(wall);
+      // Gold trim top and bottom
+      [0.5, 17.5].forEach((y) => {
+        const trim = new THREE.Mesh(new THREE.BoxGeometry(wallLen, 0.25, 0.6), wallGoldMat);
+        trim.position.set((x1 + x2) / 2, y, (z1 + z2) / 2);
+        trim.lookAt(0, y, 0);
+        scene.add(trim);
+      });
+    }
 
     // Chandelier above table
     const chandelier = new THREE.Group();
@@ -138,37 +162,46 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     chandLight.position.y = 10.4;
     scene.add(chandLight);
 
-    // ===== BIG FACE NEON SIGN =====
-    const signCanvas = document.createElement('canvas');
-    signCanvas.width = 1024;
-    signCanvas.height = 256;
-    const sctx = signCanvas.getContext('2d')!;
-    sctx.fillStyle = '#0a0a12';
-    sctx.fillRect(0, 0, 1024, 256);
-    sctx.font = 'bold 120px Arial';
-    sctx.textAlign = 'center';
-    sctx.textBaseline = 'middle';
-    // Glow effect
-    sctx.shadowColor = '#ffd700';
-    sctx.shadowBlur = 40;
-    sctx.fillStyle = '#ffd700';
-    sctx.fillText('BIG FACE', 512, 110);
-    sctx.font = 'bold 48px Arial';
-    sctx.shadowColor = '#2266ff';
-    sctx.shadowBlur = 30;
-    sctx.fillStyle = '#66aaff';
-    sctx.fillText('★ CASINO ★', 512, 200);
-    const signTex = new THREE.CanvasTexture(signCanvas);
-    const signMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(14, 3.5),
-      new THREE.MeshBasicMaterial({ map: signTex })
-    );
-    signMesh.position.set(0, 8, -17.5);
-    scene.add(signMesh);
-    // Sign glow light
-    const signGlow = new THREE.PointLight(0xffd700, 40, 20, 1.5);
-    signGlow.position.set(0, 8, -15);
-    scene.add(signGlow);
+    // ===== BIG FACE NEON SIGNS (2 walls, always visible) =====
+    const makeSign = (): THREE.CanvasTexture => {
+      const signCanvas = document.createElement('canvas');
+      signCanvas.width = 1024;
+      signCanvas.height = 256;
+      const sctx = signCanvas.getContext('2d')!;
+      sctx.fillStyle = '#0a0a14';
+      sctx.fillRect(0, 0, 1024, 256);
+      // Gold border
+      sctx.strokeStyle = '#d4af37';
+      sctx.lineWidth = 8;
+      sctx.strokeRect(10, 10, 1004, 236);
+      sctx.font = 'bold 110px Arial';
+      sctx.textAlign = 'center';
+      sctx.textBaseline = 'middle';
+      sctx.shadowColor = '#ffd700';
+      sctx.shadowBlur = 50;
+      sctx.fillStyle = '#ffdf5e';
+      sctx.fillText('BIG FACE', 512, 100);
+      sctx.font = 'bold 44px Arial';
+      sctx.shadowColor = '#2266ff';
+      sctx.shadowBlur = 35;
+      sctx.fillStyle = '#77bbff';
+      sctx.fillText('★ ★ ★  CASINO  ★ ★ ★', 512, 195);
+      return new THREE.CanvasTexture(signCanvas);
+    };
+    const signTex = makeSign();
+    // Two signs on opposite walls
+    [[0, -20.5, 0], [0, 20.5, Math.PI]].forEach(([x, z, rotY]) => {
+      const signMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(16, 4),
+        new THREE.MeshBasicMaterial({ map: signTex })
+      );
+      signMesh.position.set(x, 9, z);
+      signMesh.rotation.y = rotY;
+      scene.add(signMesh);
+      const signGlow = new THREE.PointLight(0xffd700, 50, 22, 1.4);
+      signGlow.position.set(x, 9, z > 0 ? z - 3 : z + 3);
+      scene.add(signGlow);
+    });
 
     // ===== VIP LOUNGE AREAS (4 corners) =====
     const couchMat = new THREE.MeshPhysicalMaterial({ color: 0x1a0d1a, roughness: 0.8, clearcoat: 0.2 });
@@ -234,13 +267,13 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
       scene.add(strip);
     }
 
-    // ===== WALL ART FRAMES =====
+    // ===== WALL ART FRAMES (on the walls) =====
     const frameGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.2 });
     const artColors = [0xff2d78, 0x2266ff, 0xffd700, 0x00e5ff];
     for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI * 2;
-      const ax = Math.cos(angle) * 17.8;
-      const az = Math.sin(angle) * 17.8;
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const ax = Math.cos(angle) * 21.5;
+      const az = Math.sin(angle) * 21.5;
       // Frame
       const frame = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 0.15), frameGoldMat);
       frame.position.set(ax, 7, az);
@@ -600,8 +633,6 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
       blueSpots.forEach((spot, i) => {
         spot.intensity = 120 + Math.sin(t * 2 + i * 1.5) * 25;
       });
-      // Neon sign flicker (subtle)
-      signGlow.intensity = 40 + Math.sin(t * 8) * 3 + Math.sin(t * 23) * 2;
 
       renderer.render(scene, camera);
     };
