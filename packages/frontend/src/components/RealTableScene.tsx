@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { CharacterModelBuilder } from '../engine/CharacterModelBuilder';
+import { SmoothEngine } from '../engine/SmoothEngine';
 import { useAuth } from '../auth/AuthContext';
 
 interface RealTableSceneProps {
@@ -29,10 +30,12 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     const h = Math.min(height, width * 0.625);
     renderer.setSize(width, h);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     renderer.shadowMap.enabled = true;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     mount.appendChild(renderer.domElement);
+
+    // SmoothEngine - auto-tunes quality to hold 60fps
+    const smooth = new SmoothEngine(renderer);
 
     // ===== BLUE CEILING CINEMATIC LIGHTING =====
     scene.add(new THREE.AmbientLight(0x1a2a4a, 1.1));
@@ -68,14 +71,13 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     underGlow.position.set(0, 0.4, 0);
     scene.add(underGlow);
 
-    // Neon accent lights - blue and gold alternating
+    // Neon accent lights - blue and gold alternating (4 total for performance)
     const accentData: [number, number][] = [
-      [0x2266ff, 0], [0xffd700, 0.8], [0x2266ff, 1.6], [0xffd700, 2.4],
-      [0x2266ff, 3.2], [0xffd700, 4.0], [0x2266ff, 4.8], [0xffd700, 5.6],
+      [0x2266ff, 0.4], [0xffd700, 1.9], [0x2266ff, 3.5], [0xffd700, 5.1],
     ];
     accentData.forEach(([color, angle]) => {
-      const light = new THREE.PointLight(color, 28, 22, 1.6);
-      light.position.set(Math.cos(angle) * 13, 3.5, Math.sin(angle) * 13);
+      const light = new THREE.PointLight(color, 35, 26, 1.5);
+      light.position.set(Math.cos(angle) * 13, 4, Math.sin(angle) * 13);
       scene.add(light);
     });
 
@@ -246,12 +248,13 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
       lounge.position.set(cx, 0, cz);
       lounge.lookAt(0, 0, 0);
       scene.add(lounge);
-
-      // Lounge spotlight (blue)
-      const loungeLight = new THREE.PointLight(0x4488ff, 20, 10, 1.5);
-      loungeLight.position.set(cx, 4, cz);
-      scene.add(loungeLight);
     }
+    // Shared lounge glow (2 lights instead of 4)
+    [[9.2, 9.2], [-9.2, -9.2]].forEach(([x, z]) => {
+      const loungeLight = new THREE.PointLight(0x4488ff, 25, 14, 1.4);
+      loungeLight.position.set(x, 4, z);
+      scene.add(loungeLight);
+    });
 
     // ===== NEON FLOOR STRIPS =====
     const stripBlueMat = new THREE.MeshBasicMaterial({ color: 0x2266ff });
@@ -611,6 +614,7 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
       builder.update(dt);
+      smooth.update(dt);
 
       // Cycle through 4 sections
       sectionTimer += dt;
