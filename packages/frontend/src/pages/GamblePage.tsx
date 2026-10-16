@@ -10,6 +10,7 @@ import Avatar from '../components/Avatar';
 // Lazy-load the 3D table — Three.js only loads when you visit Gamble Face
 const RealTableScene = lazy(() => import('../components/RealTableScene'));
 import type { RealTableSceneHandle } from '../components/RealTableScene';
+import type { GraphicsQuality } from '../engine/GambleEngine';
 import { useActorEngine, ActorSpeech, ACTOR_VOICES } from '../components/ActorEngine';
 
 interface Game {

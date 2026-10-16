@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 export type GambleMood = 'idle' | 'tense' | 'win' | 'lose';
+export type GraphicsQuality = 'low' | 'medium' | 'high' | 'ultra' | 'max8k';
 
 /**
  * GambleEngine — the 3D engine behind Gamble Face.
@@ -117,6 +118,69 @@ export class GambleEngine {
   }
 
   // ============ PUBLIC GAME API ============
+
+  /** Set graphics quality at runtime. Persisted by the caller. */
+  setQuality(q: GraphicsQuality): void {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (window.innerWidth < 768 && 'ontouchstart' in window);
+    const dpr = window.devicePixelRatio || 1;
+    switch (q) {
+      case 'low':
+        this.renderer.setPixelRatio(1);
+        this.renderer.shadowMap.enabled = false;
+        this.renderer.toneMappingExposure = 1.0;
+        break;
+      case 'medium':
+        this.renderer.setPixelRatio(Math.min(dpr, 1.5));
+        this.renderer.shadowMap.enabled = true;
+        this.keyLight.shadow.mapSize.set(1024, 1024);
+        this.renderer.toneMappingExposure = 1.1;
+        break;
+      case 'high':
+        this.renderer.setPixelRatio(Math.min(dpr, isMobile ? 2 : 2.5));
+        this.renderer.shadowMap.enabled = true;
+        this.keyLight.shadow.mapSize.set(2048, 2048);
+        this.renderer.toneMappingExposure = 1.15;
+        break;
+      case 'ultra':
+        this.renderer.setPixelRatio(Math.min(dpr, isMobile ? 2.5 : 3));
+        this.renderer.shadowMap.enabled = true;
+        this.keyLight.shadow.mapSize.set(4096, 4096);
+        this.renderer.toneMappingExposure = 1.2;
+        break;
+      case 'max8k':
+        // Maximum possible: full native resolution, no cap. 16x anisotropic
+        // filtering for razor-sharp textures at angles. Desktop GPUs only —
+        // phones will chug, so this is opt-in.
+        this.renderer.setPixelRatio(dpr);
+        this.renderer.shadowMap.enabled = true;
+        this.keyLight.shadow.mapSize.set(4096, 4096);
+        this.renderer.toneMappingExposure = 1.25;
+        // Max texture sharpness
+        const maxAniso = this.renderer.capabilities.getMaxAnisotropy();
+        this.scene.traverse((obj) => {
+          const mesh = obj as THREE.Mesh;
+          if (mesh.isMesh) {
+            const mat = mesh.material as THREE.MeshStandardMaterial;
+            const maps = [mat.map, mat.normalMap, mat.roughnessMap].filter(Boolean);
+            maps.forEach((m) => { if (m) m.anisotropy = maxAniso; });
+          }
+        });
+        break;
+    }
+    // Force shadow map refresh after size change
+    if (this.keyLight.shadow.map) {
+      this.keyLight.shadow.map.dispose();
+      this.keyLight.shadow.map = null as any;
+    }
+    // Resize to apply new pixel ratio
+    const w = this.container.clientWidth, h = this.container.clientHeight;
+    if (w && h) {
+      this.camera.aspect = w / h;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(w, h);
+    }
+  }
 
   /** Roll the 3D dice and land showing the actual game values */
   rollDice(v1: number, v2: number): void {

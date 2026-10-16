@@ -11,6 +11,7 @@ export interface RealTableSceneHandle {
   rollDice: (v1: number, v2: number) => void;
   celebrate: () => void;
   setMood: (mood: 'idle' | 'tense' | 'win' | 'lose') => void;
+  setQuality: (q: GraphicsQuality) => void;
 }
 
 /**
@@ -27,6 +28,7 @@ const RealTableScene = forwardRef<RealTableSceneHandle, RealTableSceneProps>(
       rollDice: (v1: number, v2: number) => engineRef.current?.rollDice(v1, v2),
       celebrate: () => engineRef.current?.celebrate(),
       setMood: (mood) => engineRef.current?.setMood(mood),
+      setQuality: (q) => engineRef.current?.setQuality(q),
     }), []);
 
     useEffect(() => {
