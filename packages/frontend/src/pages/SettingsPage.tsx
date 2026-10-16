@@ -38,22 +38,15 @@ const LANGUAGES = [
  * SettingsPage — everything a user needs to configure Big Face.
  * Notifications, privacy, display, account.
  */
-export default function SettingsPage() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [settings, setSettings] = useState<Settings>(DEFAULTS);
-  const [saved, setSaved] = useState(false);
-  const [pwCurrent, setPwCurrent] = useState('');
-  const [pwNew, setPwNew] = useState('');
-  const [pwConfirm, setPwConfirm] = useState('');
-  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [pwBusy, setPwBusy] = useState(false);
-  const [showPw, setShowPw] = useState([false, false, false]);
 
-  const PwField = ({ index, placeholder, value, onChange, autoComplete }: {
-    index: number; placeholder: string; value: string;
-    onChange: (v: string) => void; autoComplete: string;
-  }) => (
+// Password field with show/hide toggle — defined OUTSIDE SettingsPage so
+// React doesn't remount the input on every keystroke (which drops the keyboard).
+function PwField({ index, placeholder, value, onChange, autoComplete, showPw, setShowPw }: {
+  index: number; placeholder: string; value: string;
+  onChange: (v: string) => void; autoComplete: string;
+  showPw: boolean[]; setShowPw: React.Dispatch<React.SetStateAction<boolean[]>>;
+}) {
+  return (
     <div style={{ position: 'relative' }}>
       <input
         type={showPw[index] ? 'text' : 'password'}
@@ -79,6 +72,19 @@ export default function SettingsPage() {
       </button>
     </div>
   );
+}
+
+export default function SettingsPage() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [settings, setSettings] = useState<Settings>(DEFAULTS);
+  const [saved, setSaved] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pwBusy, setPwBusy] = useState(false);
+  const [showPw, setShowPw] = useState([false, false, false]);
 
   const changePassword = async () => {
     setPwMsg(null);
@@ -271,11 +277,14 @@ export default function SettingsPage() {
         )}
         <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1rem' }}>
           <PwField index={0} placeholder="Current password" value={pwCurrent}
-            onChange={setPwCurrent} autoComplete="current-password" />
+            onChange={setPwCurrent} autoComplete="current-password"
+            showPw={showPw} setShowPw={setShowPw} />
           <PwField index={1} placeholder="New password (min 6 characters)" value={pwNew}
-            onChange={setPwNew} autoComplete="new-password" />
+            onChange={setPwNew} autoComplete="new-password"
+            showPw={showPw} setShowPw={setShowPw} />
           <PwField index={2} placeholder="Confirm new password" value={pwConfirm}
-            onChange={setPwConfirm} autoComplete="new-password" />
+            onChange={setPwConfirm} autoComplete="new-password"
+            showPw={showPw} setShowPw={setShowPw} />
           <button className="btn btn-block" onClick={changePassword} disabled={pwBusy}>
             {pwBusy ? 'Changing...' : 'Change Password'}
           </button>
