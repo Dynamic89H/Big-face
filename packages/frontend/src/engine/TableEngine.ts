@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type CharacterState = 'idle' | 'talking' | 'celebrating' | 'thinking' | 'leaving' | 'joining' | 'shocked' | 'hyped';
+export type CharacterState = 'idle' | 'talking' | 'celebrating' | 'thinking' | 'leaving' | 'joining' | 'shocked' | 'hyped' | 'smoking' | 'drinking';
 
 export interface TableCharacter {
   id: string;
@@ -301,9 +301,194 @@ export class TableEngine {
     }
   }
 
+  private smokeParticles: THREE.Points[] = [];
+  private drinkProps: THREE.Group[] = [];
+
+  // Add club props to the table — bottles, glasses
+  private addClubProps() {
+    // Champagne bottles on the table
+    const bottlePositions = [
+      { x: -1.5, z: 0.8 }, { x: 1.5, z: -0.8 }, { x: 0, z: 1.5 },
+    ];
+    bottlePositions.forEach((pos) => {
+      const bottleGroup = new THREE.Group();
+      // Bottle body
+      const bottle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.15, 0.7, 12),
+        new THREE.MeshStandardMaterial({ color: 0x0a3a0a, roughness: 0.2, metalness: 0.3 })
+      );
+      bottle.position.y = 0.35;
+      bottle.castShadow = true;
+      bottleGroup.add(bottle);
+      // Bottle neck
+      const neck = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.08, 0.3, 10),
+        new THREE.MeshStandardMaterial({ color: 0x0a3a0a, roughness: 0.2 })
+      );
+      neck.position.y = 0.8;
+      bottleGroup.add(neck);
+      // Gold foil top
+      const foil = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 0.12, 10),
+        new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.9, roughness: 0.3 })
+      );
+      foil.position.y = 0.95;
+      bottleGroup.add(foil);
+      bottleGroup.position.set(pos.x, 1.0, pos.z);
+      this.scene.add(bottleGroup);
+      this.drinkProps.push(bottleGroup);
+    });
+
+    // Cocktail glasses
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2;
+      const glassGroup = new THREE.Group();
+      // Glass bowl
+      const bowl = new THREE.Mesh(
+        new THREE.ConeGeometry(0.12, 0.15, 12, 1, true),
+        new THREE.MeshStandardMaterial({
+          color: 0xffffff, transparent: true, opacity: 0.3,
+          roughness: 0.1, side: THREE.DoubleSide,
+        })
+      );
+      bowl.position.y = 0.25;
+      glassGroup.add(bowl);
+      // Drink liquid
+      const liquid = new THREE.Mesh(
+        new THREE.ConeGeometry(0.1, 0.08, 12),
+        new THREE.MeshStandardMaterial({ color: 0xff6b35, transparent: true, opacity: 0.8 })
+      );
+      liquid.position.y = 0.24;
+      glassGroup.add(liquid);
+      // Stem
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.02, 0.02, 0.2, 8),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 })
+      );
+      stem.position.y = 0.1;
+      glassGroup.add(stem);
+      glassGroup.position.set(Math.cos(angle) * 2.2, 1.0, Math.sin(angle) * 2.2);
+      this.scene.add(glassGroup);
+      this.drinkProps.push(glassGroup);
+    }
+  }
+
+  // Smoke particle effect for a character
+  private addSmoke(char: EngineCharacter) {
+    const count = 30;
+    const pos = new Float32Array(count * 3);
+    const basePos = char.group.position.clone();
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = basePos.x + (Math.random() - 0.5) * 0.3;
+      pos[i * 3 + 1] = basePos.y + 0.5 + Math.random() * 1.5;
+      pos[i * 3 + 2] = basePos.z + (Math.random() - 0.5) * 0.3;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0xcccccc, size: 0.25, transparent: true, opacity: 0.4,
+      depthWrite: false,
+    });
+    const smoke = new THREE.Points(geo, mat);
+    this.scene.add(smoke);
+    this.smokeParticles.push(smoke);
+    // Store reference on character for animation
+    (char as any).smoke = smoke;
+  }
+
+  // Story chapters — the story never dies, new chapters unlock with levels
+  private currentChapter = 1;
+  private chapterTitles: Record<number, string> = {
+    1: "Welcome to the Table",
+    5: "High Rollers",
+    10: "The Big Game",
+    15: "Kings of the Felt",
+    20: "Legend Status",
+    25: "The Final Table",
+    30: "Immortal",
+  };
+
+  setChapter(level: number) {
+    // Find the highest chapter unlocked by this level
+    let chapter = 1;
+    for (const [lvl, _] of Object.entries(this.chapterTitles)) {
+      if (level >= parseInt(lvl)) chapter = parseInt(lvl);
+    }
+    if (chapter !== this.currentChapter) {
+      this.currentChapter = chapter;
+      this.playChapterIntro(chapter);
+    }
+  }
+
+  private playChapterIntro(chapter: number) {
+    const title = this.chapterTitles[chapter] || `Chapter ${chapter}`;
+    const chars = Array.from(this.characters.values());
+
+    // Chapter announcement — everyone reacts
+    chars.forEach((char, i) => {
+      setTimeout(() => {
+        this.setState(char.data.id, 'hyped');
+        const chapterLines: Record<number, string[]> = {
+          1: ["Welcome to Big Face! 🎲", "New blood at the table! 🔥"],
+          5: ["High roller in the house! 💰", "The stakes just went up! 📈"],
+          10: ["This is the big game now! 🏆", "Only real ones make it here! 👑"],
+          15: ["Kings of the felt! ♠️", "Respect the grind! 💎"],
+          20: ["Legend status achieved! ⭐", "Your name rings bells! 🔔"],
+          25: ["The final table! 🎯", "Everything on the line! 💸"],
+          30: ["IMMORTAL! 🌟", "A living legend! 🦁"],
+        };
+        const lines = chapterLines[chapter] || ["New chapter! 📖", "The story continues! 📚"];
+        this.say(char.data.id, `📖 ${title}: ${lines[Math.floor(Math.random() * lines.length)]}`);
+        setTimeout(() => this.setState(char.data.id, 'idle'), 4000);
+      }, i * 1000);
+    });
+  }
+
+  getCurrentChapter(): { level: number; title: string } {
+    return { level: this.currentChapter, title: this.chapterTitles[this.currentChapter] || `Chapter ${this.currentChapter}` };
+  }
+
   private seatAngle(index: number): number {
     const total = Math.max(this.characters.size, 4);
     return (index / total) * Math.PI * 2 - Math.PI / 2;
+  }
+
+  private removeSmoke(char: EngineCharacter) {
+    const smoke = (char as any).smoke;
+    if (smoke) {
+      this.scene.remove(smoke);
+      this.smokeParticles = this.smokeParticles.filter((s) => s !== smoke);
+      (char as any).smoke = null;
+    }
+  }
+
+  // Start the club vibe — some characters smoke, some drink
+  startClubVibe() {
+    this.addClubProps();
+    const chars = Array.from(this.characters.values());
+    chars.forEach((char, i) => {
+      if (i % 2 === 0) {
+        setTimeout(() => {
+          this.setState(char.data.id, 'smoking');
+          this.addSmoke(char);
+        }, i * 1000);
+      } else {
+        setTimeout(() => this.setState(char.data.id, 'drinking'), i * 1000);
+      }
+    });
+    // Rotate vibes
+    setInterval(() => {
+      const random = chars[Math.floor(Math.random() * chars.length)];
+      if (random.data.state === 'idle') {
+        const vibe = Math.random() > 0.5 ? 'smoking' : 'drinking';
+        this.setState(random.data.id, vibe);
+        if (vibe === 'smoking') this.addSmoke(random);
+        setTimeout(() => {
+          this.setState(random.data.id, 'idle');
+          this.removeSmoke(random);
+        }, 8000);
+      }
+    }, 12000);
   }
 
   private showBubble(char: EngineCharacter, text: string) {
@@ -387,6 +572,22 @@ export class TableEngine {
         scalePulse = 1.05;
         char.group.rotation.x = -0.1;
         yOffset += Math.sin(t * 20) * 0.01; // micro tremble
+      } else if (state === 'smoking') {
+        // Relaxed lean, occasional puff
+        char.group.rotation.z = 0.08;
+        char.group.rotation.x = 0.05;
+        yOffset += Math.sin(t * 1) * 0.03;
+        // Exhale puff every few seconds
+        if (Math.sin(t * 0.8 + char.phase) > 0.95) {
+          scalePulse = 1.02;
+        }
+      } else if (state === 'drinking') {
+        // Tilt back like taking a sip
+        const sipCycle = (t * 0.5 + char.phase) % (Math.PI * 2);
+        if (sipCycle < 1.5) {
+          char.group.rotation.x = -0.25 * Math.sin(sipCycle / 1.5 * Math.PI);
+          yOffset += 0.1 * Math.sin(sipCycle / 1.5 * Math.PI);
+        }
       } else {
         char.group.rotation.x = 0;
         char.group.rotation.z *= 0.9;
@@ -403,6 +604,31 @@ export class TableEngine {
         char.bubble.lookAt(this.camera.position);
       }
     }
+
+    // Animate smoke particles rising
+    this.smokeParticles.forEach((smoke) => {
+      const pos = smoke.geometry.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < pos.count; i++) {
+        let y = pos.getY(i) + 0.015;
+        let x = pos.getX(i) + Math.sin(t * 2 + i) * 0.005;
+        // Reset to bottom when too high
+        if (y > 5) {
+          y = 2.5;
+          // Find parent character position
+          for (const [, char] of this.characters) {
+            if ((char as any).smoke === smoke) {
+              x = char.group.position.x + (Math.random() - 0.5) * 0.3;
+              pos.setZ(i, char.group.position.z + (Math.random() - 0.5) * 0.3);
+              break;
+            }
+          }
+        }
+        pos.setY(i, y);
+        pos.setX(i, x);
+      }
+      pos.needsUpdate = true;
+      (smoke.material as THREE.PointsMaterial).opacity = 0.3 + Math.sin(t * 1.5) * 0.1;
+    });
 
     this.renderer.render(this.scene, this.camera);
   };

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { TableEngine, type TableCharacter } from '../engine/TableEngine';
+import { useAuth } from '../auth/AuthContext';
 
 interface DiceTableSceneProps {
   players: Array<{ id: string; name: string; img: string }>;
@@ -15,6 +16,7 @@ interface DiceTableSceneProps {
 export default function DiceTableScene({ players, width = 800, height = 500, onPlayerClick }: DiceTableSceneProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<TableEngine | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -38,6 +40,12 @@ export default function DiceTableScene({ players, width = 800, height = 500, onP
 
     // Opening story — the show begins
     setTimeout(() => engine.playStory('intro'), 1500);
+    // Club vibe — smoke, drinks, the full experience
+    setTimeout(() => engine.startClubVibe(), 4000);
+    // Set story chapter based on user level
+    if (user?.level) {
+      setTimeout(() => engine.setChapter(user.level), 6000);
+    }
 
     // Ambient life — characters randomly talk
     const lifeInterval = setInterval(() => {
