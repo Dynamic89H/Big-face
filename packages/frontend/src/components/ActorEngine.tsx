@@ -11,6 +11,44 @@ export interface Actor {
   name: string;
   personality: string;
   equipped: Record<string, string>; // slot -> item name
+  voice: {
+    pitch: number;  // 0-2, 1 = normal
+    rate: number;   // 0.1-10, 1 = normal
+    volume: number; // 0-1
+  };
+}
+
+// Voice profiles for each character — distinct voices in the game room
+export const ACTOR_VOICES: Record<string, Actor['voice']> = {
+  boss:     { pitch: 0.7, rate: 0.9, volume: 1.0 },  // Deep, slow, commanding
+  diva:     { pitch: 1.4, rate: 1.1, volume: 1.0 },  // High, sassy, quick
+  dread:    { pitch: 0.9, rate: 0.85, volume: 0.9 }, // Smooth, laid back
+  enforcer: { pitch: 0.5, rate: 0.8, volume: 1.0 },  // Very deep, intimidating
+};
+
+/**
+ * Speak a line out loud using the character's voice.
+ * Uses browser speech synthesis — each character sounds different.
+ */
+export function speakLine(actorId: string, text: string): void {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    // Check if sounds are enabled
+    const soundsOff = localStorage.getItem('bigface.sounds') === 'off';
+    if (soundsOff) return;
+
+    window.speechSynthesis.cancel(); // Stop any current speech
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = ACTOR_VOICES[actorId];
+    if (voice) {
+      utterance.pitch = voice.pitch;
+      utterance.rate = voice.rate;
+      utterance.volume = voice.volume;
+    }
+    window.speechSynthesis.speak(utterance);
+  } catch {
+    /* voice not available */
+  }
 }
 
 /**
@@ -123,9 +161,11 @@ export function useActorEngine({ actors, gameState, winnerId, onLine }: ActorEng
     const lines = DIALOGUE[actorId]?.[mood];
     if (!lines?.length) return;
     const text = lines[Math.floor(Math.random() * lines.length)];
-    const line = { character: actor.name, text, mood };
+    const line: ActorLine = { character: actor.name, text, mood: mood as ActorLine['mood'] };
     setCurrentLine(line);
     onLine?.(line);
+    // Speak it out loud with the character's voice
+    speakLine(actorId, text);
 
     // Clear after 4 seconds
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
