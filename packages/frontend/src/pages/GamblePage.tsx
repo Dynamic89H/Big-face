@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, lazy, Suspense } from 'react';
 import { gambleApi, ApiError } from '../api/client';
 import { celebrate } from '../components/Celebration';
+import { sfx, haptic } from '../utils/sfx';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -100,6 +101,8 @@ export default function GamblePage() {
       engineRef.current?.rollDice(r.hostRoll, r.opponentRoll);
       if (r.winnerId === user?.id) {
         engineRef.current?.celebrate();
+        sfx.bigWin();
+        haptic([40, 40, 80]);
       } else {
         engineRef.current?.setMood('lose');
         setTimeout(() => engineRef.current?.setMood('idle'), 4000);

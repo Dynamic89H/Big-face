@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sfx, haptic } from '../utils/sfx';
 
 interface SpinStatus {
   canSpin: boolean;
@@ -35,6 +36,8 @@ export default function SpinWheel() {
     if (spinning || !status.canSpin) return;
     setSpinning(true);
     setResult(null);
+    sfx.spin();
+    haptic(20);
     // Animate wheel spin (3 full rotations + random offset)
     const targetRotation = rotation + 1080 + Math.random() * 360;
     setRotation(targetRotation);
@@ -51,6 +54,16 @@ export default function SpinWheel() {
         if (res.ok) {
           setResult(data);
           setStatus({ canSpin: false, streak: data.streak });
+          if (data.jackpot > 0) {
+            sfx.jackpot();
+            haptic([50, 50, 50, 50, 200]);
+          } else if (data.prize >= 1000) {
+            sfx.bigWin();
+            haptic([30, 30, 60]);
+          } else {
+            sfx.win();
+            haptic(15);
+          }
         }
       }, 2500);
     } catch {
