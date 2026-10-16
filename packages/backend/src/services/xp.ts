@@ -35,11 +35,17 @@ export const RANKS: Rank[] = [
   { name: 'Hustler', icon: '🥇', minLevel: 6, maxLevel: 10, color: '#ffd700', perk: '1.5x spin rewards, unlocks tournaments' },
   { name: 'Boss', icon: '💎', minLevel: 11, maxLevel: 20, color: '#00d4ff', perk: 'Unlocks marketplace selling, gold name' },
   { name: 'Kingpin', icon: '👑', minLevel: 21, maxLevel: 30, color: '#ff6b00', perk: 'Host live streams, 2x tip earnings' },
-  { name: 'Legend', icon: '🌟', minLevel: 31, maxLevel: 999, color: '#ff00ff', perk: 'Featured on homepage, crown everywhere' },
+  { name: 'Legend', icon: '🌟', minLevel: 31, maxLevel: 39, color: '#ff00ff', perk: 'Featured on homepage, crown everywhere' },
+  { name: 'Face King', icon: '🤴', minLevel: 40, maxLevel: 999, color: '#ffd700', perk: 'OFFICIAL Face King — crowned live for all players to see' },
 ];
 
-export function rankForLevel(level: number): Rank {
-  return RANKS.find((r) => level >= r.minLevel && level <= r.maxLevel) || RANKS[0];
+export function rankForLevel(level: number, gender?: string): Rank {
+  const rank = RANKS.find((r) => level >= r.minLevel && level <= r.maxLevel) || RANKS[0];
+  // Face Queen for female users at the top rank
+  if (rank.name === 'Face King' && gender === 'female') {
+    return { ...rank, name: 'Face Queen', icon: '👸' };
+  }
+  return rank;
 }
 
 export interface AwardXpResult {
@@ -82,6 +88,31 @@ export async function awardXp(userId: string, amount: number, _reason: string): 
 
   if (newLevel > Number(rows[0].level)) {
     await pool.query('UPDATE users SET level = $1 WHERE id = $2', [newLevel, userId]);
+
+    // OFFICIAL CROWNING: hitting level 40 = Face King/Queen — announce to ALL players
+    if (newLevel >= 40 && Number(rows[0].level) < 40) {
+      try {
+        const { rows: u } = await pool.query(
+          'SELECT display_name, gender FROM users WHERE id = $1', [userId]
+        );
+        const title = u[0]?.gender === 'female' ? 'Face Queen 👸' : 'Face King 🤴';
+        const { emitToAll } = await import('../sockets');
+        emitToAll('rank:crowned', {
+          userId,
+          displayName: u[0]?.display_name || 'Someone',
+          title,
+          level: newLevel,
+        });
+        // Also post to win feed so it's permanent
+        await pool.query(
+          `INSERT INTO win_feed (user_id, kind, amount_tokens, detail) VALUES ($1, 'crown', 0, $2)`,
+          [userId, `👑 CROWNED ${title}!`]
+        ).catch(() => undefined);
+      } catch {
+        /* crowning is best-effort */
+      }
+    }
+
     return { leveledUp: true, level: newLevel, xp };
   }
   return { leveledUp: false, level: Number(rows[0].level), xp };

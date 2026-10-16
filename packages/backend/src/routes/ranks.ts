@@ -11,12 +11,13 @@ router.get(
   '/',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { rows } = await pool.query('SELECT xp, level FROM users WHERE id = $1', [
+    const { rows } = await pool.query('SELECT xp, level, gender FROM users WHERE id = $1', [
       req.user!.id,
     ]);
     const level = rows[0]?.level || 1;
     const xp = Number(rows[0]?.xp || 0);
-    const currentRank = rankForLevel(level);
+    const gender = rows[0]?.gender;
+    const currentRank = rankForLevel(level, gender);
     const currentIndex = RANKS.indexOf(currentRank);
     const nextRank = RANKS[currentIndex + 1] || null;
 

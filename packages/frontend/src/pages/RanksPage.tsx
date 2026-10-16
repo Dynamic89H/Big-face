@@ -44,7 +44,8 @@ export function RankBadge({ level, size = 'md' }: { level: number; size?: 'sm' |
       { name: 'Hustler', icon: '🥇', minLevel: 6, maxLevel: 10, color: '#ffd700', perk: '' },
       { name: 'Boss', icon: '💎', minLevel: 11, maxLevel: 20, color: '#00d4ff', perk: '' },
       { name: 'Kingpin', icon: '👑', minLevel: 21, maxLevel: 30, color: '#ff6b00', perk: '' },
-      { name: 'Legend', icon: '🌟', minLevel: 31, maxLevel: 999, color: '#ff00ff', perk: '' },
+      { name: 'Legend', icon: '🌟', minLevel: 31, maxLevel: 39, color: '#ff00ff', perk: '' },
+      { name: 'Face King', icon: '🤴', minLevel: 40, maxLevel: 999, color: '#ffd700', perk: 'OFFICIAL — crowned live for all players' },
     ];
     setRank(ranks.find((r) => level >= r.minLevel && level <= r.maxLevel) || ranks[0]);
   }, [level]);
@@ -158,22 +159,31 @@ export default function RanksPage() {
         {data?.ranks.map((rank, i) => {
           const isCurrent = data.currentIndex === i;
           const isUnlocked = data.currentIndex >= i;
+          const isCrown = rank.name === 'Face King' || rank.name === 'Face Queen';
           return (
             <div
               key={rank.name}
               className="card"
               style={{
-                padding: '1rem 1.25rem',
-                borderColor: isCurrent ? rank.color : undefined,
+                padding: isCrown ? '1.5rem' : '1rem 1.25rem',
+                borderColor: isCrown ? '#ffd700' : isCurrent ? rank.color : undefined,
+                borderWidth: isCrown ? 3 : undefined,
                 opacity: isUnlocked ? 1 : 0.5,
-                background: isCurrent ? `${rank.color}10` : undefined,
+                background: isCrown
+                  ? 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05))'
+                  : isCurrent ? `${rank.color}10` : undefined,
+                boxShadow: isCrown ? '0 0 30px rgba(255,215,0,0.3)' : undefined,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ fontSize: '2rem' }}>{rank.icon}</div>
+                <div style={{ fontSize: isCrown ? '3.5rem' : '2rem' }}>{rank.icon}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 800, color: rank.color, fontSize: '1.1rem' }}>
-                    {rank.name}
+                  <div style={{
+                    fontWeight: 800, color: rank.color,
+                    fontSize: isCrown ? '1.6rem' : '1.1rem',
+                    textShadow: isCrown ? '0 0 20px rgba(255,215,0,0.5)' : undefined,
+                  }}>
+                    {isCrown ? '👑 ' : ''}{rank.name}{isCrown ? ' 👑' : ''}
                     {isCurrent && ' ← YOU'}
                   </div>
                   <div className="form-note" style={{ fontSize: '0.85rem' }}>
