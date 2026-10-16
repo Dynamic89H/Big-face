@@ -45,9 +45,54 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="loading-wrap" style={{ minHeight: '100vh' }}>
-        <div className="spinner" />
-        <p>Waking up Big Face…</p>
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: 'radial-gradient(ellipse at center, #0a2540 0%, #061525 50%, #030a12 100%)',
+      }}>
+        <style>{`
+          @keyframes bluePulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(0,150,255,0.6), 0 0 60px rgba(0,150,255,0.3); transform: scale(1); }
+            50% { box-shadow: 0 0 50px rgba(0,150,255,0.9), 0 0 100px rgba(0,150,255,0.5); transform: scale(1.05); }
+          }
+          @keyframes blueSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          @keyframes blueShimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+          }
+        `}</style>
+        {/* Blue glowing ring around logo */}
+        <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+          <div style={{
+            position: 'absolute', inset: -20, borderRadius: '50%',
+            border: '3px solid transparent',
+            borderTopColor: '#0096ff', borderRightColor: 'rgba(0,150,255,0.3)',
+            animation: 'blueSpin 1.2s linear infinite',
+          }} />
+          <div style={{
+            width: 120, height: 120, borderRadius: '50%',
+            overflow: 'hidden', animation: 'bluePulse 2s ease-in-out infinite',
+            border: '2px solid rgba(0,150,255,0.5)',
+          }}>
+            <img src="/probus-lion.webp" alt="Big Face"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        </div>
+        <h1 style={{
+          fontSize: '1.8rem', fontWeight: 800, margin: 0,
+          background: 'linear-gradient(90deg, #0096ff, #66ccff, #0096ff)',
+          backgroundSize: '200% auto',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          animation: 'blueShimmer 2s linear infinite',
+        }}>
+          BIG FACE
+        </h1>
+        <p style={{ color: 'rgba(0,150,255,0.7)', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+          Waking up…
+        </p>
       </div>
     );
   }
