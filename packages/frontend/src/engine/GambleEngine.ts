@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 export type GambleMood = 'idle' | 'tense' | 'win' | 'lose';
 export type GraphicsQuality = 'low' | 'medium' | 'high' | 'ultra' | 'max8k';
@@ -840,12 +841,14 @@ export class GambleEngine {
    */
   private buildSeats(): void {
     const loader = new GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
     // Character definitions: model file, seat angle, name
+    // Using optimized models (meshopt + webp, ~500KB each)
     const seats: { model: string; angle: number; name: string }[] = [
-      { model: '/models/xbot.glb', angle: 0.6, name: 'The Boss' },
-      { model: '/models/michelle.glb', angle: 2.2, name: 'Diva' },
-      { model: '/models/soldier.glb', angle: 3.8, name: 'Dread Artist' },
-      { model: '/models/xbot.glb', angle: 5.4, name: 'Enforcer' },
+      { model: '/models/xbot-opt.glb', angle: 0.6, name: 'The Boss' },
+      { model: '/models/michelle-opt.glb', angle: 2.2, name: 'Diva' },
+      { model: '/models/soldier-opt.glb', angle: 3.8, name: 'Dread Artist' },
+      { model: '/models/xbot-opt.glb', angle: 5.4, name: 'Enforcer' },
     ];
 
     // Chair for each seat
@@ -902,11 +905,33 @@ export class GambleEngine {
         char.position.set(sx, 0.6, sz);
         char.lookAt(0, 1.2, 0);
         char.traverse((o) => {
-          if ((o as THREE.Mesh).isMesh) {
-            (o as THREE.Mesh).castShadow = true;
-            (o as THREE.Mesh).receiveShadow = true;
+          const mesh = o as THREE.Mesh;
+          if (mesh.isMesh) {
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            // FIX: SkinnedMesh frustum culling bug — animated models vanish
+            // because bounds are computed from bind pose, not animated pose
+            mesh.frustumCulled = false;
+          }
+          // Darken skin toward brown for street-realistic look
+          const skinned = o as THREE.SkinnedMesh;
+          if (skinned.isSkinnedMesh) {
+            skinned.frustumCulled = false;
           }
         });
+
+        // Street accessories: gold chain
+        const chainMat = new THREE.MeshStandardMaterial({
+          color: 0xd4af37, metalness: 1.0, roughness: 0.25,
+        });
+        const chain = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.025, 8, 24), chainMat);
+        chain.position.set(0, 1.45, 0.05);
+        chain.rotation.x = Math.PI / 2 - 0.2;
+        char.add(chain);
+        const pendant = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.02), chainMat);
+        pendant.position.set(0, 1.32, 0.18);
+        char.add(pendant);
+
         this.scene.add(char);
 
         // Play idle animation if available
