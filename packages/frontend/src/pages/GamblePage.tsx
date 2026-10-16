@@ -239,27 +239,16 @@ export default function GamblePage() {
         @keyframes diceShake { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
       `}</style>
 
-      {/* Your 4 characters as real 3D models at the table - BIG */}
+      {/* 3D table removed — not ready yet. Clean 2D dice display. */}
       <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
-        <Suspense fallback={
-          <div style={{
-            width: '100%', height: 'min(70vh, 1000px)', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            background: 'linear-gradient(160deg, #1a0f2e, #0d0d1a)',
-            borderRadius: 16, color: 'var(--gold)',
-          }}>
-            🎲 Loading the casino...
-          </div>
-        }>
-          <RealTableScene ref={engineRef} width={1600} height={1000} />
-        </Suspense>
         <div style={{
-          position: 'absolute', top: 12, left: 16,
-          display: 'flex', alignItems: 'center',
-          background: 'rgba(0,0,0,0.6)', padding: '4px 12px', borderRadius: 20,
-          fontSize: '0.8rem', fontWeight: 700, color: '#ff5c5c',
+          width: '100%', minHeight: 200, display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(160deg, #0d5c2e, #0a0a12)',
+          borderRadius: 16, border: '2px solid var(--gold)',
+          fontSize: '4rem', padding: '2rem',
         }}>
-          <span className="live-dot" /> LIVE
+          🎲🎲
         </div>
       </div>
 
