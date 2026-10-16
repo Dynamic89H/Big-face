@@ -27,14 +27,52 @@ export default function DiceTableScene({ players, width = 800, height = 500, onP
 
     if (onPlayerClick) engine.onClick(onPlayerClick);
 
-    // Add all players to the table with personalities
-    const personalities: Array<'hype' | 'chill' | 'trash-talker' | 'diva' | 'boss'> =
-      ['trash-talker', 'diva', 'boss', 'hype'];
-    players.forEach((p, i) => {
+    // Add all players to the table with personalities, abilities, and swag
+    const characterData = [
+      {
+        ...players[0],
+        personality: 'trash-talker' as const,
+        swagLevel: 9,
+        abilities: [
+          { name: 'Intimidate', description: 'Shakes opponent confidence', icon: '😤' },
+          { name: 'Street Smarts', description: 'Reads the table', icon: '🧠' },
+        ],
+      },
+      {
+        ...players[1],
+        personality: 'diva' as const,
+        swagLevel: 10,
+        abilities: [
+          { name: 'Queen\'s Gambit', description: 'Doubles down with style', icon: '👑' },
+          { name: 'Charm', description: 'Distracts opponents', icon: '✨' },
+        ],
+      },
+      {
+        ...players[2],
+        personality: 'boss' as const,
+        swagLevel: 8,
+        abilities: [
+          { name: 'Power Move', description: 'Goes all in', icon: '💎' },
+          { name: 'Empire', description: 'Controls the table', icon: '🏛️' },
+        ],
+      },
+      {
+        ...players[3],
+        personality: 'hype' as const,
+        swagLevel: 7,
+        abilities: [
+          { name: 'Hype Train', description: 'Energizes the table', icon: '🔥' },
+          { name: 'Lucky Streak', description: 'Rides the hot hand', icon: '🍀' },
+        ],
+      },
+    ];
+    characterData.forEach((p, i) => {
       engine.addCharacter({
         id: p.id, name: p.name, img: p.img,
         state: 'idle', seatIndex: i,
-        personality: personalities[i % personalities.length],
+        personality: p.personality,
+        abilities: p.abilities,
+        swagLevel: p.swagLevel,
       });
     });
 

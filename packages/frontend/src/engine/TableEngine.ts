@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 
-export type CharacterState = 'idle' | 'talking' | 'celebrating' | 'thinking' | 'leaving' | 'joining' | 'shocked' | 'hyped' | 'smoking' | 'drinking';
+export type CharacterState = 'idle' | 'talking' | 'celebrating' | 'thinking' | 'leaving' | 'joining' | 'shocked' | 'hyped' | 'smoking' | 'drinking' | 'bluffing' | 'staredown' | 'swag-walk' | 'ability';
+
+export interface CharacterAbility {
+  name: string;
+  description: string;
+  icon: string;
+}
 
 export interface TableCharacter {
   id: string;
@@ -9,6 +15,8 @@ export interface TableCharacter {
   state: CharacterState;
   seatIndex: number;
   personality?: 'hype' | 'chill' | 'trash-talker' | 'diva' | 'boss';
+  abilities?: CharacterAbility[];
+  swagLevel?: number; // 1-10
 }
 
 interface EngineCharacter {
@@ -448,6 +456,103 @@ export class TableEngine {
     return { level: this.currentChapter, title: this.chapterTitles[this.currentChapter] || `Chapter ${this.currentChapter}` };
   }
 
+  // Character abilities — real powers with visual effects
+  useAbility(characterId: string, abilityIndex: number = 0) {
+    const char = this.characters.get(characterId);
+    if (!char || !char.data.abilities?.[abilityIndex]) return;
+    const ability = char.data.abilities[abilityIndex];
+
+    this.setState(characterId, 'ability');
+    this.say(characterId, `${ability.icon} ${ability.name}!`);
+
+    // Visual effect — golden shockwave
+    const shockwave = new THREE.Mesh(
+      new THREE.RingGeometry(0.5, 2.5, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd700, transparent: true, opacity: 0.8,
+        side: THREE.DoubleSide,
+      })
+    );
+    shockwave.position.copy(char.group.position);
+    shockwave.position.y = 0.5;
+    shockwave.rotation.x = -Math.PI / 2;
+    this.scene.add(shockwave);
+
+    let scale = 1;
+    const expand = () => {
+      scale += 0.3;
+      shockwave.scale.set(scale, scale, 1);
+      (shockwave.material as THREE.MeshBasicMaterial).opacity -= 0.05;
+      if (scale < 4) requestAnimationFrame(expand);
+      else this.scene.remove(shockwave);
+    };
+    expand();
+
+    setTimeout(() => this.setState(characterId, 'idle'), 3000);
+  }
+
+  // Mind games — psychological warfare
+  playMindGame(attackerId: string, targetId: string, type: 'bluff' | 'staredown' | 'trash-talk') {
+    const attacker = this.characters.get(attackerId);
+    const target = this.characters.get(targetId);
+    if (!attacker || !target) return;
+
+    if (type === 'bluff') {
+      this.setState(attackerId, 'bluffing');
+      const bluffs = [
+        "I know something you don't 😏",
+        "You sure about that bet? 🤔",
+        "I've seen that look before... 🃏",
+      ];
+      this.say(attackerId, bluffs[Math.floor(Math.random() * bluffs.length)]);
+      // Target gets nervous
+      setTimeout(() => this.setState(targetId, 'thinking'), 1000);
+    } else if (type === 'staredown') {
+      this.setState(attackerId, 'staredown');
+      this.setState(targetId, 'staredown');
+      this.say(attackerId, "👁️ I see you...");
+      setTimeout(() => {
+        // Loser backs down
+        const loser = Math.random() > 0.5 ? attackerId : targetId;
+        this.setState(loser, 'shocked');
+        this.say(loser, "Okay okay! 😅");
+      }, 3000);
+    } else if (type === 'trash-talk') {
+      this.setState(attackerId, 'talking');
+      const trash: Record<string, string[]> = {
+        'trash-talker': ["Your money's already mine 😤", "You play like my grandma 👵"],
+        'diva': ["Bless your heart 💅", "Cute bet, sweetie ✨"],
+        'boss': ["This is a business decision 💼", "You can't afford this table 💎"],
+        'hype': ["LET'S GOOO! You scared? 🔥", "I EAT pressure for breakfast! 💪"],
+        'chill': ["Interesting choice... 😌", "We'll see about that 🤷"],
+      };
+      const lines = trash[attacker.data.personality || 'chill'];
+      this.say(attackerId, lines[Math.floor(Math.random() * lines.length)]);
+    }
+
+    setTimeout(() => {
+      if (attacker.data.state !== 'celebrating') this.setState(attackerId, 'idle');
+      if (target.data.state !== 'celebrating') this.setState(targetId, 'idle');
+    }, 5000);
+  }
+
+  // Swag walk — character struts around the table
+  swagWalk(characterId: string) {
+    const char = this.characters.get(characterId);
+    if (!char) return;
+    this.setState(characterId, 'swag-walk');
+    const swag = char.data.swagLevel || 5;
+    this.say(characterId, `😎 Swag level ${swag}/10`);
+    // Walk to next seat and back
+    const originalSeat = char.data.seatIndex;
+    const nextSeat = (originalSeat + 1) % Math.max(this.characters.size, 4);
+    this.moveToSeat(characterId, nextSeat);
+    setTimeout(() => {
+      this.moveToSeat(characterId, originalSeat);
+      setTimeout(() => this.setState(characterId, 'idle'), 2000);
+    }, 3000);
+  }
+
   private seatAngle(index: number): number {
     const total = Math.max(this.characters.size, 4);
     return (index / total) * Math.PI * 2 - Math.PI / 2;
@@ -588,6 +693,27 @@ export class TableEngine {
           char.group.rotation.x = -0.25 * Math.sin(sipCycle / 1.5 * Math.PI);
           yOffset += 0.1 * Math.sin(sipCycle / 1.5 * Math.PI);
         }
+      } else if (state === 'bluffing') {
+        // Shifty — looking around, trying to sell it
+        char.group.rotation.y = Math.sin(t * 3) * 0.2;
+        yOffset += Math.abs(Math.sin(t * 4)) * 0.05;
+        scalePulse = 1 + Math.sin(t * 4) * 0.015;
+      } else if (state === 'staredown') {
+        // Intense — locked in, no movement
+        scalePulse = 1.08;
+        char.group.rotation.x = -0.15;
+        // Slight forward lean
+        yOffset -= 0.05;
+      } else if (state === 'swag-walk') {
+        // Confident strut — bounce with attitude
+        yOffset += Math.abs(Math.sin(t * 8)) * 0.15;
+        char.group.rotation.z = Math.sin(t * 8) * 0.1;
+        scalePulse = 1.03;
+      } else if (state === 'ability') {
+        // Powering up — glowing, rising
+        yOffset += Math.sin(t * 5) * 0.2 + 0.3;
+        scalePulse = 1 + Math.abs(Math.sin(t * 5)) * 0.08;
+        char.group.rotation.y = t * 2; // spin
       } else {
         char.group.rotation.x = 0;
         char.group.rotation.z *= 0.9;
