@@ -23,6 +23,7 @@ export const TOKEN_KEY = 'bigface.token';
 
 // Re-export shared shapes used in component props.
 export type { Gift };
+export type { GiftCatalogItem };
 
 export class ApiError extends Error {
   status: number;
