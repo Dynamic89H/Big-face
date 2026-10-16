@@ -24,15 +24,57 @@ const DICE_FACES: Record<number, string> = {
 };
 
 function Dice({ value, rolling }: { value: number; rolling: boolean }) {
+  // Premium CSS 3D dice — looks 3D, runs at 60fps, no WebGL needed
+  const pipLayouts: Record<number, [number, number][]> = {
+    1: [[50, 50]],
+    2: [[25, 25], [75, 75]],
+    3: [[25, 25], [50, 50], [75, 75]],
+    4: [[25, 25], [75, 25], [25, 75], [75, 75]],
+    5: [[25, 25], [75, 25], [50, 50], [25, 75], [75, 75]],
+    6: [[25, 25], [75, 25], [25, 50], [75, 50], [25, 75], [75, 75]],
+  };
+  const pips = pipLayouts[value] || pipLayouts[1];
   return (
-    <div
-      style={{
-        fontSize: '4rem',
-        animation: rolling ? 'diceShake 0.5s ease-in-out infinite' : undefined,
-      }}
-    >
-      {DICE_FACES[value]}
-      <style>{`@keyframes diceShake { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }`}</style>
+    <div style={{ perspective: 400 }}>
+      <div style={{
+        width: 80, height: 80, position: 'relative',
+        transformStyle: 'preserve-3d',
+        animation: rolling
+          ? 'diceTumble 0.6s ease-in-out infinite'
+          : 'diceSettle 0.3s ease-out',
+      }}>
+        <style>{`
+          @keyframes diceTumble {
+            0% { transform: rotateX(0) rotateY(0) rotateZ(0); }
+            25% { transform: rotateX(180deg) rotateY(90deg) rotateZ(45deg); }
+            50% { transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg); }
+            75% { transform: rotateX(540deg) rotateY(270deg) rotateZ(135deg); }
+            100% { transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg); }
+          }
+          @keyframes diceSettle {
+            0% { transform: scale(1.2) rotateZ(10deg); }
+            100% { transform: scale(1) rotateZ(0); }
+          }
+        `}</style>
+        {/* Dice face */}
+        <div style={{
+          width: 80, height: 80, borderRadius: 16,
+          background: 'linear-gradient(135deg, #ffffff 0%, #e8e8e8 50%, #d0d0d0 100%)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.1)',
+          position: 'relative',
+        }}>
+          {pips.map(([x, y], i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              left: `${x}%`, top: `${y}%`,
+              width: 14, height: 14, borderRadius: '50%',
+              background: 'radial-gradient(circle at 30% 30%, #333, #000)',
+              transform: 'translate(-50%, -50%)',
+              boxShadow: 'inset 0 2px 3px rgba(0,0,0,0.6)',
+            }} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -263,24 +305,60 @@ export default function GamblePage() {
         @keyframes diceShake { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
       `}</style>
 
-      {/* 3D table removed — not ready yet. Clean 2D dice display. */}
-      <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
+      {/* Premium 2D casino table — smooth, fast, beautiful */}
+      <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 20, overflow: 'hidden' }}>
         <div style={{
-          width: '100%', minHeight: 200, display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          background: 'radial-gradient(ellipse at center, #1a7a3a 0%, #0d5c2e 50%, #084a24 100%)',
-          borderRadius: 16,
-          border: '4px solid transparent',
-          backgroundClip: 'padding-box',
+          width: '100%', minHeight: 220, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', gap: '2rem',
+          background: `
+            radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at center, #1a7a3a 0%, #0d5c2e 45%, #084a24 75%, #063a1c 100%)
+          `,
+          borderRadius: 20,
           position: 'relative',
-          fontSize: '4rem', padding: '2rem',
-          boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5), 0 0 30px rgba(212,175,55,0.3)',
+          padding: '2rem',
+          boxShadow: 'inset 0 0 80px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.1)',
         }}>
+          {/* Gold trim */}
           <div style={{
-            position: 'absolute', inset: -4, borderRadius: 20, zIndex: -1,
-            background: 'linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)',
+            position: 'absolute', inset: 0, borderRadius: 20, pointerEvents: 'none',
+            border: '3px solid transparent',
+            background: 'linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) border-box',
+            WebkitMask: 'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
+            WebkitMaskComposite: 'xor', maskComposite: 'exclude',
           }} />
-          🎲🎲
+          {/* Felt texture dots */}
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: 20, pointerEvents: 'none', opacity: 0.15,
+            backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.3) 1px, transparent 1px)',
+            backgroundSize: '8px 8px',
+          }} />
+          {/* Center emblem */}
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            fontSize: '6rem', opacity: 0.08, pointerEvents: 'none',
+          }}>♠️</div>
+          {/* Dice display */}
+          <div style={{ display: 'flex', gap: '3rem', zIndex: 1 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                fontSize: '0.75rem', fontWeight: 700, color: '#fcf6ba',
+                letterSpacing: '0.15em', marginBottom: '0.5rem', textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+              }}>YOU</div>
+              <Dice value={soloDice?.[0] || 6} rolling={soloRolling} />
+            </div>
+            <div style={{
+              fontSize: '1.5rem', alignSelf: 'center', color: '#fcf6ba', fontWeight: 700,
+              textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+            }}>VS</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                fontSize: '0.75rem', fontWeight: 700, color: '#fcf6ba',
+                letterSpacing: '0.15em', marginBottom: '0.5rem', textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+              }}>HOUSE 🦁</div>
+              <Dice value={soloDice?.[1] || 6} rolling={soloRolling} />
+            </div>
+          </div>
         </div>
       </div>
 
