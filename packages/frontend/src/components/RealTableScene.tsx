@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { CharacterModelBuilder } from '../engine/CharacterModelBuilder';
-import { SmoothEngine } from '../engine/SmoothEngine';
 import { useAuth } from '../auth/AuthContext';
 
 interface RealTableSceneProps {
@@ -30,12 +29,12 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     const h = Math.min(height, width * 0.625);
     renderer.setSize(width, h);
+    // Fixed optimal pixel ratio - the engine runs at native smoothness
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     mount.appendChild(renderer.domElement);
-
-    // SmoothEngine - auto-tunes quality to hold 60fps
-    const smooth = new SmoothEngine(renderer);
 
     // ===== BLUE CEILING CINEMATIC LIGHTING =====
     scene.add(new THREE.AmbientLight(0x1a2a4a, 1.1));
@@ -568,41 +567,51 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
       }
     }, 8000);
 
-    // ===== 4 CINEMATIC CAMERA ANGLES =====
-    // Each camera covers a different section, cycling every 8 seconds
+    // ===== 4 CINEMATIC CAMERA ANGLES - ULTRA SMOOTH =====
+    // Each camera covers a different section, cycling every 10 seconds
+    // with eased transitions and velocity damping for butter-smooth motion
     const clock = new THREE.Clock();
     let raf = 0;
     let camSection = 0;
     let sectionTimer = 0;
-    const SECTION_DURATION = 8;
+    const SECTION_DURATION = 10;
+    const TRANSITION_DURATION = 2.5;
 
-    // Smooth camera transition
+    // Camera state with velocity for smooth damping
     const camPos = new THREE.Vector3(10, 4.2, 0);
     const camLook = new THREE.Vector3(0, 1.6, 0);
+    const camVel = new THREE.Vector3();
+    const lookVel = new THREE.Vector3();
     const targetPos = new THREE.Vector3();
     const targetLook = new THREE.Vector3();
+    const prevPos = new THREE.Vector3();
+    const prevLook = new THREE.Vector3();
+
+    // Smoothstep easing
+    const easeInOut = (x: number): number => x * x * (3 - 2 * x);
 
     const getCameraForSection = (section: number, t: number): [THREE.Vector3, THREE.Vector3] => {
       const pos = new THREE.Vector3();
       const look = new THREE.Vector3(0, 1.6, 0);
+      // Slower, gentler movements for smoothness
       switch (section) {
-        case 0: // Overhead table shot - dramatic top-down
-          pos.set(Math.sin(t * 0.15) * 3, 11, Math.cos(t * 0.15) * 3);
+        case 0: // Overhead table shot - slow drift
+          pos.set(Math.sin(t * 0.08) * 2.5, 11, Math.cos(t * 0.08) * 2.5);
           look.set(0, 1.2, 0);
           break;
-        case 1: // Close-up on dice - intense
-          const diceAngle = t * 0.2;
-          pos.set(Math.cos(diceAngle) * 2.5, 2.8, Math.sin(diceAngle) * 2.5);
+        case 1: // Close-up on dice - very slow orbit
+          const diceAngle = t * 0.1;
+          pos.set(Math.cos(diceAngle) * 2.8, 2.6 + Math.sin(t * 0.05) * 0.3, Math.sin(diceAngle) * 2.8);
           look.set(0, 1.7, 0);
           break;
-        case 2: // Wide room view - show the grandeur
-          pos.set(Math.cos(t * 0.08) * 16, 6.5 + Math.sin(t * 0.1) * 1, Math.sin(t * 0.08) * 16);
-          look.set(0, 2, 0);
+        case 2: // Wide room view - gentle sway
+          pos.set(Math.cos(t * 0.04) * 16, 6.5 + Math.sin(t * 0.06) * 0.8, Math.sin(t * 0.04) * 16);
+          look.set(0, 2.5, 0);
           break;
-        case 3: // Player level - orbit around characters
+        case 3: // Player level - slow cinematic orbit
         default:
-          const orbitAngle = t * 0.12;
-          pos.set(Math.cos(orbitAngle) * 8.5, 3.2 + Math.sin(t * 0.15) * 0.5, Math.sin(orbitAngle) * 8.5);
+          const orbitAngle = t * 0.06;
+          pos.set(Math.cos(orbitAngle) * 8.5, 3.2 + Math.sin(t * 0.08) * 0.4, Math.sin(orbitAngle) * 8.5);
           look.set(0, 1.8, 0);
           break;
       }
@@ -614,21 +623,46 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
       builder.update(dt);
-      smooth.update(dt);
 
-      // Cycle through 4 sections
+      // Section cycling with transition tracking
+      const prevSection = camSection;
       sectionTimer += dt;
       if (sectionTimer >= SECTION_DURATION) {
         sectionTimer = 0;
         camSection = (camSection + 1) % 4;
+        // Capture current position as transition start
+        prevPos.copy(camPos);
+        prevLook.copy(camLook);
+      }
+      const justSwitched = prevSection !== camSection;
+
+      // Get target for current section
+      const [newPos, newLook] = getCameraForSection(camSection, t);
+
+      if (justSwitched || sectionTimer < TRANSITION_DURATION) {
+        // Eased transition between sections
+        const progress = easeInOut(Math.min(sectionTimer / TRANSITION_DURATION, 1));
+        targetPos.lerpVectors(prevPos, newPos, progress);
+        targetLook.lerpVectors(prevLook, newLook, progress);
+      } else {
+        targetPos.copy(newPos);
+        targetLook.copy(newLook);
       }
 
-      // Smooth transition to current section's camera
-      const [newPos, newLook] = getCameraForSection(camSection, t);
-      targetPos.copy(newPos);
-      targetLook.copy(newLook);
-      camPos.lerp(targetPos, 1 - Math.pow(0.001, dt));
-      camLook.lerp(targetLook, 1 - Math.pow(0.001, dt));
+      // Velocity damping for ultra-smooth motion (critically damped)
+      const stiffness = 2.5;
+      const damping = 4.0;
+      // Position
+      const posDiff = targetPos.clone().sub(camPos);
+      camVel.add(posDiff.multiplyScalar(stiffness * dt));
+      camVel.multiplyScalar(Math.max(0, 1 - damping * dt));
+      camPos.add(camVel.clone().multiplyScalar(dt));
+      // Look target
+      const lookDiff = targetLook.clone().sub(camLook);
+      lookVel.add(lookDiff.multiplyScalar(stiffness * dt));
+      lookVel.multiplyScalar(Math.max(0, 1 - damping * dt));
+      camLook.add(lookVel.clone().multiplyScalar(dt));
+
       camera.position.copy(camPos);
       camera.lookAt(camLook);
 
