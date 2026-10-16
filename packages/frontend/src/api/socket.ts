@@ -45,6 +45,8 @@ export interface ServerToClientEvents {
   'gamble:cancelled': (payload: { gameId: string }) => void;
   'engagement:feed': (payload: { kind: string; amount: number }) => void;
   'engagement:crew-battle': (payload: { battleId: string }) => void;
+  'vault:update': (payload: { balance: number }) => void;
+  'vault:winner': (payload: { userId: string; amount: number }) => void;
   'gamble:result': (payload: any) => void;
 }
 

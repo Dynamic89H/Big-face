@@ -35,6 +35,7 @@ import shopRouter from './routes/shop';
 import competitionRouter from './routes/competition';
 import socialRouter from './routes/social';
 import storiesRouter from './routes/stories';
+import vaultRouter from './routes/vault';
 import adminRouter from './routes/admin';
 import reportsRouter from './routes/reports';
 import videoRouter from './routes/video';
@@ -84,6 +85,7 @@ app.use('/api/shop', shopRouter);
 app.use('/api/competition', competitionRouter);
 app.use('/api/social', socialRouter);
 app.use('/api/stories', storiesRouter);
+app.use('/api/vault', vaultRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api', videoRouter); // /rooms/:id/video/start, /video/sessions/:id/end
