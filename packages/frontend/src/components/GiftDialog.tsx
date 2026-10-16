@@ -6,10 +6,21 @@ import { playGiftSound } from '../utils/chime';
 // Display emoji per gift catalog key (catalog keys come from the contract).
 export const GIFT_EMOJI: Record<string, string> = {
   rose: '🌹',
+  heart: '❤️',
+  fire: '🔥',
+  clap: '👏',
   crown: '👑',
+  diamond: '💎',
   throne: '🪑',
+  rocket: '🚀',
+  moneygun: '💸',
   starshower: '🌠',
+  sports_car: '🏎️',
+  mansion: '🏰',
   legend: '🐉',
+  yacht: '🛥️',
+  jet: '✈️',
+  bigface: '🌟',
 };
 
 interface Props {

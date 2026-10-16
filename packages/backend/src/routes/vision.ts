@@ -350,4 +350,25 @@ router.post(
   })
 );
 
+// ============ TOP TIPPERS ============
+// Leaderboard of most generous tippers — recognition drives more tips
+router.get(
+  '/tippers/top',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.username, u.display_name, u.profile_color,
+              SUM(st.amount)::int AS total_tipped,
+              COUNT(st.id)::int AS tip_count
+       FROM stream_tips st
+       JOIN users u ON u.id = st.tipper_id
+       WHERE st.created_at > now() - interval '7 days'
+       GROUP BY u.id, u.username, u.display_name, u.profile_color
+       ORDER BY total_tipped DESC
+       LIMIT 20`
+    );
+    res.json({ tippers: rows });
+  })
+);
+
 export default router;

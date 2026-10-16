@@ -13,11 +13,26 @@ const router = Router();
 
 /** Gift catalog from API_CONTRACT.md. */
 export const GIFT_CATALOG = [
+  // Starter (10-50)
   { key: 'rose', label: 'Rose', tokenCost: 10 },
+  { key: 'heart', label: 'Heart', tokenCost: 15 },
+  { key: 'fire', label: 'Fire', tokenCost: 25 },
+  { key: 'clap', label: 'Applause', tokenCost: 30 },
   { key: 'crown', label: 'Crown', tokenCost: 50 },
+  // Mid (75-250)
+  { key: 'diamond', label: 'Diamond', tokenCost: 75 },
   { key: 'throne', label: 'Throne', tokenCost: 100 },
+  { key: 'rocket', label: 'Rocket', tokenCost: 150 },
+  { key: 'moneygun', label: 'Money Gun', tokenCost: 200 },
   { key: 'starshower', label: 'Star Shower', tokenCost: 250 },
+  // Premium (500-1000)
+  { key: 'sports_car', label: 'Sports Car', tokenCost: 500 },
+  { key: 'mansion', label: 'Mansion', tokenCost: 750 },
   { key: 'legend', label: 'Legend', tokenCost: 1000 },
+  // Whale (2500+)
+  { key: 'yacht', label: 'Yacht', tokenCost: 2500 },
+  { key: 'jet', label: 'Private Jet', tokenCost: 5000 },
+  { key: 'bigface', label: 'BIG FACE', tokenCost: 10000 },
 ] as const;
 
 /** Receiver keeps 80%; the platform keeps 20%. */
