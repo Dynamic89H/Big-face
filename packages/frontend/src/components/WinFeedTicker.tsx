@@ -27,6 +27,13 @@ export default function WinFeedTicker() {
 
   useEffect(() => {
     const load = async () => {
+      // Data saver: skip background refresh
+      try {
+        const settings = JSON.parse(localStorage.getItem('bigface.settings') || '{}');
+        if (settings.dataSaver) return;
+      } catch {
+        /* load normally */
+      }
       try {
         const res = await fetch('/api/engagement/feed?limit=10', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },

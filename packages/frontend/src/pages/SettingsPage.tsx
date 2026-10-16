@@ -10,6 +10,8 @@ interface Settings {
   allowDMs: boolean;
   showOnline: boolean;
   language: string;
+  reduceMotion: boolean;
+  dataSaver: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -20,6 +22,8 @@ const DEFAULTS: Settings = {
   allowDMs: true,
   showOnline: true,
   language: 'en',
+  reduceMotion: false,
+  dataSaver: false,
 };
 
 const LANGUAGES = [
@@ -143,6 +147,26 @@ export default function SettingsPage() {
           desc="Let others see when you're online"
           value={settings.showOnline}
           onChange={(v) => update('showOnline', v)}
+        />
+      </div>
+
+      {/* Performance */}
+      <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+        <h3 style={{ margin: '0 0 0.5rem' }}>⚡ Performance</h3>
+        <p className="form-note" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+          Speed up Big Face on slower phones or connections
+        </p>
+        <Toggle
+          label="Reduce motion"
+          desc="Disables 3D background and animations"
+          value={settings.reduceMotion}
+          onChange={(v) => update('reduceMotion', v)}
+        />
+        <Toggle
+          label="Data saver"
+          desc="Loads fewer images, reduces background updates"
+          value={settings.dataSaver}
+          onChange={(v) => update('dataSaver', v)}
         />
       </div>
 

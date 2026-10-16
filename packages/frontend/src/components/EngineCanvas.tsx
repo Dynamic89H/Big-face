@@ -10,6 +10,13 @@ export default function EngineCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    // Respect user's reduce-motion setting
+    try {
+      const settings = JSON.parse(localStorage.getItem('bigface.settings') || '{}');
+      if (settings.reduceMotion) return;
+    } catch {
+      /* use default */
+    }
     if (!canvasRef.current) return;
     try {
       BigFaceEngine.get().init(canvasRef.current);
@@ -19,6 +26,14 @@ export default function EngineCanvas() {
       console.warn('Big Face Engine could not start:', e);
     }
   }, []);
+
+  // Don't render canvas at all if reduce motion is on
+  try {
+    const settings = JSON.parse(localStorage.getItem('bigface.settings') || '{}');
+    if (settings.reduceMotion) return null;
+  } catch {
+    /* render normally */
+  }
 
   return (
     <canvas
