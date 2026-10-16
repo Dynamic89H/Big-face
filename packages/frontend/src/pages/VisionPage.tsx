@@ -194,7 +194,7 @@ export default function VisionPage() {
   ];
 
   return (
-    <div className="page">
+    <div className="page section-vision">
       <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
         <h1 className="shine-text" style={{ fontSize: '2.2rem', margin: '0 0 0.5rem' }}>
           🌟 Big Face Live

@@ -943,3 +943,70 @@ input[type="password"].input {
 .pattern-elev-1 { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
 .pattern-elev-2 { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
 .pattern-elev-3 { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 32px rgba(139, 92, 246, 0.1); }
+
+/* ============================================================
+   BIG FACE — DISTINCT SECTION IDENTITIES
+   Every major section is its own world. Not all together.
+   ============================================================ */
+
+/* 🎲 GAMBLE — The Casino. Dark green felt, gold trim, high stakes. */
+.section-gamble {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(0, 100, 50, 0.2), transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(255, 201, 77, 0.08), transparent 50%);
+}
+.section-gamble .pattern-royal {
+  background: linear-gradient(135deg, #00ff88, #ffd700, #00ff88);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* 🛍️ SHOP — The Boutique. Clean, luxury, bright accents. */
+.section-shop {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 47, 214, 0.1), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(255, 201, 77, 0.08), transparent 50%);
+}
+
+/* 💰 VAULT — The Bank. Heavy gold, secure, prestigious. */
+.section-vault {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 201, 77, 0.15), transparent 60%),
+    radial-gradient(ellipse at 50% 70%, rgba(139, 92, 246, 0.08), transparent 50%);
+}
+
+/* 🎖️ RANKS — The Hall of Fame. Trophies, spotlights, achievement. */
+.section-ranks {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 215, 0, 0.12), transparent 50%),
+    radial-gradient(ellipse at 20% 100%, rgba(0, 240, 255, 0.06), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(255, 47, 214, 0.06), transparent 50%);
+}
+
+/* 🌟 VISION/LIVE — The Studio. Broadcast energy, neon, electric. */
+.section-vision {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(255, 0, 0, 0.1), transparent 50%),
+    radial-gradient(ellipse at 80% 10%, rgba(0, 240, 255, 0.12), transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(139, 92, 246, 0.1), transparent 50%);
+}
+
+/* 🎉 SOCIAL — The Party. Warm, fun, vibrant. */
+.section-social {
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(255, 107, 0, 0.1), transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(255, 47, 214, 0.1), transparent 50%);
+}
+
+/* 🏆 COMPETITION — The Arena. Intense, competitive, fiery. */
+.section-competition {
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(255, 50, 50, 0.12), transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(255, 201, 77, 0.1), transparent 50%);
+}
+
+/* 📸 STORIES — The Gallery. Clean, minimal, focus on content. */
+.section-stories {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.08), transparent 60%);
+}

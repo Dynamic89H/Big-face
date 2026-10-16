@@ -88,7 +88,7 @@ export default function ShopPage() {
   ];
 
   return (
-    <div className="page">
+    <div className="page section-shop">
       <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
         <h1 className="shine-text" style={{ fontSize: '2.2rem', margin: '0 0 0.5rem' }}>
           🛍️ Token Shop

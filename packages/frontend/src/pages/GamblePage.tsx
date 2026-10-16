@@ -188,7 +188,7 @@ export default function GamblePage() {
   const iWon = result && user && result.winnerId === user.id;
 
   return (
-    <div className="page" style={{
+    <div className="page section-gamble" style={{
       background: 'linear-gradient(135deg, #0a0a2e 0%, #1a1a4e 50%, #0a0a2e 100%)',
       borderRadius: 16, padding: '1.5rem',
       boxShadow: '0 0 40px rgba(138,43,226,0.3), inset 0 0 60px rgba(0,0,0,0.5)',

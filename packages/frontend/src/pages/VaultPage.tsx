@@ -64,7 +64,7 @@ export default function VaultPage() {
     : '0';
 
   return (
-    <div className="page" style={{ position: 'relative', overflow: 'hidden', minHeight: '80vh' }}>
+    <div className="page section-vault" style={{ position: 'relative', overflow: 'hidden', minHeight: '80vh' }}>
       {/* VAULT background text */}
       <div style={{
         position: 'absolute', top: '50%', left: '50%',

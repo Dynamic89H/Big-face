@@ -80,7 +80,7 @@ export default function RanksPage() {
   }, []);
 
   return (
-    <div className="page" style={{ maxWidth: 700, margin: '0 auto' }}>
+    <div className="page section-ranks" style={{ maxWidth: 700, margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <h1 className="pattern-royal">
           🏆 Ranks

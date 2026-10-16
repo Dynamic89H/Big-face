@@ -80,7 +80,7 @@ export default function StoriesPage() {
   const current = viewer ? viewer.group.stories[viewer.index] : null;
 
   return (
-    <div className="page">
+    <div className="page section-stories">
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         marginBottom: '1.5rem',
