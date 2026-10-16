@@ -19,6 +19,22 @@ export type GraphicsQuality = 'low' | 'medium' | 'high' | 'ultra' | 'max8k';
  *   engine.setMood('lose')  — cool dim fade on loss
  *   engine.setMood('idle')  — back to normal casino ambiance
  */
+export interface CharacterOutfit {
+  skin?: number;
+  shirt?: number;
+  pants?: number;
+  shoes?: number;
+  hat?: 'none' | 'bandana' | 'cap' | 'fedora' | 'beanie';
+  hatColor?: number;
+  chain?: boolean;
+  glasses?: 'none' | 'sunglasses' | 'shades';
+  earrings?: boolean;
+  bracelet?: boolean;
+  watch?: boolean;
+  hairstyle?: 'none' | 'dreads' | 'fade' | 'long' | 'braids' | 'afro';
+  hairColor?: number;
+}
+
 export class GambleEngine {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
@@ -913,13 +929,16 @@ export class GambleEngine {
         char.position.set(sx, 0.6, sz);
         char.lookAt(0, 1.2, 0);
         // Character-specific styling to match approved lineup
-        const charStyles: Record<string, { skin: number; shirt: number; pants: number }> = {
-          'The Boss': { skin: 0x6b4a35, shirt: 0x1a1a1a, pants: 0x1a1a1a },      // dark skin, black outfit
-          'Diva': { skin: 0x5d3d2a, shirt: 0xcc1133, pants: 0xcc1133 },           // dark skin, red dress
-          'Dread Artist': { skin: 0x6b4a35, shirt: 0xf0f0f0, pants: 0x2a2a2a },  // dark skin, white tank
-          'Enforcer': { skin: 0x5d3d2a, shirt: 0x111111, pants: 0x111111 },       // dark skin, black sleeveless
+        const charStyles: Record<string, CharacterOutfit> = {
+          'The Boss': { skin: 0x6b4a35, shirt: 0x1a1a1a, pants: 0x1a1a1a, hat: 'bandana', hatColor: 0xcc2222, chain: true, glasses: 'sunglasses', bracelet: true },
+          'Diva': { skin: 0x5d3d2a, shirt: 0xcc1133, pants: 0xcc1133, chain: true, earrings: true, hairstyle: 'long', hairColor: 0x0a0a0a },
+          'Dread Artist': { skin: 0x6b4a35, shirt: 0xf0f0f0, pants: 0x2a2a2a, chain: true, hairstyle: 'dreads', hairColor: 0x1a1a1a, bracelet: true },
+          'Enforcer': { skin: 0x5d3d2a, shirt: 0x111111, pants: 0x111111, chain: true, hairstyle: 'fade', watch: true },
         };
-        const style = charStyles[name] || { skin: 0x6b4a35, shirt: 0x333333, pants: 0x333333 };
+        const outfit = charStyles[name] || { skin: 0x6b4a35, shirt: 0x333333, pants: 0x333333 };
+        // Store outfit for runtime changes
+        (this as any).charOutfits = (this as any).charOutfits || {};
+        (this as any).charOutfits[name] = outfit;
         char.traverse((o) => {
           const mesh = o as THREE.Mesh;
           if (mesh.isMesh) {
@@ -931,9 +950,9 @@ export class GambleEngine {
             if (mat && mat.color) {
               const matName = (mat.name || '').toLowerCase();
               if (matName.includes('skin') || matName.includes('body') || matName.includes('head') || matName.includes('face')) {
-                mat.color.setHex(style.skin);
+                mat.color.setHex(outfit.skin ?? 0x6b4a35);
               } else if (matName.includes('shirt') || matName.includes('top') || matName.includes('cloth')) {
-                mat.color.setHex(style.shirt);
+                mat.color.setHex(outfit.shirt ?? 0x333333);
               }
             }
           }
@@ -955,19 +974,8 @@ export class GambleEngine {
         pendant.position.set(0, 1.32, 0.18);
         char.add(pendant);
 
-        // The Boss gets a red bandana (Tupac-style)
-        if (name === 'The Boss') {
-          const bandanaMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.8 });
-          const bandana = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2.2), bandanaMat);
-          bandana.position.set(0, 1.62, 0);
-          bandana.scale.set(1.05, 0.7, 1.05);
-          char.add(bandana);
-          // Bandana knot tails
-          const tail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.02), bandanaMat);
-          tail.position.set(0, 1.55, -0.16);
-          tail.rotation.x = 0.3;
-          char.add(tail);
-        }
+        // Build all accessories from outfit config
+        this.buildAccessories(char, outfit);
 
         this.scene.add(char);
 
@@ -1079,6 +1087,162 @@ export class GambleEngine {
       }
     };
     animate();
+  }
+
+  /**
+   * Build all wearable accessories from outfit config.
+   * Hats, earrings, glasses, bracelets, watches, hairstyles — all procedural.
+   */
+  private buildAccessories(char: THREE.Group, outfit: CharacterOutfit): void {
+    // Helper to tag accessories for runtime removal
+    const add = (obj: THREE.Object3D) => {
+      obj.userData.isAccessory = true;
+      obj.traverse((o) => { o.userData.isAccessory = true; });
+      add(obj);
+    };
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1.0, roughness: 0.25 });
+    const silverMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 1.0, roughness: 0.3 });
+    const hatColor = outfit.hatColor ?? 0xcc2222;
+    const hairColor = outfit.hairColor ?? 0x1a1a1a;
+
+    // HATS
+    if (outfit.hat === 'bandana') {
+      const mat = new THREE.MeshStandardMaterial({ color: hatColor, roughness: 0.8 });
+      const bandana = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2.2), mat);
+      bandana.position.set(0, 1.62, 0);
+      bandana.scale.set(1.05, 0.7, 1.05);
+      add(bandana);
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.02), mat);
+      tail.position.set(0, 1.55, -0.16);
+      tail.rotation.x = 0.3;
+      add(tail);
+    } else if (outfit.hat === 'cap') {
+      const mat = new THREE.MeshStandardMaterial({ color: hatColor, roughness: 0.7 });
+      const crown = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+      crown.position.set(0, 1.62, 0);
+      add(crown);
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.02, 16, 1, false, 0, Math.PI), mat);
+      brim.position.set(0, 1.62, 0.12);
+      brim.rotation.x = 0.1;
+      add(brim);
+    } else if (outfit.hat === 'fedora') {
+      const mat = new THREE.MeshStandardMaterial({ color: hatColor, roughness: 0.6 });
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 20), mat);
+      brim.position.set(0, 1.68, 0);
+      add(brim);
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.14, 16), mat);
+      crown.position.set(0, 1.76, 0);
+      add(crown);
+    } else if (outfit.hat === 'beanie') {
+      const mat = new THREE.MeshStandardMaterial({ color: hatColor, roughness: 0.9 });
+      const beanie = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12, 0, Math.PI * 2, 0, Math.PI / 1.8), mat);
+      beanie.position.set(0, 1.62, 0);
+      add(beanie);
+      const pom = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), mat);
+      pom.position.set(0, 1.82, 0);
+      add(pom);
+    }
+
+    // EARRINGS (both ears)
+    if (outfit.earrings) {
+      [-1, 1].forEach((side) => {
+        const earring = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), goldMat);
+        earring.position.set(side * 0.14, 1.55, 0.02);
+        add(earring);
+        // Dangling part
+        const dangle = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.06, 8), goldMat);
+        dangle.position.set(side * 0.14, 1.51, 0.02);
+        add(dangle);
+      });
+    }
+
+    // GLASSES / SUNGLASSES
+    if (outfit.glasses === 'sunglasses' || outfit.glasses === 'shades') {
+      const lensMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.5 });
+      [-1, 1].forEach((side) => {
+        const lens = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.02), lensMat);
+        lens.position.set(side * 0.07, 1.58, 0.13);
+        add(lens);
+      });
+      const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.015, 0.015), lensMat);
+      bridge.position.set(0, 1.58, 0.13);
+      add(bridge);
+    }
+
+    // BRACELET (right wrist)
+    if (outfit.bracelet) {
+      const bracelet = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 8, 20), goldMat);
+      bracelet.position.set(0.28, 1.05, 0);
+      bracelet.rotation.x = Math.PI / 2;
+      add(bracelet);
+    }
+
+    // WATCH (left wrist)
+    if (outfit.watch) {
+      const watchFace = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 16), silverMat);
+      watchFace.position.set(-0.28, 1.05, 0);
+      watchFace.rotation.z = Math.PI / 2;
+      add(watchFace);
+      const watchBand = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.015, 8, 20),
+        new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 }));
+      watchBand.position.set(-0.28, 1.05, 0);
+      watchBand.rotation.y = Math.PI / 2;
+      add(watchBand);
+    }
+
+    // HAIRSTYLES
+    const hairMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.85 });
+    if (outfit.hairstyle === 'dreads') {
+      // Dreadlocks: multiple hanging cylinders
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const dread = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.02, 0.35, 8), hairMat);
+        dread.position.set(Math.cos(angle) * 0.12, 1.45, Math.sin(angle) * 0.12);
+        dread.rotation.z = Math.cos(angle) * 0.2;
+        dread.rotation.x = Math.sin(angle) * 0.2;
+        add(dread);
+      }
+    } else if (outfit.hairstyle === 'afro') {
+      const afro = new THREE.Mesh(new THREE.SphereGeometry(0.19, 16, 16), hairMat);
+      afro.position.set(0, 1.68, -0.02);
+      afro.scale.set(1, 0.9, 1);
+      add(afro);
+    } else if (outfit.hairstyle === 'long') {
+      const hair = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.4, 0.12), hairMat);
+      hair.position.set(0, 1.45, -0.08);
+      add(hair);
+    } else if (outfit.hairstyle === 'braids') {
+      for (let i = 0; i < 6; i++) {
+        const x = (i - 2.5) * 0.05;
+        const braid = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.015, 0.3, 8), hairMat);
+        braid.position.set(x, 1.48, -0.1);
+        add(braid);
+      }
+    }
+    // 'fade' and 'none' need no geometry — the model already has short hair
+  }
+
+  /**
+   * Change a character's outfit at runtime.
+   * Big Face can dress characters however it wants.
+   */
+  public setOutfit(charName: string, outfit: Partial<CharacterOutfit>): void {
+    const outfits = (this as any).charOutfits as Record<string, CharacterOutfit> | undefined;
+    const chars = (this as any).charBones as Array<{ char: THREE.Group; name: string }> | undefined;
+    if (!outfits || !chars) return;
+    // Merge new outfit settings
+    outfits[charName] = { ...outfits[charName], ...outfit };
+    // Find the character and rebuild accessories
+    const entry = chars.find((c) => c.name === charName);
+    if (!entry) return;
+    // Remove old accessories (anything we added)
+    const toRemove: THREE.Object3D[] = [];
+    entry.char.traverse((o) => {
+      if (o.userData.isAccessory) toRemove.push(o);
+    });
+    toRemove.forEach((o) => entry.char.remove(o));
+    // Rebuild with new outfit
+    this.buildAccessories(entry.char, outfits[charName]);
   }
 
   private buildDust(): void {
