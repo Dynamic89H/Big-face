@@ -856,7 +856,7 @@ export class GambleEngine {
       { model: '/models/Male_Adult_12.glb', angle: 0.6, name: 'The Boss' },
       { model: '/models/Female_Party_02.glb', angle: 2.2, name: 'Diva' },
       { model: '/models/Male_Adult_18.glb', angle: 3.8, name: 'Dread Artist' },
-      { model: '/models/Male_Adult_12.glb', angle: 5.4, name: 'Enforcer' },
+      { model: '/models/Male_Adult_05.glb', angle: 5.4, name: 'Enforcer' },
     ];
 
     // Chair for each seat
