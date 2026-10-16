@@ -4,7 +4,7 @@ import { config } from '../config';
 import { pool } from '../db';
 import { AuthUser, verifyToken } from '../middleware/auth';
 import { createMessage } from '../services/messages';
-import { awardXp, tierForLevel, AwardXpResult } from '../services/xp';
+import { awardXp, tierForLevel, rankForLevel, AwardXpResult } from '../services/xp';
 import { getLatestLegendary } from '../services/legendary';
 
 let io: Server | null = null;
@@ -178,7 +178,14 @@ export function emitToUser(userId: string, event: string, payload: unknown): voi
 /** Fires user:rank-up when an XP award crossed a level threshold. Also pays token rewards. */
 export function maybeEmitRankUp(userId: string, res: AwardXpResult): void {
   if (res.leveledUp) {
-    emitToAll('user:rank-up', { userId, level: res.level, tier: tierForLevel(res.level) });
+    const rank = rankForLevel(res.level);
+    emitToAll('user:rank-up', {
+      userId,
+      level: res.level,
+      tier: tierForLevel(res.level),
+      rank: rank.name,
+      rankIcon: rank.icon,
+    });
     // Level-up token reward: higher level = bigger bag. Fire and forget.
     payLevelUpReward(userId, res.level).catch(() => undefined);
   }

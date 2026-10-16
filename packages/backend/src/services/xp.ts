@@ -19,6 +19,29 @@ export function tierForLevel(level: number): string {
   return 'Legendary Throne';
 }
 
+/** Rank system for the come up — visible progression with perks. */
+export interface Rank {
+  name: string;
+  icon: string;
+  minLevel: number;
+  maxLevel: number;
+  color: string;
+  perk: string;
+}
+
+export const RANKS: Rank[] = [
+  { name: 'Rookie', icon: '🥉', minLevel: 1, maxLevel: 2, color: '#cd7f32', perk: 'Welcome to Big Face' },
+  { name: 'Grinder', icon: '🥈', minLevel: 3, maxLevel: 5, color: '#c0c0c0', perk: 'Unlocks crew battles' },
+  { name: 'Hustler', icon: '🥇', minLevel: 6, maxLevel: 10, color: '#ffd700', perk: '1.5x spin rewards, unlocks tournaments' },
+  { name: 'Boss', icon: '💎', minLevel: 11, maxLevel: 20, color: '#00d4ff', perk: 'Unlocks marketplace selling, gold name' },
+  { name: 'Kingpin', icon: '👑', minLevel: 21, maxLevel: 30, color: '#ff6b00', perk: 'Host live streams, 2x tip earnings' },
+  { name: 'Legend', icon: '🌟', minLevel: 31, maxLevel: 999, color: '#ff00ff', perk: 'Featured on homepage, crown everywhere' },
+];
+
+export function rankForLevel(level: number): Rank {
+  return RANKS.find((r) => level >= r.minLevel && level <= r.maxLevel) || RANKS[0];
+}
+
 export interface AwardXpResult {
   leveledUp: boolean;
   level: number;
