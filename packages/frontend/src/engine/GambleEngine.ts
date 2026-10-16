@@ -187,16 +187,24 @@ export class GambleEngine {
   }
 
   /** Roll the 3D dice and land showing the actual game values */
-  rollDice(v1: number, v2: number): void {
-    this.targetV1 = Math.max(1, Math.min(6, v1));
-    this.targetV2 = Math.max(1, Math.min(6, v2));
-    this.rolling = true;
-    this.rollT = 0;
-    // Focus camera on dice during roll
-    this.camSection = 1;
-    this.sectionTimer = 0;
-    this.prevPos.copy(this.camPos);
-    this.prevLook.copy(this.camLook);
+  rollDice(v1: number, v2: number, charIndex?: number): void {
+    // If a character is rolling, they grab and throw with bare hands first
+    const doRoll = () => {
+      this.targetV1 = Math.max(1, Math.min(6, v1));
+      this.targetV2 = Math.max(1, Math.min(6, v2));
+      this.rolling = true;
+      this.rollT = 0;
+      // Focus camera on dice during roll
+      this.camSection = 1;
+      this.sectionTimer = 0;
+      this.prevPos.copy(this.camPos);
+      this.prevLook.copy(this.camLook);
+    };
+    if (charIndex !== undefined) {
+      this.characterRollDice(charIndex, doRoll);
+    } else {
+      doRoll();
+    }
   }
 
   /** Victory celebration — gold burst + confetti rain */
@@ -934,6 +942,17 @@ export class GambleEngine {
 
         this.scene.add(char);
 
+        // Store character bones for hand animation
+        const bones: Record<string, THREE.Object3D> = {};
+        char.traverse((o) => {
+          const name = o.name.toLowerCase();
+          if (name.includes('hand') || name.includes('arm') || name.includes('shoulder') || name.includes('elbow') || name.includes('wrist')) {
+            bones[o.name] = o;
+          }
+        });
+        (this as any).charBones = (this as any).charBones || [];
+        (this as any).charBones.push({ char, bones, name });
+
         // Play idle animation if available
         if (gltf.animations.length > 0) {
           const mixer = new THREE.AnimationMixer(char);
@@ -950,6 +969,81 @@ export class GambleEngine {
         console.warn(`Could not load character ${name}:`, err);
       });
     });
+  }
+
+  /**
+   * Character reaches out with bare hand, grabs dice, and throws them.
+   * Animates arm bones procedurally: reach → grab (fingers close) → throw → release.
+   */
+  public characterRollDice(charIndex: number, onRelease: () => void): void {
+    const chars = (this as any).charBones as Array<{ char: THREE.Group; bones: Record<string, THREE.Object3D>; name: string }> | undefined;
+    if (!chars || !chars[charIndex]) {
+      onRelease();
+      return;
+    }
+    const { bones } = chars[charIndex];
+    // Find right arm bones (Mixamo naming)
+    const shoulder = bones['mixamorig:RightShoulder'] || bones['mixamorig:LeftShoulder'];
+    const arm = bones['mixamorig:RightArm'] || bones['mixamorig:LeftArm'];
+    const forearm = bones['mixamorig:RightForeArm'] || bones['mixamorig:LeftForeArm'];
+    const hand = bones['mixamorig:RightHand'] || bones['mixamorig:LeftHand'];
+    if (!shoulder || !arm || !forearm || !hand) {
+      onRelease();
+      return;
+    }
+    // Collect finger bones for grab animation
+    const fingers: THREE.Object3D[] = [];
+    const side = bones['mixamorig:RightHand'] ? 'Right' : 'Left';
+    Object.entries(bones).forEach(([name, bone]) => {
+      if (name.includes(`${side}Hand`) && (name.includes('Index') || name.includes('Middle') || name.includes('Ring') || name.includes('Pinky') || name.includes('Thumb'))) {
+        fingers.push(bone);
+      }
+    });
+
+    // Save original rotations
+    const orig = new Map<THREE.Object3D, THREE.Euler>();
+    [shoulder, arm, forearm, hand, ...fingers].forEach((b) => orig.set(b, b.rotation.clone()));
+
+    const D = 1.2; // total duration seconds
+    const start = performance.now();
+    let released = false;
+
+    const animate = () => {
+      const t = Math.min((performance.now() - start) / 1000 / D, 1);
+      // Phase 1 (0-0.35): reach forward toward dice
+      // Phase 2 (0.35-0.5): fingers close (grab)
+      // Phase 3 (0.5-0.75): pull back slightly then throw forward
+      // Phase 4 (0.75-1.0): fingers open (release), arm returns
+      const reach = t < 0.35 ? t / 0.35 : t < 0.75 ? 1 : 1 - (t - 0.75) / 0.25;
+      const grab = t < 0.35 ? 0 : t < 0.5 ? (t - 0.35) / 0.15 : t < 0.75 ? 1 : 1 - (t - 0.75) / 0.25;
+      const throwMotion = t < 0.5 ? 0 : t < 0.75 ? Math.sin(((t - 0.5) / 0.25) * Math.PI) : 0;
+
+      // Arm reaches forward and slightly down toward table
+      shoulder.rotation.x = orig.get(shoulder)!.x - reach * 0.9;
+      shoulder.rotation.z = orig.get(shoulder)!.z - reach * 0.3;
+      arm.rotation.x = orig.get(arm)!.x - reach * 0.5;
+      forearm.rotation.x = orig.get(forearm)!.x - reach * 0.7 + throwMotion * 0.8;
+      hand.rotation.x = orig.get(hand)!.x - reach * 0.3;
+
+      // Fingers curl to grab
+      fingers.forEach((f) => {
+        f.rotation.x = grab * 0.9;
+      });
+
+      // Release dice at peak of throw
+      if (t >= 0.72 && !released) {
+        released = true;
+        onRelease();
+      }
+
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Restore original pose
+        orig.forEach((rot, bone) => bone.rotation.copy(rot));
+      }
+    };
+    animate();
   }
 
   private buildDust(): void {

@@ -124,7 +124,7 @@ export default function GamblePage() {
       setRolling(false);
       setResult(r);
       // 3D dice show the real result, room reacts
-      engineRef.current?.rollDice(r.hostRoll, r.opponentRoll);
+      engineRef.current?.rollDice(r.hostRoll, r.opponentRoll, Math.floor(Math.random() * 4));
       if (r.winnerId === user?.id) {
         engineRef.current?.celebrate();
         sfx.bigWin();
@@ -184,7 +184,7 @@ export default function GamblePage() {
     try {
       const r = await gambleApi.join(gameId);
       // 3D dice tumble and land on YOUR ACTUAL roll values
-      engineRef.current?.rollDice(r.hostRoll, r.opponentRoll);
+      engineRef.current?.rollDice(r.hostRoll, r.opponentRoll, Math.floor(Math.random() * 4));
       // Rolling animation delay for drama.
       setTimeout(() => {
         setRolling(false);

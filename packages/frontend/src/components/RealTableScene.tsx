@@ -8,7 +8,7 @@ interface RealTableSceneProps {
 }
 
 export interface RealTableSceneHandle {
-  rollDice: (v1: number, v2: number) => void;
+  rollDice: (v1: number, v2: number, charIndex?: number) => void;
   celebrate: () => void;
   setMood: (mood: 'idle' | 'tense' | 'win' | 'lose') => void;
   setQuality: (q: GraphicsQuality) => void;
@@ -25,7 +25,7 @@ const RealTableScene = forwardRef<RealTableSceneHandle, RealTableSceneProps>(
     const engineRef = useRef<GambleEngine | null>(null);
 
     useImperativeHandle(ref, () => ({
-      rollDice: (v1: number, v2: number) => engineRef.current?.rollDice(v1, v2),
+      rollDice: (v1: number, v2: number, charIndex?: number) => engineRef.current?.rollDice(v1, v2, charIndex),
       celebrate: () => engineRef.current?.celebrate(),
       setMood: (mood) => engineRef.current?.setMood(mood),
       setQuality: (q) => engineRef.current?.setQuality(q),
