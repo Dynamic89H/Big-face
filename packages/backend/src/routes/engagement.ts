@@ -101,6 +101,10 @@ router.post(
     const { contributeToVault } = await import('./vault');
     await contributeToVault(req.user!.id, prize, 'spin').catch(() => undefined);
 
+    // Track season challenge
+    const { trackChallenge } = await import('./seasons');
+    await trackChallenge(req.user!.id, 'spin').catch(() => undefined);
+
     emitToAll('engagement:feed', { kind: 'spin', amount: prize + jackpotWon });
     res.json({ prize, streak, bonus: streakBonus, jackpot: jackpotWon });
   })

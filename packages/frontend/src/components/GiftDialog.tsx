@@ -35,6 +35,14 @@ export const GIFT_EMOJI: Record<string, string> = {
   jet: '✈️',
   island: '🏝️',
   bigface: '🌟',
+  panda: '🐼',
+  coffee: '☕',
+  sunglasses: '🕶️',
+  butterfly: '🦋',
+  perfume: '🌸',
+  fireworks: '🎆',
+  carousel: '🎠',
+  universe: '🌌',
 };
 
 interface Props {

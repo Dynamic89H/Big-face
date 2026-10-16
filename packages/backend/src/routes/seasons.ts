@@ -88,4 +88,76 @@ export async function awardSeasonXp(userId: string, amount: number): Promise<voi
   }
 }
 
+// Get user's challenges with progress
+router.get(
+  '/challenges',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { rows: season } = await pool.query(
+      `SELECT id FROM seasons WHERE status = 'active' LIMIT 1`
+    );
+    if (!season[0]) {
+      res.json({ challenges: [] });
+      return;
+    }
+    const { rows } = await pool.query(
+      `SELECT sc.*, COALESCE(ucp.progress, 0) AS progress, COALESCE(ucp.completed, false) AS completed
+       FROM season_challenges sc
+       LEFT JOIN user_challenge_progress ucp
+         ON ucp.challenge_id = sc.id AND ucp.user_id = $2
+       WHERE sc.season_id = $1
+       ORDER BY sc.challenge_type, sc.xp_reward DESC`,
+      [season[0].id, req.user!.id]
+    );
+    res.json({ challenges: rows });
+  })
+);
+
+// Track challenge progress (called from game actions)
+export async function trackChallenge(
+  userId: string,
+  action: string
+): Promise<void> {
+  try {
+    const { rows: season } = await pool.query(
+      `SELECT id FROM seasons WHERE status = 'active' LIMIT 1`
+    );
+    if (!season[0]) return;
+
+    // Find matching incomplete challenges
+    const { rows: challenges } = await pool.query(
+      `SELECT sc.id, sc.target_count, sc.xp_reward,
+              COALESCE(ucp.progress, 0) AS progress
+       FROM season_challenges sc
+       LEFT JOIN user_challenge_progress ucp
+         ON ucp.challenge_id = sc.id AND ucp.user_id = $2
+       WHERE sc.season_id = $1 AND sc.action = $3
+         AND COALESCE(ucp.completed, false) = false`,
+      [season[0].id, userId, action]
+    );
+
+    for (const c of challenges) {
+      const newProgress = c.progress + 1;
+      const completed = newProgress >= c.target_count;
+      await pool.query(
+        `INSERT INTO user_challenge_progress (user_id, challenge_id, progress, completed, completed_at)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (user_id, challenge_id)
+         DO UPDATE SET progress = $3, completed = $4, completed_at = $5`,
+        [userId, c.id, newProgress, completed, completed ? new Date() : null]
+      );
+      if (completed) {
+        // Award season XP bonus
+        await pool.query(
+          `INSERT INTO season_xp (season_id, user_id, xp) VALUES ($1, $2, $3)
+           ON CONFLICT (season_id, user_id) DO UPDATE SET xp = season_xp.xp + $3`,
+          [season[0].id, userId, c.xp_reward]
+        );
+      }
+    }
+  } catch {
+    /* best-effort */
+  }
+}
+
 export default router;

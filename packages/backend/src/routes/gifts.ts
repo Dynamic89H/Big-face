@@ -50,6 +50,15 @@ export const GIFT_CATALOG = [
   { key: 'jet', label: 'Private Jet', tokenCost: 5000 },
   { key: 'island', label: 'Private Island', tokenCost: 7500 },
   { key: 'bigface', label: 'BIG FACE', tokenCost: 10000 },
+  // TikTok-inspired (viral favorites)
+  { key: 'panda', label: 'Panda', tokenCost: 5 },
+  { key: 'coffee', label: 'Coffee', tokenCost: 10 },
+  { key: 'sunglasses', label: 'Sunglasses', tokenCost: 199 },
+  { key: 'butterfly', label: 'Butterfly', tokenCost: 50 },
+  { key: 'perfume', label: 'Perfume', tokenCost: 20 },
+  { key: 'fireworks', label: 'Fireworks', tokenCost: 1099 },
+  { key: 'carousel', label: 'Carousel', tokenCost: 2020 },
+  { key: 'universe', label: 'Universe', tokenCost: 34999 },
 ] as const;
 
 /** Receiver keeps 80%; the platform keeps 20%. */
