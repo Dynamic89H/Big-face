@@ -140,16 +140,22 @@ export class GambleEngine {
   // ============ SCENE BUILDING ============
 
   private buildLights(): void {
-    this.ambient = new THREE.AmbientLight(0x1a2a4a, 1.1);
+    // VIP ROOM REMODEL: Warm luxury base with dramatic accents
+    // Research: VIP rooms use warm dimmable lighting, chandeliers, spotlighting on tables
+
+    // Warmer ambient — inviting, not cold
+    this.ambient = new THREE.AmbientLight(0x3a2a1a, 1.3);
     this.scene.add(this.ambient);
 
-    this.ceilingBlue = new THREE.PointLight(0x2266ff, 80, 40, 1.4);
+    // Warm ceiling wash (was cold blue)
+    this.ceilingBlue = new THREE.PointLight(0xffb366, 90, 40, 1.4);
     this.ceilingBlue.position.set(0, 15, 0);
     this.scene.add(this.ceilingBlue);
 
+    // 4 warm spotlights with dramatic shadows
     for (let i = 0; i < 4; i++) {
       const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      const spot = new THREE.SpotLight(0x4488ff, 120, 35, Math.PI / 6, 0.5, 1.3);
+      const spot = new THREE.SpotLight(0xffaa55, 140, 35, Math.PI / 6, 0.4, 1.3);
       spot.position.set(Math.cos(angle) * 8, 14, Math.sin(angle) * 8);
       spot.target.position.set(Math.cos(angle) * 3, 0, Math.sin(angle) * 3);
       this.scene.add(spot);
@@ -157,7 +163,8 @@ export class GambleEngine {
       this.blueSpots.push(spot);
     }
 
-    this.keyLight = new THREE.SpotLight(0xffd9a0, 200, 40, Math.PI / 5, 0.35, 1.2);
+    // Key light — warm gold spotlight on table
+    this.keyLight = new THREE.SpotLight(0xffd9a0, 220, 40, Math.PI / 5, 0.3, 1.2);
     this.keyLight.position.set(0, 14, 0);
     this.keyLight.castShadow = true;
     this.keyLight.shadow.mapSize.set(2048, 2048);
@@ -165,20 +172,23 @@ export class GambleEngine {
     this.scene.add(this.keyLight);
     this.scene.add(this.keyLight.target);
 
-    const underGlow = new THREE.PointLight(0xff6b35, 15, 8);
+    // Warm under-glow from table
+    const underGlow = new THREE.PointLight(0xff8c42, 18, 8);
     underGlow.position.set(0, 0.4, 0);
     this.scene.add(underGlow);
 
+    // Accent lights — gold and warm amber alternating
     const accentData: [number, number][] = [
-      [0x2266ff, 0.4], [0xffd700, 1.9], [0x2266ff, 3.5], [0xffd700, 5.1],
+      [0xffb366, 0.4], [0xffd700, 1.9], [0xffb366, 3.5], [0xffd700, 5.1],
     ];
     accentData.forEach(([color, angle]) => {
-      const light = new THREE.PointLight(color, 35, 26, 1.5);
+      const light = new THREE.PointLight(color, 40, 26, 1.5);
       light.position.set(Math.cos(angle) * 13, 4, Math.sin(angle) * 13);
       this.scene.add(light);
     });
 
-    const rim = new THREE.DirectionalLight(0x6688ff, 0.8);
+    // Warm rim light for depth
+    const rim = new THREE.DirectionalLight(0xffcc88, 0.9);
     rim.position.set(-6, 8, -8);
     this.scene.add(rim);
   }
@@ -388,16 +398,33 @@ export class GambleEngine {
       table.add(trim);
     });
 
-    // Felt
+    // Felt — rich emerald with gold inlay pattern (VIP remodel)
     const feltCanvas = document.createElement('canvas');
     feltCanvas.width = feltCanvas.height = 512;
     const fctx = feltCanvas.getContext('2d')!;
-    fctx.fillStyle = '#0d5c2e';
+    // Deep emerald base
+    const grad = fctx.createRadialGradient(256, 256, 50, 256, 256, 256);
+    grad.addColorStop(0, '#0f6b35');
+    grad.addColorStop(1, '#084a22');
+    fctx.fillStyle = grad;
     fctx.fillRect(0, 0, 512, 512);
+    // Felt texture
     for (let i = 0; i < 8000; i++) {
       fctx.fillStyle = `rgba(${10 + Math.random() * 30},${80 + Math.random() * 40},${30 + Math.random() * 20},0.15)`;
       fctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
     }
+    // Gold inlay ring — VIP luxury detail
+    fctx.strokeStyle = '#d4af37';
+    fctx.lineWidth = 6;
+    fctx.globalAlpha = 0.7;
+    fctx.beginPath();
+    fctx.arc(256, 256, 200, 0, Math.PI * 2);
+    fctx.stroke();
+    fctx.lineWidth = 3;
+    fctx.beginPath();
+    fctx.arc(256, 256, 185, 0, Math.PI * 2);
+    fctx.stroke();
+    fctx.globalAlpha = 1.0;
     const feltTex = new THREE.CanvasTexture(feltCanvas);
     feltTex.wrapS = feltTex.wrapT = THREE.RepeatWrapping;
     feltTex.repeat.set(3, 3);
@@ -613,26 +640,39 @@ export class GambleEngine {
     const pos = new THREE.Vector3();
     const look = new THREE.Vector3(0, 2, 0);
     switch (section) {
-      case 0:
-        pos.set(Math.sin(t * 0.3) * 4, 12, Math.cos(t * 0.3) * 4);
-        look.set(0, 1.2, 0);
+      case 0: // Slow overhead orbit — establishes the room
+        pos.set(Math.sin(t * 0.25) * 5, 13, Math.cos(t * 0.25) * 5);
+        look.set(0, 1.0, 0);
         break;
-      case 1: {
-        const a = t * 0.5;
-        pos.set(Math.cos(a) * 3.5, 3, Math.sin(a) * 3.5);
-        look.set(0, 1.7, 0);
+      case 1: // Tight dice orbit — the money shot
+        {
+          const a = t * 0.6;
+          pos.set(Math.cos(a) * 2.8, 2.6, Math.sin(a) * 2.8);
+          look.set(0, 1.7, 0);
+        }
         break;
-      }
-      case 2:
-        pos.set(Math.cos(t * 0.2) * 20, 9, Math.sin(t * 0.2) * 20);
-        look.set(0, 3, 0);
+      case 2: // Wide cinematic sweep — shows the VIP room
+        pos.set(Math.cos(t * 0.15) * 22, 8, Math.sin(t * 0.15) * 22);
+        look.set(0, 3.5, 0);
         break;
-      default: {
-        const a = t * 0.35;
-        pos.set(Math.cos(a) * 10, 4.5, Math.sin(a) * 10);
-        look.set(0, 1.8, 0);
+      case 3: // Low hero angle — dramatic, looking up at table
+        {
+          const a = t * 0.3;
+          pos.set(Math.cos(a) * 7, 1.2, Math.sin(a) * 7);
+          look.set(0, 2.5, 0);
+        }
         break;
-      }
+      case 4: // Top-down money view — see all the chips
+        pos.set(Math.sin(t * 0.2) * 2, 18, Math.cos(t * 0.2) * 2);
+        look.set(0, 1.0, 0);
+        break;
+      default: // Intimate close-up — dealer perspective
+        {
+          const a = t * 0.4;
+          pos.set(Math.cos(a) * 5.5, 3.2, Math.sin(a) * 5.5);
+          look.set(0, 1.8, 0);
+        }
+        break;
     }
     const dir = pos.clone().sub(look).normalize();
     const dist = pos.distanceTo(look) / this.userZoom;
@@ -643,13 +683,17 @@ export class GambleEngine {
   private moodTargets(): { blue: number; key: number; ambient: number; blueColor: number } {
     switch (this.mood) {
       case 'tense':
-        return { blue: 130, key: 120, ambient: 0.7, blueColor: 0x1a44cc };
+        // Tense: dim warm, dramatic shadows
+        return { blue: 60, key: 140, ambient: 0.8, blueColor: 0xcc6633 };
       case 'win':
-        return { blue: 40, key: 320, ambient: 1.4, blueColor: 0xffd700 };
+        // Win: explosive gold celebration
+        return { blue: 50, key: 350, ambient: 1.6, blueColor: 0xffd700 };
       case 'lose':
-        return { blue: 50, key: 80, ambient: 0.5, blueColor: 0x334466 };
+        // Lose: cool fade, somber
+        return { blue: 40, key: 90, ambient: 0.6, blueColor: 0x445566 };
       default:
-        return { blue: 80, key: 200, ambient: 1.1, blueColor: 0x2266ff };
+        // Idle: warm VIP luxury
+        return { blue: 90, key: 220, ambient: 1.3, blueColor: 0xffb366 };
     }
   }
 
@@ -665,8 +709,8 @@ export class GambleEngine {
     }
     const mt = this.easeInOut(this.moodTransition);
     const targets = this.moodTargets();
-    // Blend from idle toward mood targets
-    const idleTargets = { blue: 80, key: 200, ambient: 1.1 };
+    // Blend from warm idle toward mood targets
+    const idleTargets = { blue: 90, key: 220, ambient: 1.3 };
     this.ceilingBlue.intensity = idleTargets.blue + (targets.blue - idleTargets.blue) * mt
       + Math.sin(t * 1.5) * 12;
     this.ceilingBlue.color.setHex(targets.blueColor);
@@ -736,14 +780,14 @@ export class GambleEngine {
     }
     this.dustGeo.attributes.position.needsUpdate = true;
 
-    // Camera
-    const SECTION_DURATION = 7;
-    const TRANSITION = 1.2;
+    // Camera — 6 cinematic angles
+    const SECTION_DURATION = 6;
+    const TRANSITION = 1.5;
     const prevSection = this.camSection;
     this.sectionTimer += dt;
     if (this.sectionTimer >= SECTION_DURATION) {
       this.sectionTimer = 0;
-      this.camSection = (this.camSection + 1) % 4;
+      this.camSection = (this.camSection + 1) % 6;
       this.prevPos.copy(this.camPos);
       this.prevLook.copy(this.camLook);
     }
