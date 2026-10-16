@@ -1,49 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { useAuth } from '../auth/AuthContext';
-
-// Lightweight cinematic: vignette + grain only (no expensive bloom)
-// Keeps 60fps on phones while killing the flat look
-const CinematicShader = {
-  uniforms: {
-    tDiffuse: { value: null },
-    time: { value: 0 },
-  },
-  vertexShader: `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  fragmentShader: `
-    uniform sampler2D tDiffuse;
-    uniform float time;
-    varying vec2 vUv;
-    float rand(vec2 co) {
-      return fract(sin(dot(co, vec2(12.9898, 78.233)) + time * 0.5) * 43758.5453);
-    }
-    void main() {
-      vec4 color = texture2D(tDiffuse, vUv);
-      // Vignette - darkens edges for cinematic feel
-      vec2 dist = vUv - 0.5;
-      float vig = 1.0 - dot(dist, dist) * 1.1;
-      color.rgb *= clamp(vig, 0.35, 1.0);
-      // Subtle film grain
-      float grain = (rand(vUv * 1080.0) - 0.5) * 0.045;
-      color.rgb += grain;
-      // Warm lift in highlights, cool shadows (teal/orange grade)
-      float lum = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-      color.rgb = mix(color.rgb, color.rgb * vec3(0.95, 1.0, 1.1), (1.0 - lum) * 0.25);
-      color.rgb = mix(color.rgb, color.rgb * vec3(1.08, 1.0, 0.92), lum * 0.2);
-      gl_FragColor = color;
-    }
-  `,
-};
 
 interface RealTableSceneProps {
   width?: number;
@@ -78,13 +35,6 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
     mount.appendChild(renderer.domElement);
-
-    // ===== LIGHTWEIGHT CINEMATIC (fast on phones) =====
-    const composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene, camera));
-    const cinematicPass = new ShaderPass(CinematicShader);
-    composer.addPass(cinematicPass);
-    composer.addPass(new OutputPass());
 
     // ===== BLUE CEILING CINEMATIC LIGHTING =====
     scene.add(new THREE.AmbientLight(0x1a2a4a, 1.1));
@@ -578,54 +528,89 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     const die1Start = die1.position.clone();
     const die2Start = die2.position.clone();
 
-    // ===== 4 CINEMATIC CAMERA ANGLES - ULTRA SMOOTH =====
-    // Each camera covers a different section, cycling every 10 seconds
-    // with eased transitions and velocity damping for butter-smooth motion
+    // ===== CAMERA - fast, zoomable, full room view =====
     const clock = new THREE.Clock();
     let raf = 0;
     let camSection = 0;
     let sectionTimer = 0;
-    const SECTION_DURATION = 10;
-    const TRANSITION_DURATION = 2.5;
+    const SECTION_DURATION = 7;
+    const TRANSITION_DURATION = 1.2;
 
-    // Camera state with velocity for smooth damping
-    const camPos = new THREE.Vector3(10, 4.2, 0);
-    const camLook = new THREE.Vector3(0, 1.6, 0);
-    const camVel = new THREE.Vector3();
-    const lookVel = new THREE.Vector3();
+    // User zoom control (pinch/wheel)
+    let userZoom = 1.0;
+    const minZoom = 0.5;
+    const maxZoom = 2.5;
+
+    // Pinch zoom for mobile
+    let lastPinchDist = 0;
+    const canvas = renderer.domElement;
+    canvas.style.touchAction = 'none';
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        lastPinchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    }, { passive: true });
+    canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        if (lastPinchDist > 0) {
+          userZoom = Math.max(minZoom, Math.min(maxZoom, userZoom * (lastPinchDist / dist)));
+        }
+        lastPinchDist = dist;
+        e.preventDefault();
+      }
+    }, { passive: false });
+    // Wheel zoom for desktop
+    canvas.addEventListener('wheel', (e) => {
+      userZoom = Math.max(minZoom, Math.min(maxZoom, userZoom * (1 + e.deltaY * 0.001)));
+      e.preventDefault();
+    }, { passive: false });
+
+    // Camera state
+    const camPos = new THREE.Vector3(14, 7, 0);
+    const camLook = new THREE.Vector3(0, 2, 0);
     const targetPos = new THREE.Vector3();
     const targetLook = new THREE.Vector3();
     const prevPos = new THREE.Vector3();
     const prevLook = new THREE.Vector3();
 
-    // Smoothstep easing
     const easeInOut = (x: number): number => x * x * (3 - 2 * x);
 
     const getCameraForSection = (section: number, t: number): [THREE.Vector3, THREE.Vector3] => {
       const pos = new THREE.Vector3();
-      const look = new THREE.Vector3(0, 1.6, 0);
-      // Slower, gentler movements for smoothness
+      const look = new THREE.Vector3(0, 2, 0);
+      // Faster, more dynamic movements - no more slow motion
       switch (section) {
-        case 0: // Overhead table shot - slow drift
-          pos.set(Math.sin(t * 0.08) * 2.5, 11, Math.cos(t * 0.08) * 2.5);
+        case 0: // Overhead table shot
+          pos.set(Math.sin(t * 0.3) * 4, 12, Math.cos(t * 0.3) * 4);
           look.set(0, 1.2, 0);
           break;
-        case 1: // Close-up on dice - very slow orbit
-          const diceAngle = t * 0.1;
-          pos.set(Math.cos(diceAngle) * 2.8, 2.6 + Math.sin(t * 0.05) * 0.3, Math.sin(diceAngle) * 2.8);
+        case 1: // Close-up on dice
+          const diceAngle = t * 0.5;
+          pos.set(Math.cos(diceAngle) * 3.5, 3, Math.sin(diceAngle) * 3.5);
           look.set(0, 1.7, 0);
           break;
-        case 2: // Wide room view - gentle sway
-          pos.set(Math.cos(t * 0.04) * 16, 6.5 + Math.sin(t * 0.06) * 0.8, Math.sin(t * 0.04) * 16);
-          look.set(0, 2.5, 0);
+        case 2: // WIDE - see the whole room
+          pos.set(Math.cos(t * 0.2) * 20, 9, Math.sin(t * 0.2) * 20);
+          look.set(0, 3, 0);
           break;
-        case 3: // Player level - slow cinematic orbit
+        case 3: // Orbit around table
         default:
-          const orbitAngle = t * 0.06;
-          pos.set(Math.cos(orbitAngle) * 8.5, 3.2 + Math.sin(t * 0.08) * 0.4, Math.sin(orbitAngle) * 8.5);
+          const orbitAngle = t * 0.35;
+          pos.set(Math.cos(orbitAngle) * 10, 4.5, Math.sin(orbitAngle) * 10);
           look.set(0, 1.8, 0);
           break;
       }
+      // Apply user zoom
+      const dir = pos.clone().sub(look).normalize();
+      const dist = pos.distanceTo(look) / userZoom;
+      pos.copy(look).add(dir.multiplyScalar(dist));
       return [pos, look];
     };
 
@@ -659,19 +644,10 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
         targetLook.copy(newLook);
       }
 
-      // Velocity damping for ultra-smooth motion (critically damped)
-      const stiffness = 2.5;
-      const damping = 4.0;
-      // Position
-      const posDiff = targetPos.clone().sub(camPos);
-      camVel.add(posDiff.multiplyScalar(stiffness * dt));
-      camVel.multiplyScalar(Math.max(0, 1 - damping * dt));
-      camPos.add(camVel.clone().multiplyScalar(dt));
-      // Look target
-      const lookDiff = targetLook.clone().sub(camLook);
-      lookVel.add(lookDiff.multiplyScalar(stiffness * dt));
-      lookVel.multiplyScalar(Math.max(0, 1 - damping * dt));
-      camLook.add(lookVel.clone().multiplyScalar(dt));
+      // Direct responsive camera - no more slow motion lag
+      const lerpSpeed = 1 - Math.pow(0.0001, dt);
+      camPos.lerp(targetPos, lerpSpeed);
+      camLook.lerp(targetLook, lerpSpeed);
 
       camera.position.copy(camPos);
       camera.lookAt(camLook);
@@ -725,9 +701,8 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
         }
       }
 
-      // Cinematic render with vignette, film grain
-      cinematicPass.uniforms.time.value = t;
-      composer.render();
+      // Direct render - no post-processing (was causing glitching)
+      renderer.render(scene, camera);
     };
     animate();
 
