@@ -2,7 +2,7 @@
  * Cee-lo Match Mode — 3-dice street dice vs AI characters.
  * Setup → bet → roll → settle → next round.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ceeloApi } from '../api/client';
 
 const CHARACTER_META: Record<string, { name: string; emoji: string; ability: string; abilityDesc: string }> = {
@@ -29,10 +29,14 @@ interface RoundResult {
   playerWon: boolean;
   matchOver: boolean;
   talk: { who: string; line: string }[];
+  banter: { from: string; to: string; line: string }[];
+  rollReaction: string | null;
 }
 
 export default function CeeloMatch({ onExit }: { onExit: () => void }) {
-  const [phase, setPhase] = useState<'setup' | 'playing'>('setup');
+  const [phase, setPhase] = useState<'story' | 'setup' | 'playing'>('story');
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [selectedChapter, setSelectedChapter] = useState<any>(null);
   const [opponents, setOpponents] = useState<string[]>(['boss']);
   const [buyIn, setBuyIn] = useState(1000);
   const [ability, setAbility] = useState<string>('');
@@ -45,6 +49,17 @@ export default function CeeloMatch({ onExit }: { onExit: () => void }) {
   const [lastRound, setLastRound] = useState<RoundResult | null>(null);
   const [rolling, setRolling] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    ceeloApi.story().then((res) => {
+      setChapters(res.chapters);
+      const current = res.chapters.find((c) => c.current) || res.chapters[0];
+      setSelectedChapter(current);
+      // Pre-fill opponents/buy-in from the current chapter
+      setOpponents(current.opponents.slice(0, 1));
+      setBuyIn(current.buyIns[0]);
+    }).catch(() => {});
+  }, []);
 
   const toggleOpponent = (key: string) => {
     setOpponents((prev) =>
@@ -89,6 +104,48 @@ export default function CeeloMatch({ onExit }: { onExit: () => void }) {
 
   const nameOf = (key: string) => key === 'player' ? 'You' : CHARACTER_META[key]?.name || key;
   const emojiOf = (key: string) => key === 'player' ? '😎' : CHARACTER_META[key]?.emoji || '🎲';
+
+  if (phase === 'story') {
+    return (
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1rem' }}>
+        <h2 style={{ marginTop: 0 }}>📖 Story Mode</h2>
+        <p className="form-note">From the corner to the Boss's table. Climb the chapters as you level up.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem' }}>
+          {chapters.map((ch) => (
+            <button
+              key={ch.id}
+              disabled={!ch.unlocked}
+              onClick={() => {
+                setSelectedChapter(ch);
+                setOpponents(ch.opponents.slice(0, 1));
+                setBuyIn(ch.buyIns[0]);
+                setPhase('setup');
+              }}
+              className={`btn ${ch.current ? '' : 'btn-ghost'}`}
+              style={{
+                padding: '1rem', textAlign: 'left', opacity: ch.unlocked ? 1 : 0.4,
+                border: ch.bossFight ? '2px solid #cc0000' : undefined,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                    {ch.unlocked ? '📖' : '🔒'} Chapter {ch.id}: {ch.title}
+                  </div>
+                  <div className="form-note">{ch.subtitle} — Level {ch.minLevel}+</div>
+                </div>
+                {ch.current && <span style={{ color: 'var(--gold)', fontWeight: 800 }}>YOU ARE HERE</span>}
+              </div>
+              <div style={{ fontSize: '0.85rem', marginTop: '0.4rem', fontStyle: 'italic', opacity: 0.9 }}>
+                "{ch.intro}"
+              </div>
+            </button>
+          ))}
+        </div>
+        <button onClick={onExit} className="btn btn-ghost btn-sm">Back</button>
+      </div>
+    );
+  }
 
   if (phase === 'setup') {
     return (
@@ -216,6 +273,27 @@ export default function CeeloMatch({ onExit }: { onExit: () => void }) {
               <strong>{t.who}:</strong> <em>"{t.line}"</em>
             </div>
           ))}
+          {/* Table banter — characters talking to each other */}
+          {lastRound.banter?.map((b, i) => (
+            <div key={`b${i}`} style={{
+              background: 'rgba(201,162,39,0.08)', borderRadius: 8,
+              padding: '0.4rem 0.8rem', marginTop: '0.3rem', fontSize: '0.85rem',
+              borderLeft: '2px solid var(--gold)',
+            }}>
+              <strong>{b.from}</strong> <span style={{ opacity: 0.6 }}>→ {b.to}:</span>{' '}
+              <em>"{b.line}"</em>
+            </div>
+          ))}
+          {/* Roll reaction */}
+          {lastRound.rollReaction && (
+            <div style={{
+              background: 'rgba(255,107,0,0.1)', borderRadius: 8,
+              padding: '0.4rem 0.8rem', marginTop: '0.3rem', fontSize: '0.9rem',
+              fontWeight: 700,
+            }}>
+              👀 {lastRound.rollReaction}
+            </div>
+          )}
         </div>
       )}
 

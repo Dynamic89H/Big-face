@@ -277,6 +277,7 @@ export const ceeloApi = {
     post<any>('/ceelo/round', { matchId, bet }),
   getMatch: (id: string) => get<any>(`/ceelo/match/${id}`),
   rivalries: () => get<any>('/ceelo/rivalries'),
+  story: () => get<{ chapters: any[]; playerLevel: number }>('/ceelo/story'),
 };
 
 // --- Push Notifications ---

@@ -9,6 +9,7 @@ import Avatar from '../components/Avatar';
 
 // Lazy-load the 3D table — Three.js only loads when you visit Gamble Face
 const RealTableScene = lazy(() => import('../components/RealTableScene'));
+const CeeloMatch = lazy(() => import('../components/CeeloMatch'));
 import type { RealTableSceneHandle } from '../components/RealTableScene';
 import type { GraphicsQuality } from '../engine/GambleEngine';
 import { useActorEngine, ActorSpeech, ACTOR_VOICES } from '../components/ActorEngine';
@@ -260,6 +261,11 @@ export default function GamblePage() {
           <span className="live-dot" /> LIVE
         </div>
       </div>
+
+      {/* Cee-lo Story Mode */}
+      <Suspense fallback={<div className="card" style={{ padding: '1rem' }}>🎲 Loading story mode...</div>}>
+        <CeeloMatch onExit={() => {}} />
+      </Suspense>
 
       {/* Table chat */}
       <div className="card" style={{ marginBottom: '1rem' }}>

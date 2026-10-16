@@ -138,6 +138,75 @@ function pickLine(char: AICharacter, event: string): string {
   return lines[Math.floor(Math.random() * lines.length)];
 }
 
+// ============ AMBIENT TABLE BANTER ============
+// Characters talking to EACH OTHER while the player plays.
+// Cross-talk makes the table feel alive.
+
+const BANTER: { from: string; to: string; line: string }[] = [
+  { from: 'boss', to: 'diva', line: 'Diva, you\'re quiet. That means you\'re winning or plotting.' },
+  { from: 'diva', to: 'boss', line: 'A lady never tells, darling.' },
+  { from: 'dread', to: 'enforcer', line: 'You breathe too loud when you\'re nervous, big man.' },
+  { from: 'enforcer', to: 'dread', line: 'Keep talking. I like my money angry.' },
+  { from: 'boss', to: 'dread', line: 'You still counting dice in your head, professor?' },
+  { from: 'dread', to: 'boss', line: 'Someone has to think at this table.' },
+  { from: 'diva', to: 'enforcer', line: 'Careful, handsome. Those chips are heavy.' },
+  { from: 'enforcer', to: 'diva', line: 'I can handle heavy.' },
+  { from: 'diva', to: 'dread', line: 'If you stare at the dice any harder they\'ll crack.' },
+  { from: 'dread', to: 'diva', line: 'Just appreciating the physics, Diva.' },
+  { from: 'boss', to: 'enforcer', line: 'Easy. We need him confident before we take it all.' },
+  { from: 'enforcer', to: 'boss', line: 'I don\'t do patient.' },
+];
+
+const ROLL_REACTIONS: Record<string, string[]> = {
+  hot: [ // player rolled strong
+    'boss: "Okay. Okay. I see you."',
+    'diva: "Ooh, somebody came to play."',
+    'dread: "Statistically improbable. Impressive."',
+    'enforcer: "LUCK. Pure luck."',
+  ],
+  cold: [ // player rolled weak
+    'boss: "That\'s… that\'s rough."',
+    'diva: "Oh honey."',
+    'dread: "The dice have spoken."',
+    'enforcer: "HA! Told you."',
+  ],
+  tense: [ // big bet, everyone watching
+    'boss: "Now we\'re talking."',
+    'diva: "My, my. Bold."',
+    'dread: "Interesting wager sizing."',
+    'enforcer: "FINALLY. Some action."',
+  ],
+};
+
+/** Get 1-2 ambient banter exchanges between AI characters at the table */
+export function getBanter(opponentKeys: string[]): { from: string; to: string; line: string }[] {
+  const relevant = BANTER.filter((b) => opponentKeys.includes(b.from) && opponentKeys.includes(b.to));
+  if (relevant.length === 0) return [];
+  const count = Math.min(2, relevant.length);
+  const picked: typeof relevant = [];
+  const pool = [...relevant];
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    picked.push(pool.splice(idx, 1)[0]);
+  }
+  return picked.map((b) => ({
+    from: CHARACTERS[b.from].name,
+    to: CHARACTERS[b.to].name,
+    line: b.line,
+  }));
+}
+
+/** Get a reaction line based on how the player's roll went */
+export function getRollReaction(opponentKeys: string[], kind: 'hot' | 'cold' | 'tense'): string | null {
+  const options = ROLL_REACTIONS[kind].filter((r) => {
+    const key = r.split(':')[0];
+    const charKey = Object.keys(CHARACTERS).find((k) => CHARACTERS[k].name.toLowerCase() === key);
+    return charKey && opponentKeys.includes(charKey);
+  });
+  if (options.length === 0) return null;
+  return options[Math.floor(Math.random() * options.length)];
+}
+
 // ============ MOB STORY CHAPTERS ============
 
 export interface StoryChapter {
@@ -435,6 +504,22 @@ router.post(
       talk.push({ who: CHARACTERS[newBanker].name, line: pickLine(CHARACTERS[newBanker], 'banker') });
     }
 
+    // --- Ambient banter: characters talking to each other ---
+    const banter = getBanter(opponents);
+
+    // --- Roll reaction based on player's hand ---
+    let rollReaction: string | null = null;
+    const playerHand = hands.player;
+    if (playerHand) {
+      if (playerHand.type === 'auto_win' || playerHand.type === 'trips') {
+        rollReaction = getRollReaction(opponents, 'hot');
+      } else if (playerHand.type === 'auto_loss') {
+        rollReaction = getRollReaction(opponents, 'cold');
+      } else if (bet >= (stacks.player + bet) * 0.5) {
+        rollReaction = getRollReaction(opponents, 'tense');
+      }
+    }
+
     res.json({
       round: roundNum,
       banker, newBanker,
@@ -443,7 +528,7 @@ router.post(
       stacks, pot, heater, heat,
       playerWon: !!playerWon,
       matchOver,
-      talk,
+      talk, banter, rollReaction,
     });
   })
 );

@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
-import { GambleEngine } from '../engine/GambleEngine';
+import { GambleEngine, type GraphicsQuality } from '../engine/GambleEngine';
 import { BigFaceEngine } from '../engine/BigFaceEngine';
 
 interface RealTableSceneProps {
