@@ -5,6 +5,8 @@ import { useLang, LANGS, type Lang } from '../i18n/LangContext';
 import { getSocket, type GiftReceivedPayload, type RankUpPayload } from '../api/socket';
 import RedCarpetBanner from './RedCarpetBanner';
 import DailyRewardBanner from './DailyRewardBanner';
+import WinFeedTicker from './WinFeedTicker';
+import SpinWheel from './SpinWheel';
 import Avatar, { facePhotoOf } from './Avatar';
 import { GIFT_EMOJI } from './GiftDialog';
 import WhatIsBigFace from './WhatIsBigFace';
@@ -192,6 +194,9 @@ export default function Layout() {
 
       <RedCarpetBanner />
       <DailyRewardBanner />
+      {/* Engagement engine — every page, every position */}
+      <WinFeedTicker />
+      <SpinWheel />
     </div>
   );
 }

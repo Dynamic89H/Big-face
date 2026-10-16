@@ -133,6 +133,9 @@ router.post(
       await awardXp(winnerId, 100, 'battle_winner').catch(() => undefined);
       const loserId = scores.length > 1 ? scores[1].battler_id : null;
       if (loserId) await awardXp(loserId, 25, 'battle_participant').catch(() => undefined);
+      // Publish to win feed
+      const { publishWin } = await import('./engagement');
+      await publishWin(winnerId, 'battle', 100, 'battle victory').catch(() => undefined);
     }
 
     emitToAll('battle:ended', { battleId: b.id, winnerId });

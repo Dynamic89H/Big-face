@@ -117,6 +117,10 @@ router.post(
     // Pay the winner.
     await addTokens(winnerId, winnerPayout, 'dice_win', { reference: `dice:${g.id}` });
 
+    // Publish to the live win feed + score crew battle points
+    const { publishWin } = await import('./engagement');
+    await publishWin(winnerId, 'gamble', winnerPayout, `${bet} token dice game`).catch(() => undefined);
+
     // Dweezy's 10% cut on every dice game.
     await recordPlatformRevenue('dice_margin', platformCut, {
       userId: winnerId,

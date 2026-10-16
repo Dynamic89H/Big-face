@@ -43,6 +43,8 @@ export interface ServerToClientEvents {
   'gamble:created': (payload: { gameId: string; betTokens?: number }) => void;
   'gamble:finished': (payload: any) => void;
   'gamble:cancelled': (payload: { gameId: string }) => void;
+  'engagement:feed': (payload: { kind: string; amount: number }) => void;
+  'engagement:crew-battle': (payload: { battleId: string }) => void;
   'gamble:result': (payload: any) => void;
 }
 
