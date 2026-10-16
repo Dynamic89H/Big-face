@@ -72,6 +72,7 @@ export function RankBadge({ level, size = 'md' }: { level: number; size?: 'sm' |
 export default function RanksPage() {
   const [data, setData] = useState<RankData | null>(null);
   const [leaders, setLeaders] = useState<Leader[]>([]);
+  const [rankTab, setRankTab] = useState<'my-rank' | 'ladder' | 'top'>('my-rank');
 
   useEffect(() => {
     const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
@@ -87,14 +88,29 @@ export default function RanksPage() {
 
   return (
     <div className="page section-ranks" style={{ maxWidth: 700, margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
         <h1 className="pattern-royal">
           🏆 Ranks
         </h1>
         <p className="pattern-royal-sub">The come up. Grind your way to Legend.</p>
       </div>
 
-      {data && (
+      {/* Ranks own navigation */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        {([
+          ['my-rank', '👑 My Rank'],
+          ['ladder', '🪜 Ladder'],
+          ['top', '🔥 Top Players'],
+        ] as const).map(([key, label]) => (
+          <button key={key} onClick={() => setRankTab(key)}
+            className={`btn ${rankTab === key ? '' : 'btn-ghost'}`}
+            style={{ flex: 1, padding: '0.7rem 0.4rem', fontSize: '0.85rem' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {rankTab === 'my-rank' && data && (
         <div className="pattern-gold pattern-elev-3" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '0.5rem' }}>
             YOUR RANK
@@ -135,6 +151,8 @@ export default function RanksPage() {
         </div>
       )}
 
+      {rankTab === 'ladder' && (
+      <>
       <h2 style={{ margin: '0 0 1rem', fontSize: '1.2rem' }}>All Ranks</h2>
       <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '2rem' }}>
         {data?.ranks.map((rank, i) => {
@@ -169,7 +187,11 @@ export default function RanksPage() {
           );
         })}
       </div>
+      </>
+      )}
 
+      {rankTab === 'top' && (
+      <>
       <h2 style={{ margin: '0 0 1rem', fontSize: '1.2rem' }}>Top Ranked</h2>
       <div style={{ display: 'grid', gap: '0.5rem' }}>
         {leaders.slice(0, 10).map((l, i) => (
@@ -187,6 +209,8 @@ export default function RanksPage() {
           </p>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

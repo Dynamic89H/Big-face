@@ -61,7 +61,6 @@ const SECTIONS: Section[] = [
     items: [
       { label: 'Leaderboard', icon: '🏆', to: '/leaderboard' },
       { label: 'Hall of Fame', icon: '⭐', to: '/hall-of-fame' },
-      { label: 'Ranks', icon: '🎖️', to: '/ranks' },
       { label: 'Throne', icon: '👑', to: '/throne' },
     ],
   },
