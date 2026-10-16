@@ -932,108 +932,108 @@ export class GambleEngine {
       plate.lookAt(0, 2.2, 0);
       this.scene.add(plate);
 
-      // Load character model
-      loader.load(model, (gltf) => {
-        const char = gltf.scene;
-        char.scale.setScalar(1.1);
-        char.position.set(sx, 0.6, sz);
-        char.lookAt(0, 1.2, 0);
+      // Character models removed per user request — chairs stay, characters go
+      // loader.load(model, (gltf) => {
+//         const char = gltf.scene;
+//         char.scale.setScalar(1.1);
+//         char.position.set(sx, 0.6, sz);
+//         char.lookAt(0, 1.2, 0);
         // Character-specific styling to match approved lineup
-        const charStyles: Record<string, CharacterOutfit> = {
-          'The Boss': {
-            skin: 0x6b4a35, shirt: 0x111111, pants: 0x1a1a1a, shoes: 0xffffff,
-            hat: 'bandana', hatColor: 0xcc2222,
-            chain: true, glasses: 'sunglasses', bracelet: true, watch: true,
-            hairstyle: 'fade', hairColor: 0x0a0a0a,
-          },
-          'Diva': {
-            skin: 0x5d3d2a, shirt: 0xcc1133, pants: 0xcc1133, shoes: 0xd4af37,
-            chain: true, earrings: true, bracelet: true,
-            hairstyle: 'long', hairColor: 0x0a0a0a,
-          },
-          'Dread Artist': {
-            skin: 0x6b4a35, shirt: 0xf0f0f0, pants: 0x2a2a2a, shoes: 0xffffff,
-            hat: 'beanie', hatColor: 0x111111,
-            chain: true, bracelet: true,
-            hairstyle: 'dreads', hairColor: 0x1a1a1a,
-          },
-          'Enforcer': {
-            skin: 0x5d3d2a, shirt: 0x111111, pants: 0x111111, shoes: 0x111111,
-            hat: 'none',
-            chain: true, glasses: 'shades', watch: true,
-            hairstyle: 'fade', hairColor: 0x0a0a0a,
-          },
-        };
-        const outfit = charStyles[name] || { skin: 0x6b4a35, shirt: 0x333333, pants: 0x333333 };
+//         const charStyles: Record<string, CharacterOutfit> = {
+//           'The Boss': {
+//             skin: 0x6b4a35, shirt: 0x111111, pants: 0x1a1a1a, shoes: 0xffffff,
+//             hat: 'bandana', hatColor: 0xcc2222,
+//             chain: true, glasses: 'sunglasses', bracelet: true, watch: true,
+//             hairstyle: 'fade', hairColor: 0x0a0a0a,
+//           },
+//           'Diva': {
+//             skin: 0x5d3d2a, shirt: 0xcc1133, pants: 0xcc1133, shoes: 0xd4af37,
+//             chain: true, earrings: true, bracelet: true,
+//             hairstyle: 'long', hairColor: 0x0a0a0a,
+//           },
+//           'Dread Artist': {
+//             skin: 0x6b4a35, shirt: 0xf0f0f0, pants: 0x2a2a2a, shoes: 0xffffff,
+//             hat: 'beanie', hatColor: 0x111111,
+//             chain: true, bracelet: true,
+//             hairstyle: 'dreads', hairColor: 0x1a1a1a,
+//           },
+//           'Enforcer': {
+//             skin: 0x5d3d2a, shirt: 0x111111, pants: 0x111111, shoes: 0x111111,
+//             hat: 'none',
+//             chain: true, glasses: 'shades', watch: true,
+//             hairstyle: 'fade', hairColor: 0x0a0a0a,
+//           },
+//         };
+//         const outfit = charStyles[name] || { skin: 0x6b4a35, shirt: 0x333333, pants: 0x333333 };
         // Store outfit for runtime changes
-        (this as any).charOutfits = (this as any).charOutfits || {};
-        (this as any).charOutfits[name] = outfit;
-        char.traverse((o) => {
-          const mesh = o as THREE.Mesh;
-          if (mesh.isMesh) {
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            mesh.frustumCulled = false;
+//         (this as any).charOutfits = (this as any).charOutfits || {};
+//         (this as any).charOutfits[name] = outfit;
+//         char.traverse((o) => {
+//           const mesh = o as THREE.Mesh;
+//           if (mesh.isMesh) {
+//             mesh.castShadow = true;
+//             mesh.receiveShadow = true;
+//             mesh.frustumCulled = false;
             // Tint materials: darken skin, color clothes per character
-            const mat = mesh.material as THREE.MeshStandardMaterial;
-            if (mat && mat.color) {
-              const matName = (mat.name || '').toLowerCase();
-              if (matName.includes('skin') || matName.includes('body') || matName.includes('head') || matName.includes('face')) {
-                mat.color.setHex(outfit.skin ?? 0x6b4a35);
-              } else if (matName.includes('shirt') || matName.includes('top') || matName.includes('cloth')) {
-                mat.color.setHex(outfit.shirt ?? 0x333333);
-              }
-            }
-          }
-          const skinned = o as THREE.SkinnedMesh;
-          if (skinned.isSkinnedMesh) {
-            skinned.frustumCulled = false;
-          }
-        });
+//             const mat = mesh.material as THREE.MeshStandardMaterial;
+//             if (mat && mat.color) {
+//               const matName = (mat.name || '').toLowerCase();
+//               if (matName.includes('skin') || matName.includes('body') || matName.includes('head') || matName.includes('face')) {
+//                 mat.color.setHex(outfit.skin ?? 0x6b4a35);
+//               } else if (matName.includes('shirt') || matName.includes('top') || matName.includes('cloth')) {
+//                 mat.color.setHex(outfit.shirt ?? 0x333333);
+//               }
+//             }
+//           }
+//           const skinned = o as THREE.SkinnedMesh;
+//           if (skinned.isSkinnedMesh) {
+//             skinned.frustumCulled = false;
+//           }
+//         });
 
         // Street accessories: gold chain
-        const chainMat = new THREE.MeshStandardMaterial({
-          color: 0xd4af37, metalness: 1.0, roughness: 0.25,
-        });
-        const chain = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.025, 8, 24), chainMat);
-        chain.position.set(0, 1.45, 0.05);
-        chain.rotation.x = Math.PI / 2 - 0.2;
-        char.add(chain);
-        const pendant = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.02), chainMat);
-        pendant.position.set(0, 1.32, 0.18);
-        char.add(pendant);
+//         const chainMat = new THREE.MeshStandardMaterial({
+//           color: 0xd4af37, metalness: 1.0, roughness: 0.25,
+//         });
+//         const chain = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.025, 8, 24), chainMat);
+//         chain.position.set(0, 1.45, 0.05);
+//         chain.rotation.x = Math.PI / 2 - 0.2;
+//         char.add(chain);
+//         const pendant = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.02), chainMat);
+//         pendant.position.set(0, 1.32, 0.18);
+//         char.add(pendant);
 
         // Build all accessories from outfit config
-        this.buildAccessories(char, outfit);
+//         this.buildAccessories(char, outfit);
 
-        this.scene.add(char);
+//         this.scene.add(char);
 
         // Store character bones for hand animation
-        const bones: Record<string, THREE.Object3D> = {};
-        char.traverse((o) => {
-          const name = o.name.toLowerCase();
-          if (name.includes('hand') || name.includes('arm') || name.includes('shoulder') || name.includes('elbow') || name.includes('wrist')) {
-            bones[o.name] = o;
-          }
-        });
-        (this as any).charBones = (this as any).charBones || [];
-        (this as any).charBones.push({ char, bones, name });
+//         const bones: Record<string, THREE.Object3D> = {};
+//         char.traverse((o) => {
+//           const name = o.name.toLowerCase();
+//           if (name.includes('hand') || name.includes('arm') || name.includes('shoulder') || name.includes('elbow') || name.includes('wrist')) {
+//             bones[o.name] = o;
+//           }
+//         });
+//         (this as any).charBones = (this as any).charBones || [];
+//         (this as any).charBones.push({ char, bones, name });
 
         // Play idle animation if available
-        if (gltf.animations.length > 0) {
-          const mixer = new THREE.AnimationMixer(char);
+//         if (gltf.animations.length > 0) {
+//           const mixer = new THREE.AnimationMixer(char);
           // Find an idle-like animation, or just play the first
-          const idleClip = gltf.animations.find((a) =>
-            a.name.toLowerCase().includes('idle')
-          ) || gltf.animations[0];
-          mixer.clipAction(idleClip).play();
+//           const idleClip = gltf.animations.find((a) =>
+//             a.name.toLowerCase().includes('idle')
+//           ) || gltf.animations[0];
+//           mixer.clipAction(idleClip).play();
           // Store mixer for update loop
-          (this as any).charMixers = (this as any).charMixers || [];
-          (this as any).charMixers.push(mixer);
-        }
-      }, undefined, (err) => {
-        console.warn(`Could not load character ${name}:`, err);
-      });
+//           (this as any).charMixers = (this as any).charMixers || [];
+//           (this as any).charMixers.push(mixer);
+//         }
+      // }, undefined, (err) => {
+      //   console.warn(`Could not load character ${name}:`, err);
+      // });
     });
   }
 
