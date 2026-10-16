@@ -30,6 +30,7 @@ import GamblePage from './pages/GamblePage';
 import FactoryPage from './pages/FactoryPage';
 import CharacterStudioPage from './pages/CharacterStudioPage';
 import LobbyPage from './pages/LobbyPage';
+import HomePage from './pages/HomePage';
 import InsightsPage from './pages/InsightsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import DJBoothPage from './pages/DJBoothPage';
@@ -120,6 +121,7 @@ export default function App() {
             <Route path="factory" element={<FactoryPage />} />
             <Route path="character-studio" element={<CharacterStudioPage />} />
             <Route path="lobby" element={<LobbyPage />} />
+            <Route path="home" element={<HomePage />} />
             <Route path="insights" element={<InsightsPage />} />
             <Route path="dj-booth" element={<DJBoothPage />} />
             <Route path="safety" element={<SafetyPage />} />

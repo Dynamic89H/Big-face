@@ -54,6 +54,15 @@ const NAV: { to: string; key: string; icon: string }[] = [
   { to: '/earnings', key: 'nav_earnings', icon: '💵' },
 ];
 
+// Slim bottom nav — just 5 essentials. Everything else lives in the Home Hub.
+const BOTTOM_NAV: { to: string; key: string; icon: string }[] = [
+  { to: '/home', key: 'nav_home', icon: '🏠' },
+  { to: '/gamble', key: 'nav_gamble', icon: '🎲' },
+  { to: '/chats', key: 'nav_chat', icon: '💬' },
+  { to: '/leaderboard', key: 'nav_leaderboard', icon: '🏆' },
+  { to: '/profile', key: 'nav_profile', icon: '👤' },
+];
+
 let toastId = 0;
 
 export default function Layout() {
@@ -215,7 +224,11 @@ export default function Layout() {
         </Suspense>
       </main>
 
-      <nav className="bottom-nav">{navLinks('nav-link')}</nav>
+      <nav className="bottom-nav">{BOTTOM_NAV.map((n) => (
+        <NavLink key={n.to} to={n.to} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+          <span className="nav-icon">{n.icon}</span>
+        </NavLink>
+      ))}</nav>
 
       <div className="toast-stack" aria-live="polite">
         {toasts.map((t) => (
