@@ -48,6 +48,37 @@ export default function SettingsPage() {
   const [pwConfirm, setPwConfirm] = useState('');
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pwBusy, setPwBusy] = useState(false);
+  const [showPw, setShowPw] = useState([false, false, false]);
+
+  const PwField = ({ index, placeholder, value, onChange, autoComplete }: {
+    index: number; placeholder: string; value: string;
+    onChange: (v: string) => void; autoComplete: string;
+  }) => (
+    <div style={{ position: 'relative' }}>
+      <input
+        type={showPw[index] ? 'text' : 'password'}
+        className="input"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete={autoComplete}
+        style={{ paddingRight: '2.75rem' }}
+      />
+      <button
+        type="button"
+        onClick={() => setShowPw((s) => s.map((v, i) => (i === index ? !v : v)))}
+        style={{
+          position: 'absolute', right: '0.5rem', top: '50%',
+          transform: 'translateY(-50%)', background: 'none',
+          border: 'none', fontSize: '1.2rem', cursor: 'pointer',
+          padding: '0.25rem',
+        }}
+        aria-label={showPw[index] ? 'Hide password' : 'Show password'}
+      >
+        {showPw[index] ? '🙈' : '👁️'}
+      </button>
+    </div>
+  );
 
   const changePassword = async () => {
     setPwMsg(null);
@@ -239,30 +270,12 @@ export default function SettingsPage() {
           </div>
         )}
         <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1rem' }}>
-          <input
-            type="password"
-            className="input"
-            placeholder="Current password"
-            value={pwCurrent}
-            onChange={(e) => setPwCurrent(e.target.value)}
-            autoComplete="current-password"
-          />
-          <input
-            type="password"
-            className="input"
-            placeholder="New password (min 6 characters)"
-            value={pwNew}
-            onChange={(e) => setPwNew(e.target.value)}
-            autoComplete="new-password"
-          />
-          <input
-            type="password"
-            className="input"
-            placeholder="Confirm new password"
-            value={pwConfirm}
-            onChange={(e) => setPwConfirm(e.target.value)}
-            autoComplete="new-password"
-          />
+          <PwField index={0} placeholder="Current password" value={pwCurrent}
+            onChange={setPwCurrent} autoComplete="current-password" />
+          <PwField index={1} placeholder="New password (min 6 characters)" value={pwNew}
+            onChange={setPwNew} autoComplete="new-password" />
+          <PwField index={2} placeholder="Confirm new password" value={pwConfirm}
+            onChange={setPwConfirm} autoComplete="new-password" />
           <button className="btn btn-block" onClick={changePassword} disabled={pwBusy}>
             {pwBusy ? 'Changing...' : 'Change Password'}
           </button>
