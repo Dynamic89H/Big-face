@@ -8,9 +8,8 @@ interface RealTableSceneProps {
 }
 
 /**
- * RealTableScene — your 4 characters as real 3D models at the dice table.
- * They walk to the table, sit/stand, talk with moving jaws, gesture.
- * Built by Probus with the CharacterModelBuilder.
+ * RealTableScene — premium 3D casino dice table for Big Face.
+ * Cinematic lighting, animated dice, 4 camera angles with zoom.
  */
 export default function RealTableScene({ width = 800, height = 500 }: RealTableSceneProps) {
   const mountRef = useRef<HTMLDivElement>(null);

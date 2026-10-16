@@ -75,7 +75,7 @@ export default function SignupPage() {
           </div>
           <div className="field">
             <label htmlFor="su-referral">Referral code <span className="form-note">(optional)</span></label>
-            <input id="su-referral" className="input" value={form.referralCode} onChange={set('referralCode')} maxLength={16} placeholder="Friend's invite code — you both earn rewards" style={{ textTransform: 'uppercase' }} />
+            <input id="su-referral" className="input" value={form.referralCode} onChange={set('referralCode')} maxLength={16} placeholder="Invite code (optional)" style={{ textTransform: 'uppercase' }} />
           </div>
           {error && <div className="form-error">{error}</div>}
           <button className="btn btn-block" type="submit" disabled={busy}>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { usersApi } from '../api/client';
+import { usersApi, walletApi } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import Avatar, { facePhotoOf } from '../components/Avatar';
@@ -31,11 +31,20 @@ export default function InsightsPage() {
         const entries = lb.entries || [];
         const myRank = entries.findIndex((e: any) => e.user?.id === user?.id) + 1;
 
+        // Fetch real wallet balance for earnings
+        let earned = 0;
+        try {
+          const wallet = await walletApi.get();
+          earned = Number(wallet.balance || 0);
+        } catch {
+          /* wallet offline */
+        }
+
         setLeaders(entries.slice(0, 5));
         setData({
           rank: myRank > 0 ? myRank : null,
           totalUsers: entries.length,
-          tokensEarned: 0, // TODO: fetch from wallet API
+          tokensEarned: earned,
           level: Number(user?.level || 1),
           xp: Number(user?.xp || 0),
           xpForNext: 100 * Number(user?.level || 1),

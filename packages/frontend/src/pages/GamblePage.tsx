@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { gambleApi, ApiError } from '../api/client';
 import { celebrate } from '../components/Celebration';
-import AmbientDice from '../components/AmbientDice';
-import DiceTableScene from '../components/DiceTableScene';
-import GTATableScene from '../components/GTATableScene';
 import RealTableScene from '../components/RealTableScene';
 import { getSocket } from '../api/socket';
 import { useAuth } from '../auth/AuthContext';

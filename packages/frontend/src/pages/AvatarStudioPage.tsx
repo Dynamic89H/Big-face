@@ -4,10 +4,8 @@ import { avatarApi, walletApi, usersApi, uploadsApi, ApiError } from '../api/cli
 import { useAuth } from '../auth/AuthContext';
 import type { AvatarItem } from '../types';
 import { RARITY_COLORS } from '../types';
-import CharacterAvatar from '../components/CharacterAvatar';
 import ItemVisual from '../components/ItemVisual';
 import RealisticAvatar3D from '../components/RealisticAvatar3D';
-import LivingCharacter from '../components/LivingCharacter';
 import ModelCharacter from '../components/ModelCharacter';
 import { usePageTitle } from '../hooks/usePageTitle';
 
