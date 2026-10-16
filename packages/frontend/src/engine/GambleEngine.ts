@@ -853,10 +853,10 @@ export class GambleEngine {
     // Character definitions: model file, seat angle, name
     // Microsoft Rocketbox photorealistic humans (MIT license)
     const seats: { model: string; angle: number; name: string }[] = [
-      { model: '/models/Male_Adult_03.glb', angle: 0.6, name: 'The Boss' },
+      { model: '/models/Male_Adult_12.glb', angle: 0.6, name: 'The Boss' },
       { model: '/models/Female_Adult_07.glb', angle: 2.2, name: 'Diva' },
-      { model: '/models/Male_Adult_10.glb', angle: 3.8, name: 'Dread Artist' },
-      { model: '/models/Male_Adult_16.glb', angle: 5.4, name: 'Enforcer' },
+      { model: '/models/Male_Adult_18.glb', angle: 3.8, name: 'Dread Artist' },
+      { model: '/models/Male_Adult_10.glb', angle: 5.4, name: 'Enforcer' },
     ];
 
     // Chair for each seat
@@ -930,7 +930,7 @@ export class GambleEngine {
             const mat = mesh.material as THREE.MeshStandardMaterial;
             if (mat && mat.color) {
               const matName = (mat.name || '').toLowerCase();
-              if (matName.includes('skin') || matName.includes('body')) {
+              if (matName.includes('skin') || matName.includes('body') || matName.includes('head') || matName.includes('face')) {
                 mat.color.setHex(style.skin);
               } else if (matName.includes('shirt') || matName.includes('top') || matName.includes('cloth')) {
                 mat.color.setHex(style.shirt);
