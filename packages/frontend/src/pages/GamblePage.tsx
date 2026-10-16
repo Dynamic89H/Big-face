@@ -192,9 +192,9 @@ export default function GamblePage() {
         @keyframes diceShake { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
       `}</style>
 
-      {/* Your 4 characters as real 3D models at the table */}
+      {/* Your 4 characters as real 3D models at the table - BIG */}
       <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: 16, overflow: 'hidden' }}>
-        <RealTableScene width={800} height={500} />
+        <RealTableScene width={1200} height={700} />
         <div style={{
           position: 'absolute', top: 12, left: 16,
           display: 'flex', alignItems: 'center',

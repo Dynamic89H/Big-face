@@ -66,14 +66,78 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     rim.position.set(-6, 8, -8);
     scene.add(rim);
 
-    // Floor
+    // ===== GRAND CASINO ROOM =====
+    // Massive floor
     const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(25, 48),
-      new THREE.MeshStandardMaterial({ color: 0x0c0c14, roughness: 0.25, metalness: 0.8 })
+      new THREE.CircleGeometry(40, 64),
+      new THREE.MeshStandardMaterial({ color: 0x0c0c14, roughness: 0.2, metalness: 0.85 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
+
+    // Gold carpet inlay around table
+    const carpet = new THREE.Mesh(
+      new THREE.RingGeometry(5.5, 9, 64),
+      new THREE.MeshStandardMaterial({ color: 0x6b0f1a, roughness: 0.95 })
+    );
+    carpet.rotation.x = -Math.PI / 2;
+    carpet.position.y = 0.01;
+    carpet.receiveShadow = true;
+    scene.add(carpet);
+
+    // Chandelier above table
+    const chandelier = new THREE.Group();
+    const chandRing = new THREE.Mesh(
+      new THREE.TorusGeometry(1.8, 0.12, 12, 48),
+      new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.2 })
+    );
+    chandelier.add(chandRing);
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      const bulb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 12, 12),
+        new THREE.MeshBasicMaterial({ color: 0xffeebb })
+      );
+      bulb.position.set(Math.cos(angle) * 1.8, -0.25, Math.sin(angle) * 1.8);
+      chandelier.add(bulb);
+      const candle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 0.35, 8),
+        new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.3 })
+      );
+      candle.position.set(Math.cos(angle) * 1.8, 0, Math.sin(angle) * 1.8);
+      chandelier.add(candle);
+    }
+    const chain = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 6, 8),
+      new THREE.MeshStandardMaterial({ color: 0x8a6d1f, metalness: 0.9, roughness: 0.4 })
+    );
+    chain.position.y = 3.2;
+    chandelier.add(chain);
+    chandelier.position.y = 11;
+    scene.add(chandelier);
+    const chandLight = new THREE.PointLight(0xffd9a0, 120, 30, 1.5);
+    chandLight.position.y = 10.4;
+    scene.add(chandLight);
+
+    // Pillars around the room
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.4, metalness: 0.3 });
+    const pillarGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.25 });
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const px = Math.cos(angle) * 18;
+      const pz = Math.sin(angle) * 18;
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 16, 16), pillarMat);
+      pillar.position.set(px, 8, pz);
+      pillar.castShadow = true;
+      scene.add(pillar);
+      [1.5, 14.5].forEach((y) => {
+        const band = new THREE.Mesh(new THREE.TorusGeometry(1.02, 0.09, 8, 24), pillarGoldMat);
+        band.rotation.x = Math.PI / 2;
+        band.position.set(px, y, pz);
+        scene.add(band);
+      });
+    }
 
     // ===== PREMIUM CASINO DICE TABLE =====
     const table = new THREE.Group();
