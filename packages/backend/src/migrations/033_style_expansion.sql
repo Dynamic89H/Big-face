@@ -1,5 +1,10 @@
 -- Massive style expansion: outfits, hair, shoes, jewelry for characters
 -- Based on 2024-2025 trends: streetwear, luxury, braids, locs, fades
+-- First: allow the new slots (watch, glasses)
+ALTER TABLE avatar_items DROP CONSTRAINT IF EXISTS avatar_items_slot_check;
+ALTER TABLE avatar_items ADD CONSTRAINT avatar_items_slot_check
+  CHECK (slot IN ('hair','top','bottom','shoes','chain','ring','earring','grill','hat','watch','glasses'));
+
 INSERT INTO avatar_items (slot, name, rarity, min_level, token_price, style) VALUES
 -- HAIR: Men (fades, waves, braids, locs, twists)
 ('hair','360 Waves','rare',2,60,'{"color":"#1a1a1a","style":"waves"}'),
