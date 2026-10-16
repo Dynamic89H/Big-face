@@ -58,11 +58,11 @@ export class RealisticTableEngine {
     this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
     this.updateCamera(0);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
     mount.appendChild(this.renderer.domElement);
@@ -114,7 +114,7 @@ export class RealisticTableEngine {
     chandelier.position.set(0, 10, 0);
     chandelier.target.position.set(0, 0, 0);
     chandelier.castShadow = true;
-    chandelier.shadow.mapSize.set(2048, 2048);
+    chandelier.shadow.mapSize.set(1024, 1024);
     this.scene.add(chandelier);
     this.scene.add(chandelier.target);
 

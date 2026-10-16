@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RealisticTableEngine } from '../engine/RealisticTableEngine';
 import { useAuth } from '../auth/AuthContext';
 
@@ -14,6 +14,7 @@ interface GTATableSceneProps {
 export default function GTATableScene({ width = 800, height = 500 }: GTATableSceneProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -50,6 +51,7 @@ export default function GTATableScene({ width = 800, height = 500 }: GTATableSce
     ];
 
     crew.forEach((c) => engine.addCharacter(c));
+    setLoading(false);
 
     engine.onClick((id) => {
       const char = crew.find((c) => c.id === id);
@@ -106,8 +108,19 @@ export default function GTATableScene({ width = 800, height = 500 }: GTATableSce
           width, height: Math.min(height, width * 0.625),
           margin: '0 auto', cursor: 'pointer',
           borderRadius: 20, overflow: 'hidden',
+          position: 'relative',
         }}
-      />
+      >
+        {loading && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#0a0a12', color: '#ffd700', fontSize: '1.1rem', fontWeight: 700,
+          }}>
+            🎬 Loading the table...
+          </div>
+        )}
+      </div>
       <p className="form-note" style={{ marginTop: '0.5rem' }}>
         🎬 GTA-style cutscene • Tap a character to talk to them
       </p>
