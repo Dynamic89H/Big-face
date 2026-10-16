@@ -34,11 +34,28 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     mount.appendChild(renderer.domElement);
 
-    // ===== CINEMATIC CASINO LIGHTING =====
-    scene.add(new THREE.AmbientLight(0x2a2a40, 0.9));
+    // ===== BLUE CEILING CINEMATIC LIGHTING =====
+    scene.add(new THREE.AmbientLight(0x1a2a4a, 1.1));
 
-    // Main chandelier spotlight - warm pool of light on table
-    const key = new THREE.SpotLight(0xffd9a0, 260, 40, Math.PI / 5, 0.35, 1.2);
+    // Blue ceiling wash - the signature Big Face glow
+    const ceilingBlue = new THREE.PointLight(0x2266ff, 80, 40, 1.4);
+    ceilingBlue.position.set(0, 15, 0);
+    scene.add(ceilingBlue);
+
+    // Blue ceiling spotlights (4 of them, one per section)
+    const blueSpots: THREE.SpotLight[] = [];
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const spot = new THREE.SpotLight(0x4488ff, 120, 35, Math.PI / 6, 0.5, 1.3);
+      spot.position.set(Math.cos(angle) * 8, 14, Math.sin(angle) * 8);
+      spot.target.position.set(Math.cos(angle) * 3, 0, Math.sin(angle) * 3);
+      scene.add(spot);
+      scene.add(spot.target);
+      blueSpots.push(spot);
+    }
+
+    // Main warm spotlight on table (contrast against blue)
+    const key = new THREE.SpotLight(0xffd9a0, 200, 40, Math.PI / 5, 0.35, 1.2);
     key.position.set(0, 14, 0);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
@@ -46,23 +63,24 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     scene.add(key);
     scene.add(key.target);
 
-    // Under-table glow (casino ambiance)
-    const underGlow = new THREE.PointLight(0xff6b35, 18, 8);
+    // Under-table warm glow
+    const underGlow = new THREE.PointLight(0xff6b35, 15, 8);
     underGlow.position.set(0, 0.4, 0);
     scene.add(underGlow);
 
-    // Colored accent lights around the room
+    // Neon accent lights - blue and gold alternating
     const accentData: [number, number][] = [
-      [0xff2d78, 0], [0x00e5ff, 2.1], [0xffd700, 4.2],
+      [0x2266ff, 0], [0xffd700, 0.8], [0x2266ff, 1.6], [0xffd700, 2.4],
+      [0x2266ff, 3.2], [0xffd700, 4.0], [0x2266ff, 4.8], [0xffd700, 5.6],
     ];
     accentData.forEach(([color, angle]) => {
-      const light = new THREE.PointLight(color, 32, 24, 1.6);
-      light.position.set(Math.cos(angle) * 11, 4.5, Math.sin(angle) * 11);
+      const light = new THREE.PointLight(color, 28, 22, 1.6);
+      light.position.set(Math.cos(angle) * 13, 3.5, Math.sin(angle) * 13);
       scene.add(light);
     });
 
     // Rim light for character silhouettes
-    const rim = new THREE.DirectionalLight(0x8899ff, 0.7);
+    const rim = new THREE.DirectionalLight(0x6688ff, 0.8);
     rim.position.set(-6, 8, -8);
     scene.add(rim);
 
@@ -120,23 +138,140 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
     chandLight.position.y = 10.4;
     scene.add(chandLight);
 
-    // Pillars around the room
-    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.4, metalness: 0.3 });
-    const pillarGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.25 });
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      const px = Math.cos(angle) * 18;
-      const pz = Math.sin(angle) * 18;
-      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 16, 16), pillarMat);
-      pillar.position.set(px, 8, pz);
-      pillar.castShadow = true;
-      scene.add(pillar);
-      [1.5, 14.5].forEach((y) => {
-        const band = new THREE.Mesh(new THREE.TorusGeometry(1.02, 0.09, 8, 24), pillarGoldMat);
-        band.rotation.x = Math.PI / 2;
-        band.position.set(px, y, pz);
-        scene.add(band);
-      });
+    // ===== BIG FACE NEON SIGN =====
+    const signCanvas = document.createElement('canvas');
+    signCanvas.width = 1024;
+    signCanvas.height = 256;
+    const sctx = signCanvas.getContext('2d')!;
+    sctx.fillStyle = '#0a0a12';
+    sctx.fillRect(0, 0, 1024, 256);
+    sctx.font = 'bold 120px Arial';
+    sctx.textAlign = 'center';
+    sctx.textBaseline = 'middle';
+    // Glow effect
+    sctx.shadowColor = '#ffd700';
+    sctx.shadowBlur = 40;
+    sctx.fillStyle = '#ffd700';
+    sctx.fillText('BIG FACE', 512, 110);
+    sctx.font = 'bold 48px Arial';
+    sctx.shadowColor = '#2266ff';
+    sctx.shadowBlur = 30;
+    sctx.fillStyle = '#66aaff';
+    sctx.fillText('★ CASINO ★', 512, 200);
+    const signTex = new THREE.CanvasTexture(signCanvas);
+    const signMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(14, 3.5),
+      new THREE.MeshBasicMaterial({ map: signTex })
+    );
+    signMesh.position.set(0, 8, -17.5);
+    scene.add(signMesh);
+    // Sign glow light
+    const signGlow = new THREE.PointLight(0xffd700, 40, 20, 1.5);
+    signGlow.position.set(0, 8, -15);
+    scene.add(signGlow);
+
+    // ===== VIP LOUNGE AREAS (4 corners) =====
+    const couchMat = new THREE.MeshPhysicalMaterial({ color: 0x1a0d1a, roughness: 0.8, clearcoat: 0.2 });
+    const couchGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.3 });
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const cx = Math.cos(angle) * 13;
+      const cz = Math.sin(angle) * 13;
+      const lounge = new THREE.Group();
+
+      // Couch base
+      const couchBase = new THREE.Mesh(new THREE.BoxGeometry(3, 0.8, 1.2), couchMat);
+      couchBase.position.y = 0.4;
+      couchBase.castShadow = true;
+      lounge.add(couchBase);
+      // Couch back
+      const couchBack = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 0.3), couchMat);
+      couchBack.position.set(0, 1.0, -0.55);
+      couchBack.castShadow = true;
+      lounge.add(couchBack);
+      // Gold trim
+      const couchTrim = new THREE.Mesh(new THREE.BoxGeometry(3.05, 0.06, 1.25), couchGoldMat);
+      couchTrim.position.y = 0.82;
+      lounge.add(couchTrim);
+
+      // Small round table
+      const sideTable = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.5, 0.4, 0.7, 16),
+        new THREE.MeshStandardMaterial({ color: 0x2a1a0e, roughness: 0.3, metalness: 0.5 })
+      );
+      sideTable.position.set(2.2, 0.35, 0);
+      sideTable.castShadow = true;
+      lounge.add(sideTable);
+      // Champagne bottle on table
+      const bottle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.1, 0.5, 12),
+        new THREE.MeshPhysicalMaterial({ color: 0x1a4d1a, roughness: 0.1, transparent: true, opacity: 0.9 })
+      );
+      bottle.position.set(2.2, 0.95, 0);
+      lounge.add(bottle);
+
+      lounge.position.set(cx, 0, cz);
+      lounge.lookAt(0, 0, 0);
+      scene.add(lounge);
+
+      // Lounge spotlight (blue)
+      const loungeLight = new THREE.PointLight(0x4488ff, 20, 10, 1.5);
+      loungeLight.position.set(cx, 4, cz);
+      scene.add(loungeLight);
+    }
+
+    // ===== NEON FLOOR STRIPS =====
+    const stripBlueMat = new THREE.MeshBasicMaterial({ color: 0x2266ff });
+    const stripGoldMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+    for (let i = 0; i < 16; i++) {
+      const angle = (i / 16) * Math.PI * 2;
+      const strip = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, 0.04, 0.12),
+        i % 2 === 0 ? stripBlueMat : stripGoldMat
+      );
+      strip.position.set(Math.cos(angle) * 10.5, 0.03, Math.sin(angle) * 10.5);
+      strip.lookAt(0, 0.03, 0);
+      scene.add(strip);
+    }
+
+    // ===== WALL ART FRAMES =====
+    const frameGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.2 });
+    const artColors = [0xff2d78, 0x2266ff, 0xffd700, 0x00e5ff];
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2;
+      const ax = Math.cos(angle) * 17.8;
+      const az = Math.sin(angle) * 17.8;
+      // Frame
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 0.15), frameGoldMat);
+      frame.position.set(ax, 7, az);
+      frame.lookAt(0, 7, 0);
+      scene.add(frame);
+      // Art canvas
+      const artCanvas = document.createElement('canvas');
+      artCanvas.width = 256;
+      artCanvas.height = 192;
+      const actx = artCanvas.getContext('2d')!;
+      actx.fillStyle = '#0a0a12';
+      actx.fillRect(0, 0, 256, 192);
+      actx.fillStyle = `#${artColors[i].toString(16).padStart(6, '0')}`;
+      actx.font = 'bold 72px Arial';
+      actx.textAlign = 'center';
+      actx.textBaseline = 'middle';
+      const symbols = ['♠', '♥', '♦', '♣'];
+      actx.fillText(symbols[i], 128, 96);
+      const artTex = new THREE.CanvasTexture(artCanvas);
+      const art = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.6, 2.6),
+        new THREE.MeshBasicMaterial({ map: artTex })
+      );
+      art.position.set(ax * 0.99, 7, az * 0.99);
+      art.lookAt(0, 7, 0);
+      // Offset slightly toward center
+      const dirX = -ax / Math.hypot(ax, az);
+      const dirZ = -az / Math.hypot(ax, az);
+      art.position.x += dirX * 0.1;
+      art.position.z += dirZ * 0.1;
+      scene.add(art);
     }
 
     // ===== PREMIUM CASINO DICE TABLE =====
@@ -397,19 +532,77 @@ export default function RealTableScene({ width = 800, height = 500 }: RealTableS
       }
     }, 8000);
 
-    // Cinematic camera
+    // ===== 4 CINEMATIC CAMERA ANGLES =====
+    // Each camera covers a different section, cycling every 8 seconds
     const clock = new THREE.Clock();
     let raf = 0;
-    let camAngle = 0;
+    let camSection = 0;
+    let sectionTimer = 0;
+    const SECTION_DURATION = 8;
+
+    // Smooth camera transition
+    const camPos = new THREE.Vector3(10, 4.2, 0);
+    const camLook = new THREE.Vector3(0, 1.6, 0);
+    const targetPos = new THREE.Vector3();
+    const targetLook = new THREE.Vector3();
+
+    const getCameraForSection = (section: number, t: number): [THREE.Vector3, THREE.Vector3] => {
+      const pos = new THREE.Vector3();
+      const look = new THREE.Vector3(0, 1.6, 0);
+      switch (section) {
+        case 0: // Overhead table shot - dramatic top-down
+          pos.set(Math.sin(t * 0.15) * 3, 11, Math.cos(t * 0.15) * 3);
+          look.set(0, 1.2, 0);
+          break;
+        case 1: // Close-up on dice - intense
+          const diceAngle = t * 0.2;
+          pos.set(Math.cos(diceAngle) * 2.5, 2.8, Math.sin(diceAngle) * 2.5);
+          look.set(0, 1.7, 0);
+          break;
+        case 2: // Wide room view - show the grandeur
+          pos.set(Math.cos(t * 0.08) * 16, 6.5 + Math.sin(t * 0.1) * 1, Math.sin(t * 0.08) * 16);
+          look.set(0, 2, 0);
+          break;
+        case 3: // Player level - orbit around characters
+        default:
+          const orbitAngle = t * 0.12;
+          pos.set(Math.cos(orbitAngle) * 8.5, 3.2 + Math.sin(t * 0.15) * 0.5, Math.sin(orbitAngle) * 8.5);
+          look.set(0, 1.8, 0);
+          break;
+      }
+      return [pos, look];
+    };
+
     const animate = () => {
       raf = requestAnimationFrame(animate);
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
       builder.update(dt);
-      camAngle += dt * 0.1;
-      const radius = 10 + Math.sin(t * 0.08) * 1.2;
-      camera.position.set(Math.cos(camAngle) * radius, 4.2 + Math.sin(t * 0.12) * 0.6, Math.sin(camAngle) * radius);
-      camera.lookAt(0, 1.6, 0);
+
+      // Cycle through 4 sections
+      sectionTimer += dt;
+      if (sectionTimer >= SECTION_DURATION) {
+        sectionTimer = 0;
+        camSection = (camSection + 1) % 4;
+      }
+
+      // Smooth transition to current section's camera
+      const [newPos, newLook] = getCameraForSection(camSection, t);
+      targetPos.copy(newPos);
+      targetLook.copy(newLook);
+      camPos.lerp(targetPos, 1 - Math.pow(0.001, dt));
+      camLook.lerp(targetLook, 1 - Math.pow(0.001, dt));
+      camera.position.copy(camPos);
+      camera.lookAt(camLook);
+
+      // Pulse the blue ceiling lights
+      ceilingBlue.intensity = 80 + Math.sin(t * 1.5) * 15;
+      blueSpots.forEach((spot, i) => {
+        spot.intensity = 120 + Math.sin(t * 2 + i * 1.5) * 25;
+      });
+      // Neon sign flicker (subtle)
+      signGlow.intensity = 40 + Math.sin(t * 8) * 3 + Math.sin(t * 23) * 2;
+
       renderer.render(scene, camera);
     };
     animate();
