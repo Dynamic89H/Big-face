@@ -109,8 +109,8 @@ export default function SpinWheel() {
               </p>
             )}
 
-            {/* Wheel */}
-            <div style={{ position: 'relative', width: 200, height: 200, margin: '0 auto 1.5rem' }}>
+            {/* Wheel with prize labels */}
+            <div style={{ position: 'relative', width: 240, height: 240, margin: '0 auto 1.5rem' }}>
               <div style={{
                 width: '100%', height: '100%', borderRadius: '50%',
                 background: 'conic-gradient(#ffd700 0deg 45deg, #ff6b35 45deg 90deg, #00e5ff 90deg 135deg, #8b5cf6 135deg 180deg, #22c55e 180deg 225deg, #ff2d78 225deg 270deg, #ffd700 270deg 315deg, #ff6b35 315deg 360deg)',
@@ -118,7 +118,25 @@ export default function SpinWheel() {
                 transition: spinning ? 'transform 2.5s cubic-bezier(0.15, 0.85, 0.25, 1)' : 'none',
                 border: '4px solid rgba(255,215,0,0.5)',
                 boxShadow: '0 0 30px rgba(255,215,0,0.3)',
-              }} />
+              }}>
+                {/* Prize labels on each segment */}
+                {['50', '100', '250', '500', '1K', '2.5K', '5K', '10K'].map((label, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      position: 'absolute',
+                      top: '50%', left: '50%',
+                      transform: `rotate(${i * 45 + 22.5}deg) translateY(-85px)`,
+                      transformOrigin: '0 0',
+                      fontSize: '0.7rem', fontWeight: 800, color: '#000',
+                      textShadow: '0 1px 2px rgba(255,255,255,0.5)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
               <div style={{
                 position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)',
                 fontSize: '1.5rem',
