@@ -21,6 +21,61 @@ async function statusBetween(me: string, other: string): Promise<string | null> 
   return r.status; // accepted | declined | blocked
 }
 
+// GET /api/friends/search?q= — search for people to befriend.
+router.get(
+  '/search',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const me = req.user!.id;
+    const q = String(req.query.q || '').trim();
+    if (q.length < 2) return res.json({ users: [] });
+    const { rows } = await pool.query(
+      `SELECT u.* FROM users u
+       WHERE u.id != $1
+       AND (u.display_name ILIKE $2 OR u.username ILIKE $2)
+       AND NOT EXISTS (
+         SELECT 1 FROM friendships f
+         WHERE ((f.requester_id = $1 AND f.addressee_id = u.id)
+            OR (f.requester_id = u.id AND f.addressee_id = $1))
+           AND f.status IN ('accepted', 'pending', 'blocked')
+       )
+       ORDER BY u.level DESC, u.display_name
+       LIMIT 20`,
+      [me, `%${q}%`]
+    );
+    // Attach friendship status (should all be null, but be safe)
+    const users = await Promise.all(rows.map(async (u: any) => ({
+      ...toUser(u),
+      friendshipStatus: await statusBetween(me, u.id),
+    })));
+    res.json({ users });
+  })
+);
+
+// GET /api/friends/discover — people you may know (active, not friends).
+router.get(
+  '/discover',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const me = req.user!.id;
+    const { rows } = await pool.query(
+      `SELECT u.* FROM users u
+       WHERE u.id != $1
+       AND u.updated_at > now() - interval '30 days'
+       AND NOT EXISTS (
+         SELECT 1 FROM friendships f
+         WHERE ((f.requester_id = $1 AND f.addressee_id = u.id)
+            OR (f.requester_id = u.id AND f.addressee_id = $1))
+           AND f.status IN ('accepted', 'pending', 'blocked')
+       )
+       ORDER BY u.level DESC, u.xp DESC
+       LIMIT 20`,
+      [me]
+    );
+    res.json({ users: rows.map(toUser) });
+  })
+);
+
 // GET /api/friends — my accepted friends.
 router.get(
   '/',

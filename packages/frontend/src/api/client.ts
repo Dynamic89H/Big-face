@@ -149,6 +149,8 @@ export const friendsApi = {
   accept: (userId: string) => post<{ ok: boolean }>('/friends/accept', { userId }),
   decline: (userId: string) => post<{ ok: boolean }>('/friends/decline', { userId }),
   unfriend: (userId: string) => del<{ ok: boolean }>(`/friends/${userId}`),
+  search: (q: string) => get<{ users: User[] }>(`/friends/search?q=${encodeURIComponent(q)}`),
+  discover: () => get<{ users: User[] }>('/friends/discover'),
 };
 
 // --- Rooms ---

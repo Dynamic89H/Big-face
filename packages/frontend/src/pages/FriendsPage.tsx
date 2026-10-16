@@ -27,9 +27,14 @@ export default function FriendsPage() {
   usePageTitle('Friends');
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [tab, setTab] = useState<'friends' | 'discover'>('friends');
   const [friends, setFriends] = useState<User[]>([]);
   const [received, setReceived] = useState<User[]>([]);
   const [sent, setSent] = useState<User[]>([]);
+  const [discoverUsers, setDiscoverUsers] = useState<User[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -41,20 +46,39 @@ export default function FriendsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [{ friends: f }, { received: r, sent: s }, { code, count }] = await Promise.all([
+      const [{ friends: f }, { received: r, sent: s }, { code, count }, { users: d }] = await Promise.all([
         friendsApi.list(),
         friendsApi.requests(),
         usersApi.referral(),
+        friendsApi.discover().catch(() => ({ users: [] as User[] })),
       ]);
       setFriends(f);
       setReceived(r);
       setSent(s);
       setReferralCode(code);
       setReferralCount(count);
+      setDiscoverUsers(d);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not load friends.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const doSearch = async (q: string) => {
+    setSearchQuery(q);
+    if (q.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const { users } = await friendsApi.search(q.trim());
+      setSearchResults(users);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -125,6 +149,87 @@ export default function FriendsPage() {
 
       {!loading && !error && (
         <>
+          {/* Friend navigation tabs */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.2rem' }}>
+            <button
+              className={`btn ${tab === 'friends' ? '' : 'btn-ghost'}`}
+              onClick={() => setTab('friends')}
+              style={{ flex: 1 }}
+            >
+              👥 My Friends ({friends.length})
+            </button>
+            <button
+              className={`btn ${tab === 'discover' ? '' : 'btn-ghost'}`}
+              onClick={() => setTab('discover')}
+              style={{ flex: 1 }}
+            >
+              🔍 Meet New People
+              {received.length > 0 && tab !== 'discover' && (
+                <span style={{
+                  marginLeft: '0.4rem', background: 'var(--gold)', color: '#000',
+                  borderRadius: 10, padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 800,
+                }}>
+                  {received.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {tab === 'discover' && (
+            <>
+              <div className="card" style={{ marginBottom: '1.2rem' }}>
+                <h3 style={{ margin: '0 0 0.6rem' }}>🔍 Search people</h3>
+                <input
+                  type="text"
+                  placeholder="Search by name or username…"
+                  value={searchQuery}
+                  onChange={(e) => doSearch(e.target.value)}
+                  className="input"
+                  style={{ width: '100%', marginBottom: searchResults.length > 0 ? '0.8rem' : 0 }}
+                />
+                {searching && <p className="form-note">Searching…</p>}
+                {!searching && searchQuery.trim().length >= 2 && searchResults.length === 0 && (
+                  <p className="form-note">No one found. Try a different name.</p>
+                )}
+                {searchResults.map((p) => (
+                  <UserRow key={p.id} person={p}>
+                    <button
+                      className="btn btn-sm"
+                      disabled={busyId === p.id}
+                      onClick={() => act(p.id, friendsApi.request)}
+                    >
+                      {busyId === p.id ? '…' : '➕ Add Friend'}
+                    </button>
+                  </UserRow>
+                ))}
+              </div>
+
+              <div className="card" style={{ marginBottom: '1.2rem' }}>
+                <h3 style={{ margin: '0 0 0.4rem' }}>✨ People you may know</h3>
+                <p className="form-note" style={{ margin: '0 0 0.8rem' }}>
+                  Active players you haven't connected with yet.
+                </p>
+                {discoverUsers.length === 0 ? (
+                  <p className="form-note">No suggestions right now. Check back later!</p>
+                ) : (
+                  discoverUsers.map((p) => (
+                    <UserRow key={p.id} person={p}>
+                      <button
+                        className="btn btn-sm"
+                        disabled={busyId === p.id}
+                        onClick={() => act(p.id, friendsApi.request)}
+                      >
+                        {busyId === p.id ? '…' : '➕ Add Friend'}
+                      </button>
+                    </UserRow>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+
+          {tab === 'friends' && (
+          <>
           {referralCode && (
             <div className="card" style={{ marginBottom: '1.2rem', borderColor: 'var(--gold)', background: 'linear-gradient(135deg, rgba(201,162,39,0.08), transparent)' }}>
               <h3 style={{ margin: '0 0 0.4rem' }}>🎁 Invite friends, earn rewards</h3>
@@ -202,6 +307,8 @@ export default function FriendsPage() {
                 </UserRow>
               ))}
             </div>
+          )}
+          </>
           )}
         </>
       )}
