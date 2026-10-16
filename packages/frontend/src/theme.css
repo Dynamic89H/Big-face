@@ -64,8 +64,31 @@ img { max-width: 100%; }
   white-space: nowrap;
   filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.35));
 }
-.page-title { font-size: 1.6rem; font-weight: 800; margin: 0; }
-.page-sub { color: var(--muted); margin: 0.35rem 0 0; font-size: 0.95rem; }
+.page-title { font-size: 1.8rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+.page-sub { color: var(--muted); margin: 0.4rem 0 0; font-size: 1rem; line-height: 1.5; }
+.page { animation: page-enter 0.35s ease both; }
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Section headers with gold accent */
+.page h3 {
+  font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em;
+  padding-bottom: 0.4rem; margin-bottom: 1rem;
+  border-bottom: 2px solid rgba(201,162,39,0.2);
+}
+/* Improved cards */
+.card {
+  background: linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  border-color: rgba(201,162,39,0.3);
+  box-shadow: 0 6px 32px rgba(0,0,0,0.35), 0 0 20px rgba(201,162,39,0.08);
+}
 h1:not(.wordmark) {
   background: linear-gradient(135deg, #fff 20%, var(--neon-cyan) 80%);
   -webkit-background-clip: text;
