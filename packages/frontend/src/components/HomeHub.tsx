@@ -59,6 +59,7 @@ const SECTIONS: Section[] = [
     title: '🏆 Fame',
     icon: '🏆',
     items: [
+      { label: 'Ranks', icon: '🎖️', to: '/ranks', highlight: true },
       { label: 'Leaderboard', icon: '🏆', to: '/leaderboard' },
       { label: 'Hall of Fame', icon: '⭐', to: '/hall-of-fame' },
       { label: 'Throne', icon: '👑', to: '/throne' },

@@ -54,10 +54,11 @@ const NAV: { to: string; key: string; icon: string }[] = [
   { to: '/earnings', key: 'nav_earnings', icon: '💵' },
 ];
 
-// Slim bottom nav — just 5 essentials. Everything else lives in the Home Hub.
+// Slim bottom nav — just the essentials. Everything else lives in the Home Hub.
 const BOTTOM_NAV: { to: string; key: string; icon: string }[] = [
   { to: '/home', key: 'nav_home', icon: '🏠' },
   { to: '/gamble', key: 'nav_gamble', icon: '🎲' },
+  { to: '/ranks', key: 'nav_ranks', icon: '🎖️' },
   { to: '/chats', key: 'nav_chat', icon: '💬' },
   { to: '/leaderboard', key: 'nav_leaderboard', icon: '🏆' },
   { to: '/profile', key: 'nav_profile', icon: '👤' },
