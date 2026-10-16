@@ -194,9 +194,35 @@ export class GambleEngine {
   }
 
   private buildRoom(): void {
+    // Realistic marble floor with reflections
+    const floorCanvas = document.createElement('canvas');
+    floorCanvas.width = floorCanvas.height = 512;
+    const fx = floorCanvas.getContext('2d')!;
+    fx.fillStyle = '#1a1a22';
+    fx.fillRect(0, 0, 512, 512);
+    // Marble veining
+    for (let i = 0; i < 40; i++) {
+      fx.strokeStyle = `rgba(255,255,255,${0.03 + Math.random() * 0.05})`;
+      fx.lineWidth = 1 + Math.random() * 2;
+      fx.beginPath();
+      let x = Math.random() * 512, y = Math.random() * 512;
+      fx.moveTo(x, y);
+      for (let j = 0; j < 8; j++) {
+        x += (Math.random() - 0.5) * 120;
+        y += (Math.random() - 0.5) * 120;
+        fx.lineTo(x, y);
+      }
+      fx.stroke();
+    }
+    const floorTex = new THREE.CanvasTexture(floorCanvas);
+    floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+    floorTex.repeat.set(6, 6);
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(40, 64),
-      new THREE.MeshStandardMaterial({ color: 0x0c0c14, roughness: 0.15, metalness: 0.9 })
+      new THREE.MeshStandardMaterial({
+        map: floorTex, color: 0xffffff,
+        roughness: 0.08, metalness: 0.9, // Polished marble — reflective
+      })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
@@ -211,8 +237,9 @@ export class GambleEngine {
     carpet.receiveShadow = true;
     this.scene.add(carpet);
 
-    // Walls
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.85 });
+    // Walls — rich burgundy with wood paneling (real casino feel)
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a1215, roughness: 0.7 });
+    const woodPanelMat = new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.35, metalness: 0.1 });
     const wallGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.25 });
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2;
@@ -225,6 +252,11 @@ export class GambleEngine {
       wall.position.set((x1 + x2) / 2, 9, (z1 + z2) / 2);
       wall.lookAt(0, 9, 0);
       this.scene.add(wall);
+      // Wood paneling — lower half (real casino detail)
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(wallLen, 5, 0.6), woodPanelMat);
+      panel.position.set((x1 + x2) / 2, 2.5, (z1 + z2) / 2);
+      panel.lookAt(0, 2.5, 0);
+      this.scene.add(panel);
       [0.5, 17.5].forEach((y) => {
         const trim = new THREE.Mesh(new THREE.BoxGeometry(wallLen, 0.25, 0.6), wallGoldMat);
         trim.position.set((x1 + x2) / 2, y, (z1 + z2) / 2);
@@ -305,6 +337,43 @@ export class GambleEngine {
 
     // VIP lounges
     this.buildLounges();
+
+    // Background gaming tables — a real casino has multiple tables
+    this.buildBackgroundTables();
+  }
+
+  private buildBackgroundTables(): void {
+    const tableMat = new THREE.MeshStandardMaterial({ color: 0x0d3a1f, roughness: 0.9 });
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0d, roughness: 0.4 });
+    for (let i = 0; i < 3; i++) {
+      const angle = (i / 3) * Math.PI * 2 + Math.PI / 6;
+      const tx = Math.cos(angle) * 15;
+      const tz = Math.sin(angle) * 15;
+      const bgTable = new THREE.Group();
+      // Table top
+      const top = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 0.15, 24), tableMat);
+      top.position.y = 1.0;
+      bgTable.add(top);
+      // Legs
+      for (let j = 0; j < 4; j++) {
+        const la = (j / 4) * Math.PI * 2;
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.0, 8), legMat);
+        leg.position.set(Math.cos(la) * 1.4, 0.5, Math.sin(la) * 1.4);
+        bgTable.add(leg);
+      }
+      // Small lamp on each table
+      const lampGlow = new THREE.PointLight(0xffd9a0, 12, 6, 1.5);
+      lampGlow.position.y = 1.8;
+      bgTable.add(lampGlow);
+      const shade = new THREE.Mesh(
+        new THREE.ConeGeometry(0.3, 0.25, 16),
+        new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.3 })
+      );
+      shade.position.y = 1.6;
+      bgTable.add(shade);
+      bgTable.position.set(tx, 0, tz);
+      this.scene.add(bgTable);
+    }
   }
 
   private makeSignTexture(): THREE.CanvasTexture {
