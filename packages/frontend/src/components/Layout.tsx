@@ -35,7 +35,6 @@ const NAV: { to: string; key: string; icon: string }[] = [
   { to: '/gamble', key: 'nav_gamble', icon: '🎲' },
   { to: '/shop', key: 'nav_shop', icon: '🛍️' },
   { to: '/competition', key: 'nav_competition', icon: '🏆' },
-  { to: '/social', key: 'nav_social', icon: '🎉' },
   { to: '/factory', key: 'nav_factory', icon: '🏭' },
   { to: '/character-studio', key: 'nav_creator', icon: '🎨' },
   { to: '/lobby', key: 'nav_lobby', icon: '🏛️' },
