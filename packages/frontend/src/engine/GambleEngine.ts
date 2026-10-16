@@ -53,6 +53,11 @@ export class GambleEngine {
   private camSection = 0;
   private sectionTimer = 0;
   private userZoom = 1.0;
+  // Manual orbit — user drags to look around. Auto-orbit pauses while interacting.
+  private userAzimuth = 0;
+  private userPolar = 0;
+  private lastInteract = 0;
+  private dragging = false;
   private camPos = new THREE.Vector3(14, 7, 0);
   private camLook = new THREE.Vector3(0, 2, 0);
   private targetPos = new THREE.Vector3();
@@ -750,9 +755,40 @@ export class GambleEngine {
   private setupZoom(): void {
     const canvas = this.renderer.domElement;
     canvas.style.touchAction = 'none';
+    canvas.style.cursor = 'grab';
     let lastPinchDist = 0;
+
+    // --- Drag to orbit: one finger / mouse ---
+    let lastX = 0, lastY = 0;
+    const startDrag = (x: number, y: number) => {
+      this.dragging = true;
+      this.lastInteract = performance.now();
+      lastX = x; lastY = y;
+      canvas.style.cursor = 'grabbing';
+    };
+    const moveDrag = (x: number, y: number) => {
+      if (!this.dragging) return;
+      const dx = x - lastX, dy = y - lastY;
+      lastX = x; lastY = y;
+      // Horizontal drag = orbit around table, vertical = tilt up/down
+      this.userAzimuth -= dx * 0.008;
+      this.userPolar = Math.max(-0.6, Math.min(0.9, this.userPolar + dy * 0.005));
+      this.lastInteract = performance.now();
+    };
+    const endDrag = () => {
+      this.dragging = false;
+      this.lastInteract = performance.now();
+      canvas.style.cursor = 'grab';
+    };
+    canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    window.addEventListener('mouseup', endDrag);
+
     canvas.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 2) {
+      if (e.touches.length === 1) {
+        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      } else if (e.touches.length === 2) {
+        this.dragging = false; // switch to pinch
         lastPinchDist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
@@ -760,7 +796,9 @@ export class GambleEngine {
       }
     }, { passive: true });
     canvas.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 2) {
+      if (e.touches.length === 1) {
+        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+      } else if (e.touches.length === 2) {
         const dist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
@@ -769,11 +807,14 @@ export class GambleEngine {
           this.userZoom = Math.max(0.5, Math.min(2.5, this.userZoom * (lastPinchDist / dist)));
         }
         lastPinchDist = dist;
+        this.lastInteract = performance.now();
         e.preventDefault();
       }
     }, { passive: false });
+    canvas.addEventListener('touchend', endDrag);
     canvas.addEventListener('wheel', (e) => {
       this.userZoom = Math.max(0.5, Math.min(2.5, this.userZoom * (1 + e.deltaY * 0.001)));
+      this.lastInteract = performance.now();
       e.preventDefault();
     }, { passive: false });
   }
@@ -825,6 +866,24 @@ export class GambleEngine {
     const dir = pos.clone().sub(look).normalize();
     const dist = pos.distanceTo(look) / this.userZoom;
     pos.copy(look).add(dir.multiplyScalar(dist));
+    // Manual orbit: user drag offsets the auto-orbit. After 5s idle, ease back.
+    const idleSecs = (performance.now() - this.lastInteract) / 1000;
+    if (idleSecs > 5 && (this.userAzimuth !== 0 || this.userPolar !== 0)) {
+      const ease = Math.min(1, (idleSecs - 5) / 3);
+      this.userAzimuth *= 1 - ease * 0.05;
+      this.userPolar *= 1 - ease * 0.05;
+      if (Math.abs(this.userAzimuth) < 0.001) this.userAzimuth = 0;
+      if (Math.abs(this.userPolar) < 0.001) this.userPolar = 0;
+    }
+    if (this.userAzimuth !== 0 || this.userPolar !== 0) {
+      // Rotate position around the look target
+      const offset = pos.clone().sub(look);
+      const spherical = new THREE.Spherical().setFromVector3(offset);
+      spherical.theta += this.userAzimuth;
+      spherical.phi = Math.max(0.15, Math.min(Math.PI / 2 + 0.1, spherical.phi + this.userPolar));
+      offset.setFromSpherical(spherical);
+      pos.copy(look).add(offset);
+    }
     return [pos, look];
   }
 
