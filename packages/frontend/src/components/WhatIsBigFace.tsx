@@ -4,7 +4,7 @@ const SLIDES = [
   {
     emoji: '👑',
     title: 'Welcome to Big Face',
-    body: 'The social app where YOU get paid. Chat, go live, climb the ranks — and earn real money doing it.',
+    body: 'The social app where YOU get rewarded. Chat, go live, climb the ranks — and earn tokens doing it.',
   },
   {
     emoji: '⚡',

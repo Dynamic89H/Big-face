@@ -140,8 +140,7 @@ export default function FameTrackerPage() {
           <div className="card" style={{ marginTop: '1.2rem', textAlign: 'center' }}>
             <h3>💰 Fame pays</h3>
             <p className="form-note">
-              Gifts from fans convert to tokens. Tokens convert to real money in your Earnings dashboard.
-              Big Face takes a 30% platform fee — you keep 70%.
+              Gifts from fans convert to tokens. Use tokens for gifts, bets, and unlocks across Big Face.
             </p>
             <Link to="/earnings" className="btn" style={{ marginTop: '0.6rem' }}>
               View Earnings

@@ -112,7 +112,7 @@ export default function VaultPage() {
             🪙 {(vault?.balance || 0).toLocaleString()}
           </div>
           <div style={{ fontSize: '0.85rem', opacity: 0.6, marginTop: '0.5rem' }}>
-            ≈ ${((vault?.balance || 0) / 100).toFixed(2)}
+            tokens in the prize pool
           </div>
         </div>
 

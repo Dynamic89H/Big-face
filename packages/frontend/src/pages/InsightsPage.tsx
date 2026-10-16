@@ -86,7 +86,7 @@ export default function InsightsPage() {
       }}>
         <StatCard icon="🏆" label="Your Rank" value={data?.rank ? `#${data.rank}` : '—'} sub={data?.rank ? 'on the leaderboard' : 'play to rank up'} />
         <StatCard icon="⭐" label="Level" value={String(data?.level || 1)} sub={`${Math.round(xpPct)}% to next`} />
-        <StatCard icon="🪙" label="Tokens" value={String(data?.tokensEarned || 0)} sub={`$${((data?.tokensEarned || 0) / 100).toFixed(2)} value`} />
+        <StatCard icon="🪙" label="Tokens" value={String(data?.tokensEarned || 0)} sub="play tokens" />
         <StatCard icon="👥" label="Community" value={String(data?.totalUsers || 0)} sub="ranked players" />
       </div>
 

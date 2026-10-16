@@ -125,7 +125,7 @@ export default function EarningsPage() {
     <div>
       <div className="page-head">
         <h1 className="page-title">Earnings</h1>
-        <p className="page-sub">Turn your tokens into real money. 100 tokens = $1.00.</p>
+        <p className="page-sub">Your token balance. Tokens are for fun — use them for gifts, bets, and unlocks.</p>
       </div>
 
       {loading && <div className="loading-wrap"><div className="spinner" /><p>Counting your coins…</p></div>}
