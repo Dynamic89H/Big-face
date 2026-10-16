@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { GambleEngine } from '../engine/GambleEngine';
+import { BigFaceEngine } from '../engine/BigFaceEngine';
 
 interface RealTableSceneProps {
   width?: number;
@@ -31,11 +32,23 @@ const RealTableScene = forwardRef<RealTableSceneHandle, RealTableSceneProps>(
     useEffect(() => {
       const mount = mountRef.current;
       if (!mount) return;
+      // Pause the background starfield engine — smooth operator, one 3D context at a time
+      try {
+        BigFaceEngine.get().pause();
+      } catch {
+        /* engine not initialized */
+      }
       const engine = new GambleEngine(mount, width, height);
       engineRef.current = engine;
       return () => {
         engine.dispose();
         engineRef.current = null;
+        // Resume background when leaving gamble
+        try {
+          BigFaceEngine.get().resume();
+        } catch {
+          /* engine not initialized */
+        }
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [width]);

@@ -223,12 +223,31 @@ export class BigFaceEngine {
     const loop = () => {
       if (this.disposed) return;
       this.raf = requestAnimationFrame(loop);
+      if (this.paused) return; // Skip render when paused — saves CPU/GPU
       const dt = Math.min(this.clock.getDelta(), 0.05);
       const t = this.clock.elapsedTime;
       for (const fn of this.updatables) fn(dt, t);
       this.renderer.render(this.scene, this.camera);
     };
     loop();
+  }
+
+  private paused = false;
+
+  /** Pause rendering — saves CPU/GPU when another 3D view is active */
+  pause(): void {
+    this.paused = true;
+  }
+
+  /** Resume rendering */
+  resume(): void {
+    this.paused = false;
+    this.clock.getDelta(); // Reset delta to avoid jump
+  }
+
+  /** Check if paused */
+  isPaused(): boolean {
+    return this.paused;
   }
 
   private handleResize(): void {
