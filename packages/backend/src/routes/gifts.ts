@@ -103,6 +103,10 @@ router.post(
 
     // Gift received: +10 XP. Gift sent: +2 XP.
     maybeEmitRankUp(body.receiverId, await awardXp(body.receiverId, 10, 'gift received'));
+
+    // Feed the Vault
+    const { contributeToVault } = await import('./vault');
+    await contributeToVault(senderId, gift.tokenCost, 'gift').catch(() => undefined);
     maybeEmitRankUp(senderId, await awardXp(senderId, 2, 'gift sent'));
 
     const shaped = toGift(giftRow, senderRes.rows[0], receiverRes.rows[0]);

@@ -90,6 +90,9 @@ router.post(
       `INSERT INTO win_feed (user_id, kind, amount_tokens, detail) VALUES ($1, 'spin', $2, $3)`,
       [req.user!.id, prize, `${streak} day streak`]
     );
+    // Feed the Vault
+    const { contributeToVault } = await import('./vault');
+    await contributeToVault(req.user!.id, prize, 'spin').catch(() => undefined);
 
     emitToAll('engagement:feed', { kind: 'spin', amount: prize });
     res.json({ prize, streak, bonus: streakBonus });

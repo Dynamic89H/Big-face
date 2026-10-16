@@ -35,6 +35,10 @@ router.post(
     // Deduct tokens
     await addTokens(req.user!.id, -boost.cost, 'bonus', { reference: `boost:${boostId}` });
 
+    // Feed the Vault
+    const { contributeToVault } = await import('./vault');
+    await contributeToVault(req.user!.id, boost.cost, 'shop').catch(() => undefined);
+
     // Record the boost purchase
     const expiresAt = new Date();
     if (boostId === 'xp_2x_1h') expiresAt.setHours(expiresAt.getHours() + 1);

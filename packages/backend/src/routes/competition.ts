@@ -54,6 +54,9 @@ router.post(
     await addTokens(req.user!.id, -t[0].entry_fee, 'dice_bet_escrow', {
       reference: `tournament:${req.params.id}`,
     });
+    // Feed the Vault
+    const { contributeToVault } = await import('./vault');
+    await contributeToVault(req.user!.id, t[0].entry_fee, 'tournament').catch(() => undefined);
     await pool.query(
       'UPDATE tournaments SET prize_pool = prize_pool + $1 WHERE id = $2',
       [t[0].entry_fee, req.params.id]
@@ -154,6 +157,11 @@ router.post(
     if (Number(user[0].token_balance) < COST) throw new HttpError(400, 'Not enough tokens');
 
     await addTokens(req.user!.id, -COST, 'bonus', { reference: 'shoutout' });
+
+    // Feed the Vault
+    const { contributeToVault } = await import('./vault');
+    await contributeToVault(req.user!.id, COST, 'shoutout').catch(() => undefined);
+
     const { rows } = await pool.query(
       `INSERT INTO shoutouts (user_id, message, cost) VALUES ($1, $2, $3) RETURNING id`,
       [req.user!.id, message, COST]
