@@ -244,9 +244,10 @@ export default function GamblePage() {
         <div style={{
           width: '100%', minHeight: 200, display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(160deg, #0d5c2e, #0a0a12)',
-          borderRadius: 16, border: '2px solid var(--gold)',
+          background: 'radial-gradient(ellipse at center, #1a7a3a 0%, #0d5c2e 50%, #084a24 100%)',
+          borderRadius: 16, border: '3px solid #d4af37',
           fontSize: '4rem', padding: '2rem',
+          boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)',
         }}>
           🎲🎲
         </div>
