@@ -33,17 +33,17 @@ UPDATE users SET is_artist = true
 WHERE username IN ('marcus_504', 'keisha_k', 'dre_day', 'princess_bf', 'snoop_d', 'rell_world');
 
 -- Seed artist tracks (placeholder entries — real audio uploaded via DJ Booth)
-INSERT INTO artist_tracks (artist_id, title, genre, duration_secs, play_count)
-SELECT u.id, t.title, t.genre, t.duration_secs, t.play_count
+INSERT INTO artist_tracks (artist_id, title, genre, audio_url, plays)
+SELECT u.id, t.title, t.genre, '/audio/placeholder.mp3', t.plays
 FROM users u
 JOIN (VALUES
-  ('marcus_504', '504 Anthem', 'Hip-Hop', 180, 1250),
-  ('marcus_504', 'Dice Game', 'Hip-Hop', 210, 890),
-  ('keisha_k', 'Queen Energy', 'R&B', 195, 2100),
-  ('keisha_k', 'Crown On', 'R&B', 175, 1500),
-  ('dre_day', 'High Roller', 'Hip-Hop', 200, 980),
-  ('princess_bf', 'Booth Princess', 'R&B', 185, 750),
-  ('snoop_d', 'Laugh Track', 'Hip-Hop', 165, 620),
-  ('rell_world', 'Rell World', 'Hip-Hop', 190, 1100)
-) AS t(username, title, genre, duration_secs, play_count) ON u.username = t.username
+  ('marcus_504', '504 Anthem', 'Hip-Hop', 1250),
+  ('marcus_504', 'Dice Game', 'Hip-Hop', 890),
+  ('keisha_k', 'Queen Energy', 'R&B', 2100),
+  ('keisha_k', 'Crown On', 'R&B', 1500),
+  ('dre_day', 'High Roller', 'Hip-Hop', 980),
+  ('princess_bf', 'Booth Princess', 'R&B', 750),
+  ('snoop_d', 'Laugh Track', 'Hip-Hop', 620),
+  ('rell_world', 'Rell World', 'Hip-Hop', 1100)
+) AS t(username, title, genre, plays) ON u.username = t.username
 ON CONFLICT DO NOTHING;
