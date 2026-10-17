@@ -167,7 +167,7 @@ h1:not(.wordmark) {
 }
 .icon-btn:hover { color: var(--text); border-color: var(--muted); }
 
-.main { flex: 1; min-width: 0; padding: 1.6rem; max-width: 1600px; margin: 0 auto; width: 100%; position: relative; }
+.main { flex: 1; min-width: 0; padding: 1.6rem 1.6rem 4rem; max-width: 1600px; margin: 0 auto; width: 100%; position: relative; }
 .page-head { margin-bottom: 1.4rem; }
 
 /* ---------- Page transitions — entertainment feel ---------- */
@@ -1133,5 +1133,5 @@ input[type="password"].input {
 
 /* Mobile: sidebar is hidden, ticker spans full width above the bottom nav */
 @media (max-width: 768px) {
-  .win-ticker { left: 0; bottom: 4rem; }
+  .win-ticker { left: 0; bottom: 4.5rem; }
 }
