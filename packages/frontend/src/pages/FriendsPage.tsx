@@ -157,14 +157,7 @@ export default function FriendsPage() {
               style={{ flex: 1 }}
             >
               👥 My Friends ({friends.length})
-            </button>
-            <button
-              className={`btn ${tab === 'discover' ? '' : 'btn-ghost'}`}
-              onClick={() => setTab('discover')}
-              style={{ flex: 1 }}
-            >
-              🔍 Meet New People
-              {received.length > 0 && tab !== 'discover' && (
+              {received.length > 0 && (
                 <span style={{
                   marginLeft: '0.4rem', background: 'var(--gold)', color: '#000',
                   borderRadius: 10, padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 800,
@@ -172,6 +165,13 @@ export default function FriendsPage() {
                   {received.length}
                 </span>
               )}
+            </button>
+            <button
+              className={`btn ${tab === 'discover' ? '' : 'btn-ghost'}`}
+              onClick={() => setTab('discover')}
+              style={{ flex: 1 }}
+            >
+              🔍 Meet New People
             </button>
           </div>
 

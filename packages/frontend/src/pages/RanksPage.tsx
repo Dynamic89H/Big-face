@@ -75,14 +75,23 @@ export default function RanksPage() {
   const [data, setData] = useState<RankData | null>(null);
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [rankTab, setRankTab] = useState<'my-rank' | 'ladder' | 'top'>('my-rank');
+  const [rankLoading, setRankLoading] = useState(true);
+  const [rankError, setRankError] = useState<string | null>(null);
+
+  const loadRanks = () => {
+    setRankLoading(true);
+    setRankError(null);
+    Promise.all([ranksApi.get(), ranksApi.leaderboard()])
+      .then(([rankData, lb]) => {
+        setData(rankData);
+        setLeaders(lb.leaders || []);
+      })
+      .catch(() => setRankError('Could not load ranks. Check your connection and try again.'))
+      .finally(() => setRankLoading(false));
+  };
 
   useEffect(() => {
-    ranksApi.get()
-      .then(setData)
-      .catch(() => {});
-    ranksApi.leaderboard()
-      .then((d) => setLeaders(d.leaders || []))
-      .catch(() => {});
+    loadRanks();
   }, []);
 
   return (
@@ -109,7 +118,16 @@ export default function RanksPage() {
         ))}
       </div>
 
-      {rankTab === 'my-rank' && data && (
+      {rankTab === 'my-rank' && rankLoading && (
+        <div className="loading-wrap"><div className="spinner" /><p>Loading your rank…</p></div>
+      )}
+      {rankTab === 'my-rank' && rankError && !rankLoading && (
+        <div className="error-wrap">
+          <p>😕 {rankError}</p>
+          <button className="btn" onClick={loadRanks}>Try again</button>
+        </div>
+      )}
+      {rankTab === 'my-rank' && !rankLoading && !rankError && data && (
         <div className="pattern-gold pattern-elev-3" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '0.5rem' }}>
             YOUR RANK
@@ -153,6 +171,16 @@ export default function RanksPage() {
       {rankTab === 'ladder' && (
       <>
       <h2 style={{ margin: '0 0 1rem', fontSize: '1.2rem' }}>All Ranks</h2>
+      {rankLoading && (
+        <div className="loading-wrap"><div className="spinner" /><p>Loading the ladder…</p></div>
+      )}
+      {rankError && !rankLoading && (
+        <div className="error-wrap">
+          <p>😕 {rankError}</p>
+          <button className="btn" onClick={loadRanks}>Try again</button>
+        </div>
+      )}
+      {!rankLoading && !rankError && (
       <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '2rem' }}>
         {data?.ranks.map((rank, i) => {
           const isCurrent = data.currentIndex === i;
@@ -195,12 +223,23 @@ export default function RanksPage() {
           );
         })}
       </div>
+      )}
       </>
       )}
 
       {rankTab === 'top' && (
       <>
       <h2 style={{ margin: '0 0 1rem', fontSize: '1.2rem' }}>Top Ranked</h2>
+      {rankLoading && (
+        <div className="loading-wrap"><div className="spinner" /><p>Loading top players…</p></div>
+      )}
+      {rankError && !rankLoading && (
+        <div className="error-wrap">
+          <p>😕 {rankError}</p>
+          <button className="btn" onClick={loadRanks}>Try again</button>
+        </div>
+      )}
+      {!rankLoading && !rankError && (
       <div style={{ display: 'grid', gap: '0.5rem' }}>
         {leaders.slice(0, 10).map((l, i) => (
           <div key={l.id} className="card" style={{ padding: '0.75rem 1rem' }}>
@@ -217,6 +256,7 @@ export default function RanksPage() {
           </p>
         )}
       </div>
+      )}
       </>
       )}
     </div>

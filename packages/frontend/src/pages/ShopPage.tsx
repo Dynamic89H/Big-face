@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { giftsApi, lifestyleApi, walletApi, type GiftCatalogItem, type LifestyleAsset } from '../api/client';
 import { GIFT_EMOJI } from '../components/GiftDialog';
 
@@ -9,6 +10,7 @@ type Tab = 'gifts' | 'lifestyle' | 'boosts';
  * One place to spend tokens: gifts, whips & cribs, profile boosts.
  */
 export default function ShopPage() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('gifts');
   const [gifts, setGifts] = useState<GiftCatalogItem[]>([]);
   const [assets, setAssets] = useState<LifestyleAsset[]>([]);
@@ -35,8 +37,8 @@ export default function ShopPage() {
   }, []);
 
   const buyGift = async (gift: GiftCatalogItem) => {
-    // Gifts are sent via GiftDialog — redirect to find someone
     setMessage(`Pick someone to send the ${gift.label} to! 💝`);
+    setTimeout(() => navigate('/friends'), 1200);
   };
 
   const buyAsset = async (asset: LifestyleAsset) => {

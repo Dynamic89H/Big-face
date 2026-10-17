@@ -60,7 +60,7 @@ export default function WinFeedTicker() {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 900,
+      position: 'fixed', bottom: '4rem', left: 0, right: 0, zIndex: 90,
       background: 'linear-gradient(90deg, rgba(10,10,20,0.95), rgba(20,15,30,0.95))',
       borderTop: '1px solid rgba(201,162,39,0.3)',
       backdropFilter: 'blur(10px)',

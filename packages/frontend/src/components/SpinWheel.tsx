@@ -17,6 +17,12 @@ export default function SpinWheel() {
   const [result, setResult] = useState<{ prize: number; streak: number; jackpot?: number } | null>(null);
   const [rotation, setRotation] = useState(0);
 
+  useEffect(() => {
+    const openSpin = () => { setOpen(true); loadStatus(); };
+    window.addEventListener('bigface:open-spin', openSpin);
+    return () => window.removeEventListener('bigface:open-spin', openSpin);
+  }, []);
+
   const loadStatus = async () => {
     try {
       const res = await fetch('/api/engagement/spin/status', {

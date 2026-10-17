@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties, Suspense } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useLang, LANGS, type Lang } from '../i18n/LangContext';
+import type { StringKey } from '../i18n/strings';
 import { getSocket, type GiftReceivedPayload, type RankUpPayload } from '../api/socket';
 import RedCarpetBanner from './RedCarpetBanner';
 import DailyRewardBanner from './DailyRewardBanner';
@@ -55,7 +56,7 @@ const NAV: { to: string; key: string; icon: string }[] = [
 ];
 
 // Slim bottom nav — just the essentials. Everything else lives in the Home Hub.
-const BOTTOM_NAV: { to: string; key: string; icon: string }[] = [
+const BOTTOM_NAV: { to: string; key: StringKey; icon: string }[] = [
   { to: '/home', key: 'nav_home', icon: '🏠' },
   { to: '/gamble', key: 'nav_gamble', icon: '🎲' },
   { to: '/ranks', key: 'nav_ranks', icon: '🎖️' },
@@ -228,8 +229,12 @@ export default function Layout() {
       <nav className="bottom-nav">{BOTTOM_NAV.map((n) => (
         <NavLink key={n.to} to={n.to} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
           <span className="nav-icon">{n.icon}</span>
+          <span className="nav-label">{t(n.key)}</span>
         </NavLink>
       ))}</nav>
+
+      {/* Live wins ticker sits above the bottom nav, hidden in chat rooms */}
+      {!location.pathname.startsWith('/chats/') && <WinFeedTicker />}
 
       <div className="toast-stack" aria-live="polite">
         {toasts.map((t) => (
@@ -243,7 +248,6 @@ export default function Layout() {
       <RedCarpetBanner />
       <DailyRewardBanner />
       {/* Engagement engine — every page, every position */}
-      <WinFeedTicker />
       <SpinWheel />
       <GiftRain />
     </div>

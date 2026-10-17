@@ -105,6 +105,11 @@ export default function GamblePage() {
   const musicRef = useRef<HTMLAudioElement | null>(null);
   const [soloRolling, setSoloRolling] = useState(false);
   const [soloDice, setSoloDice] = useState<[number, number] | null>(null);
+  // In-app confirmation modal (replaces native confirm()).
+  const [confirmState, setConfirmState] = useState<{
+    title: string; body: string; confirmLabel: string; danger?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
 
   /** Solo dice — press and roll against the house. Instant. */
   const soloRoll = async () => {
@@ -246,7 +251,15 @@ export default function GamblePage() {
       setMsg('🎭 You need an avatar to play! Set up your character in the Avatar Studio first.');
       return;
     }
-    if (!confirm(`Match the ${bet.toLocaleString()} token bet and roll?`)) return;
+    setConfirmState({
+      title: '🎲 Join this game?',
+      body: `Match the ${bet.toLocaleString()} token bet and roll the dice. Winner takes the pot!`,
+      confirmLabel: `Roll for ${bet.toLocaleString()} 🪙`,
+      onConfirm: () => doJoin(gameId),
+    });
+  };
+
+  const doJoin = async (gameId: string) => {
     setRolling(true);
     setResult(null);
     setMsg(null);
@@ -273,6 +286,16 @@ export default function GamblePage() {
   };
 
   const cancel = async (gameId: string) => {
+    setConfirmState({
+      title: '🚫 Cancel this game?',
+      body: 'Your bet will be refunded in full. This cannot be undone.',
+      confirmLabel: 'Yes, cancel it',
+      danger: true,
+      onConfirm: () => doCancel(gameId),
+    });
+  };
+
+  const doCancel = async (gameId: string) => {
     try {
       await gambleApi.cancel(gameId);
       setMsg('Game cancelled, bet refunded.');
@@ -626,6 +649,39 @@ export default function GamblePage() {
       <p className="form-note" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
         ⚠️ Play responsibly. Only bet what you can afford to lose.
       </p>
+
+      {/* In-app confirmation modal — themed, no native confirm() */}
+      {confirmState && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+        }} onClick={() => setConfirmState(null)}>
+          <div className="card" style={{
+            maxWidth: 360, width: '100%', textAlign: 'center', padding: '1.8rem',
+            borderColor: confirmState.danger ? '#cc0000' : 'var(--gold)',
+            animation: 'diceSettle 0.25s ease-out',
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+              {confirmState.danger ? '⚠️' : '🎲'}
+            </div>
+            <h3 style={{ margin: '0 0 0.5rem' }}>{confirmState.title}</h3>
+            <p className="form-note" style={{ marginBottom: '1.2rem' }}>{confirmState.body}</p>
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <button className="btn btn-ghost" style={{ flex: 1 }}
+                onClick={() => setConfirmState(null)}>
+                Never mind
+              </button>
+              <button className="btn" style={{
+                flex: 1,
+                ...(confirmState.danger ? { background: '#cc0000', borderColor: '#cc0000' } : {}),
+              }} onClick={() => { setConfirmState(null); confirmState.onConfirm(); }}>
+                {confirmState.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

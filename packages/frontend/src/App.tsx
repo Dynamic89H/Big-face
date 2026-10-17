@@ -173,6 +173,7 @@ export default function App() {
             <Route path="wallet" element={<WalletPage />} />
             <Route path="earnings" element={<EarningsPage />} />
             <Route path="u/:id" element={<ProfilePage />} />
+            <Route path="profile" element={<ProfileRedirect />} />
             <Route path="profile/edit" element={<ProfileEditPage />} />
             <Route path="*" element={<Navigate to="/chats" replace />} />
           </Route>
@@ -182,4 +183,11 @@ export default function App() {
     </BrowserRouter>
     </ErrorBoundary>
   );
+}
+
+// Redirect /profile to the current user's profile page
+function ProfileRedirect() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={`/u/${user.id}`} replace />;
 }

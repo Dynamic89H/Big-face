@@ -319,7 +319,7 @@ export default function ChatRoomPage() {
   let lastDay = '';
 
   return (
-    <div className="chat-panel" style={{ height: 'calc(100vh - 4.5rem)' }}>
+    <div className="chat-panel">
       <div className="chat-header">
         <button className="icon-btn" onClick={() => navigate('/chats')} aria-label="Back to chats">←</button>
         <Avatar displayName={room.name} profileColor={user?.profileColor ?? '#0066FF'} size="sm" />

@@ -11,7 +11,7 @@ export const LANGS: { code: Lang; label: string; flag: string }[] = [
 const en = {
   nav_home: 'Home', nav_chat: 'Chats', nav_video: 'Video', nav_friends: 'Friends',
   nav_lifestyle: 'Lifestyle', nav_battles: 'Battles', nav_crews: 'Crews', nav_artists: 'Artists',
-  nav_earnings: 'Earnings', nav_profile: 'Profile', nav_leaderboard: 'Leaderboard',
+  nav_earnings: 'Earnings', nav_profile: 'Profile', nav_leaderboard: 'Leaderboard', nav_ranks: 'Ranks',
   nav_hall: 'Hall of Fame', nav_studio: 'Avatar Studio', nav_throne: 'Throne Room',
   nav_fame: 'Fame Tracker', nav_dj: 'DJ Booth', nav_gamble: 'Gamble Face', nav_factory: 'Factory', nav_creator: 'Create Character', nav_lobby: 'Lobby', nav_insights: 'Insights', nav_safety: 'Safety', nav_wallet: 'Wallet',
   battles_title: 'Gift Battles', battles_go_live: 'Go Live', battles_join: 'Join Battle',
@@ -23,7 +23,7 @@ const en = {
 const es: typeof en = {
   nav_home: 'Inicio', nav_chat: 'Chats', nav_video: 'Video', nav_friends: 'Amigos',
   nav_lifestyle: 'Estilo de vida', nav_battles: 'Batallas', nav_crews: 'Pandillas', nav_artists: 'Artistas',
-  nav_earnings: 'Ganancias', nav_profile: 'Perfil', nav_leaderboard: 'Clasificación',
+  nav_earnings: 'Ganancias', nav_profile: 'Perfil', nav_leaderboard: 'Clasificación', nav_ranks: 'Rangos',
   nav_hall: 'Salón de la fama', nav_studio: 'Estudio de avatar', nav_throne: 'Sala del trono',
   nav_fame: 'Rastreador de fama', nav_dj: 'Cabina DJ', nav_gamble: 'Gamble Face', nav_factory: 'Factory', nav_creator: 'Crear personaje', nav_lobby: 'Lobby', nav_insights: 'Insights', nav_safety: 'Seguridad', nav_wallet: 'Billetera',
   battles_title: 'Batallas de regalos', battles_go_live: 'En vivo', battles_join: 'Unirse',
@@ -35,7 +35,7 @@ const es: typeof en = {
 const fr: typeof en = {
   nav_home: 'Accueil', nav_chat: 'Discussions', nav_video: 'Vidéo', nav_friends: 'Amis',
   nav_lifestyle: 'Style de vie', nav_battles: 'Batailles', nav_crews: 'Équipes', nav_artists: 'Artistes',
-  nav_earnings: 'Gains', nav_profile: 'Profil', nav_leaderboard: 'Classement',
+  nav_earnings: 'Gains', nav_profile: 'Profil', nav_leaderboard: 'Classement', nav_ranks: 'Rangs',
   nav_hall: 'Temple de la renommée', nav_studio: "Studio d'avatar", nav_throne: 'Salle du trône',
   nav_fame: 'Suivi de célébrité', nav_dj: 'Cabine DJ', nav_gamble: 'Gamble Face', nav_factory: 'Factory', nav_creator: 'Créer personnage', nav_lobby: 'Lobby', nav_insights: 'Insights', nav_safety: 'Sécurité', nav_wallet: 'Portefeuille',
   battles_title: 'Batailles de cadeaux', battles_go_live: 'En direct', battles_join: 'Rejoindre',
@@ -47,7 +47,7 @@ const fr: typeof en = {
 const pt: typeof en = {
   nav_home: 'Início', nav_chat: 'Conversas', nav_video: 'Vídeo', nav_friends: 'Amigos',
   nav_lifestyle: 'Estilo de vida', nav_battles: 'Batalhas', nav_crews: 'Equipes', nav_artists: 'Artistas',
-  nav_earnings: 'Ganhos', nav_profile: 'Perfil', nav_leaderboard: 'Classificação',
+  nav_earnings: 'Ganhos', nav_profile: 'Perfil', nav_leaderboard: 'Classificação', nav_ranks: 'Classificações',
   nav_hall: 'Hall da fama', nav_studio: 'Estúdio de avatar', nav_throne: 'Sala do trono',
   nav_fame: 'Rastreador de fama', nav_dj: 'Cabine DJ', nav_gamble: 'Gamble Face', nav_factory: 'Factory', nav_creator: 'Criar personagem', nav_lobby: 'Lobby', nav_insights: 'Insights', nav_safety: 'Segurança', nav_wallet: 'Carteira',
   battles_title: 'Batalhas de presentes', battles_go_live: 'Ao vivo', battles_join: 'Entrar',
@@ -59,7 +59,7 @@ const pt: typeof en = {
 const sw: typeof en = {
   nav_home: 'Nyumbani', nav_chat: 'Mazungumzo', nav_video: 'Video', nav_friends: 'Marafiki',
   nav_lifestyle: 'Mtindo wa maisha', nav_battles: 'Mapambano', nav_crews: 'Vikundi', nav_artists: 'Wasanii',
-  nav_earnings: 'Mapato', nav_profile: 'Wasifu', nav_leaderboard: 'Viongozi',
+  nav_earnings: 'Mapato', nav_profile: 'Wasifu', nav_leaderboard: 'Viongozi', nav_ranks: 'Vyeo',
   nav_hall: 'Ukumbi wa umaarufu', nav_studio: 'Studio ya avatar', nav_throne: 'Chumba cha kiti',
   nav_fame: 'Kifuatiliaji cha umaarufu', nav_dj: 'Kibanda cha DJ', nav_gamble: 'Gamble Face', nav_factory: 'Factory', nav_creator: 'Tengeneza', nav_lobby: 'Lobby', nav_insights: 'Insights', nav_safety: 'Usalama', nav_wallet: 'Pochi',
   battles_title: 'Mapambano ya zawadi', battles_go_live: 'Moja kwa moja', battles_join: 'Jiunge',

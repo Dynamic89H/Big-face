@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 interface Section {
   title: string;
   icon: string;
-  items: { label: string; icon: string; to: string; highlight?: boolean }[];
+  items: { label: string; icon: string; to?: string; action?: string; highlight?: boolean }[];
 }
 
 const SECTIONS: Section[] = [
@@ -20,7 +20,7 @@ const SECTIONS: Section[] = [
       { label: 'Gamble Face', icon: '🎲', to: '/gamble', highlight: true },
       { label: 'Battles', icon: '⚔️', to: '/battles' },
       { label: 'Competition', icon: '🏆', to: '/competition' },
-      { label: 'Daily Spin', icon: '🎡', to: '/spin' },
+      { label: 'Daily Spin', icon: '🎡', action: 'spin' },
     ],
   },
   {
@@ -85,10 +85,16 @@ export default function HomeHub() {
             gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
             gap: '0.6rem',
           }}>
-            {section.items.map((item) => (
+            {section.items.map((item: any) => (
               <button
-                key={item.to}
-                onClick={() => navigate(item.to)}
+                key={item.to || item.action}
+                onClick={() => {
+                  if (item.action === 'spin') {
+                    window.dispatchEvent(new CustomEvent('bigface:open-spin'));
+                  } else {
+                    navigate(item.to);
+                  }
+                }}
                 style={{
                   padding: '1rem 0.6rem',
                   borderRadius: 16,
