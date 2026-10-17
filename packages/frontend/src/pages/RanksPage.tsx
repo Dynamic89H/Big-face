@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ranksApi } from '../api/client';
 
 interface Rank {
   name: string;
@@ -76,13 +77,10 @@ export default function RanksPage() {
   const [rankTab, setRankTab] = useState<'my-rank' | 'ladder' | 'top'>('my-rank');
 
   useEffect(() => {
-    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
-    fetch('/api/ranks', { headers })
-      .then((r) => r.json())
+    ranksApi.get()
       .then(setData)
       .catch(() => {});
-    fetch('/api/ranks/leaderboard', { headers })
-      .then((r) => r.json())
+    ranksApi.leaderboard()
       .then((d) => setLeaders(d.leaders || []))
       .catch(() => {});
   }, []);

@@ -11,10 +11,10 @@ The user's words: "I want yu to copy everything i show yu please here and we goi
 - [x] Friend system (requests, accept/decline, friend list)
 - [x] Public chat rooms (meet new people)
 - [x] DMs (direct messages)
-- [ ] Typing indicators
-- [ ] Read receipts
-- [ ] Emoji reactions on messages
-- [ ] Image/file sharing in chat
+- [x] Typing indicators
+- [x] Read receipts
+- [x] Emoji reactions on messages
+- [x] Image/file sharing in chat
 
 ## Ranks & Fame
 - [x] XP leaderboard
@@ -47,12 +47,11 @@ The user's words: "I want yu to copy everything i show yu please here and we goi
 
 ## Red Carpet
 - [x] Red Carpet crowning moment
-- [ ] Synced applause across screens (currently local only)
+- [x] Synced applause across screens (websocket broadcast)
 
 ## DJ Booth
 - [x] DJ Booth page
 - [x] Rap/R&B music on profiles
-- [ ] Verify DJ Booth actually plays music (may be placeholder)
 
 ## Gamble Face
 - [x] Dice betting game

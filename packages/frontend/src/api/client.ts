@@ -274,6 +274,19 @@ export const gambleApi = {
   soloRoll: (betTokens: number) => post<{ playerRoll: number; houseRoll: number; won: boolean; payout: number }>('/gamble/solo', { betTokens }),
 };
 
+// --- Ranks ---
+export const ranksApi = {
+  get: () => get<{
+    ranks: Array<{ name: string; icon: string; minLevel: number; maxLevel: number; color: string; perk: string }>;
+    current: { name: string; icon: string; minLevel: number; maxLevel: number; color: string; perk: string };
+    currentIndex: number;
+    next: { name: string; icon: string; minLevel: number; maxLevel: number; color: string; perk: string } | null;
+    level: number;
+    xpProgress: { current: number; needed: number; remaining: number; percent: number } | null;
+  }>('/ranks'),
+  leaderboard: () => get<{ leaders: Array<{ id: string; username: string; display_name: string; level: number; profile_color: string }> }>('/ranks/leaderboard'),
+};
+
 // --- Cee-lo Match Mode ---
 export const ceeloApi = {
   startMatch: (opponents: string[], buyIn: number, playerAbility?: string) =>
