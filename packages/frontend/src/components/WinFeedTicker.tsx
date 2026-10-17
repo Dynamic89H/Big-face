@@ -59,42 +59,32 @@ export default function WinFeedTicker() {
   if (!visible || items.length === 0) return null;
 
   return (
-    <div style={{
-      position: 'fixed', bottom: '4rem', left: 0, right: 0, zIndex: 90,
-      background: 'linear-gradient(90deg, rgba(10,10,20,0.95), rgba(20,15,30,0.95))',
-      borderTop: '1px solid rgba(201,162,39,0.3)',
-      backdropFilter: 'blur(10px)',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', padding: '0.4rem 0.75rem', gap: '0.5rem',
-      }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gold)', whiteSpace: 'nowrap' }}>
+    <div className="win-ticker">
+      <div className="win-ticker-inner">
+        <span className="win-ticker-label">
           🔴 LIVE WINS
         </span>
-        <div style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-          <div style={{
-            display: 'inline-block', animation: 'tickerScroll 30s linear infinite',
-            fontSize: '0.8rem',
-          }}>
+        <div className="win-ticker-scroll">
+          <div className="win-ticker-track">
             {items.map((item) => (
-              <span key={item.id} style={{ marginRight: '2rem', color: 'var(--text)' }}>
+              <span key={item.id} className="win-ticker-item">
                 {KIND_ICON[item.kind] || '🏆'}{' '}
                 <strong style={{ color: item.user.profileColor }}>{item.user.displayName}</strong>
-                {' '}won <strong style={{ color: 'var(--gold)' }}>{item.amount.toLocaleString()}</strong> tokens
-                {item.detail && <span style={{ opacity: 0.6 }}> ({item.detail})</span>}
+                {' '}won <strong className="win-ticker-amount">{item.amount.toLocaleString()}</strong> tokens
+                {item.detail && <span className="win-ticker-detail"> ({item.detail})</span>}
               </span>
             ))}
           </div>
         </div>
         <button
+          className="win-ticker-close"
           onClick={() => setVisible(false)}
-          style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.9rem' }}
+          aria-label="Dismiss live wins ticker"
+          title="Dismiss"
         >
           ✕
         </button>
       </div>
-      <style>{`@keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }`}</style>
     </div>
   );
 }

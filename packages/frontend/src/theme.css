@@ -1096,3 +1096,42 @@ input[type="password"].input {
 @media (hover: none) {
   .reaction-pill.reaction-add { opacity: 0.55; }
 }
+
+/* ---------- Live wins ticker ---------- */
+/* Desktop: starts after the 248px sidebar so it never covers profile buttons or language flags */
+.win-ticker {
+  position: fixed; bottom: 0; left: 248px; right: 0; z-index: 90;
+  background: linear-gradient(90deg, rgba(10,10,20,0.95), rgba(20,15,30,0.95));
+  border-top: 1px solid rgba(201,162,39,0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+.win-ticker-inner {
+  display: flex; align-items: center; padding: 0.4rem 0.75rem; gap: 0.5rem;
+}
+.win-ticker-label {
+  font-size: 0.75rem; font-weight: 800; color: var(--gold); white-space: nowrap;
+}
+.win-ticker-scroll { flex: 1; overflow: hidden; white-space: nowrap; }
+.win-ticker-track {
+  display: inline-block; animation: tickerScroll 30s linear infinite;
+  font-size: 0.8rem;
+}
+.win-ticker-item { margin-right: 2rem; color: var(--text); }
+.win-ticker-amount { color: var(--gold); }
+.win-ticker-detail { opacity: 0.6; }
+.win-ticker-close {
+  background: rgba(255,255,255,0.08); border: 1px solid var(--border);
+  color: var(--text); cursor: pointer; font-size: 0.85rem; font-weight: 700;
+  min-width: 44px; min-height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.win-ticker-close:hover { background: rgba(255,255,255,0.16); }
+@keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* Mobile: sidebar is hidden, ticker spans full width above the bottom nav */
+@media (max-width: 768px) {
+  .win-ticker { left: 0; bottom: 4rem; }
+}
