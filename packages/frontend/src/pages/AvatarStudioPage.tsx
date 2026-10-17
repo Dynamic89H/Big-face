@@ -463,7 +463,7 @@ export default function AvatarStudioPage() {
                 height={420}
                 characterImg={character.img}
                 characterName={character.name}
-                equipped={equipped}
+                equipped={stageEquipped}
                 facePhotoUrl={facePhotoUrl || undefined}
               />
             ) : (
@@ -558,6 +558,56 @@ export default function AvatarStudioPage() {
                 {equippedList.length} item{equippedList.length === 1 ? '' : 's'} equipped
               </p>
             )}
+            {equippedList.length > 0 && (
+              <button
+                className="btn btn-ghost btn-sm btn-block"
+                disabled={stripping}
+                onClick={stripAll}
+                style={{ marginTop: '0.4rem' }}
+              >
+                {stripping ? 'Stripping…' : '🧹 Reset look (unequip all)'}
+              </button>
+            )}
+
+            {/* My Fits — saved outfits */}
+            <div style={{ marginTop: '1.2rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1rem' }}>
+              <h4 style={{ textAlign: 'center', margin: '0 0 0.6rem' }}>👔 My Fits</h4>
+              {fits.length === 0 ? (
+                <p className="form-note" style={{ textAlign: 'center' }}>
+                  No saved fits yet. Dial in a look, name it, save it.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.7rem' }}>
+                  {fits.map((fit, i) => (
+                    <div key={i} className="card" style={{ padding: '0.6rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ flex: 1, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fit.name}</span>
+                      <span className="form-note" style={{ margin: 0, whiteSpace: 'nowrap' }}>{Object.keys(fit.items).length} pcs</span>
+                      <button className="btn btn-sm" disabled={busyId === 'fit-load'} onClick={() => loadFit(fit)}>
+                        {busyId === 'fit-load' ? '…' : 'Wear'}
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => deleteFit(i)} aria-label={`Delete ${fit.name}`}>
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {fits.length < 3 && (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    className="input"
+                    placeholder="Name this fit…"
+                    value={fitName}
+                    onChange={(e) => setFitName(e.target.value)}
+                    maxLength={24}
+                    style={{ flex: 1 }}
+                  />
+                  <button className="btn btn-sm" onClick={saveFit} style={{ whiteSpace: 'nowrap' }}>
+                    💾 Save fit
+                  </button>
+                </div>
+              )}
+            </div>
             {onboarding && (
               <button
                 className="btn btn-block"
@@ -567,6 +617,96 @@ export default function AvatarStudioPage() {
                 Done — Enter Big Face →
               </button>
             )}
+          </div>
+        </div>
+      )}
+      {/* Item detail modal */}
+      {detailItem && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+          }}
+          onClick={() => setDetailItem(null)}
+        >
+          <div
+            className="card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 380, width: '100%', textAlign: 'center', position: 'relative' }}
+          >
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setDetailItem(null)}
+              style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <ItemVisual
+              slot={detailItem.slot}
+              style={detailItem.style as Record<string, unknown>}
+              name={detailItem.name}
+              size={140}
+            />
+            <h3 style={{ margin: '0.5rem 0 0.2rem' }}>{detailItem.name}</h3>
+            <div
+              className="rarity-tag"
+              style={{
+                color: RARITY_COLORS[detailItem.rarity], fontWeight: 800,
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+              }}
+            >
+              {detailItem.rarity}
+            </div>
+            <p className="form-note" style={{ margin: '0.6rem 0' }}>{itemBlurb(detailItem)}</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '0.9rem', flexWrap: 'wrap' }}>
+              {detailItem.minLevel > 1 && <span>🔒 Level {detailItem.minLevel}+</span>}
+              {detailItem.tokenPrice > 0 ? <span>💰 {detailItem.tokenPrice} tokens</span> : <span>🆓 Free</span>}
+              <span>👥 Owned by {fakeOwnerCount(detailItem.id).toLocaleString()} players</span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {(() => {
+                const owned = ownedIds.has(detailItem.id);
+                const isEq = equipped[detailItem.slot]?.id === detailItem.id;
+                const locked = (user?.level ?? 1) < detailItem.minLevel;
+                const item = detailItem;
+                if (owned && isEq) {
+                  return (
+                    <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { unequip(item.slot); setDetailItem(null); }}>
+                      Unequip
+                    </button>
+                  );
+                }
+                if (owned) {
+                  return (
+                    <button className="btn" style={{ flex: 1 }} disabled={busyId === item.id} onClick={() => { equip(item); setDetailItem(null); }}>
+                      {busyId === item.id ? '…' : 'Equip'}
+                    </button>
+                  );
+                }
+                return (
+                  <>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ flex: 1 }}
+                      disabled={locked}
+                      onClick={() => { setPreviewItem(item); setDetailItem(null); }}
+                      title={locked ? `Reach level ${item.minLevel} to unlock` : undefined}
+                    >
+                      👁️ Try it on
+                    </button>
+                    <button
+                      className="btn"
+                      style={{ flex: 1 }}
+                      disabled={locked || busyId === item.id}
+                      onClick={async () => { await acquire(item); setDetailItem(null); }}
+                    >
+                      {busyId === item.id ? '…' : locked ? `🔒 Lv ${item.minLevel}` : item.tokenPrice > 0 ? `Buy · ${item.tokenPrice} 🪙` : 'Claim free'}
+                    </button>
+                  </>
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}
