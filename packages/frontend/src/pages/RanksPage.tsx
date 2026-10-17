@@ -29,7 +29,7 @@ interface Leader {
   username: string;
   display_name: string;
   level: number;
-  rank: Rank;
+  rank?: Rank;
   profile_color: string;
 }
 
