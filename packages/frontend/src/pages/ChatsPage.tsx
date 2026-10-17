@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import type { RoomSummary, User } from '../types';
 import { timeAgo } from '../types';
 import Avatar, { facePhotoOf } from '../components/Avatar';
+import GrandLoader, { GrandEmpty } from '../components/GrandStates';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 // Room list with "New room" and "New DM" flows. User lookup for DMs searches
@@ -137,9 +138,7 @@ export default function ChatsPage() {
         </div>
       </div>
 
-      {loading && (
-        <div className="loading-wrap"><div className="spinner" /><p>Loading your chats…</p></div>
-      )}
+      {loading && <GrandLoader text="Loading your chats" />}
       {error && !loading && (
         <div className="error-wrap">
           <p>😕 {error}</p>
@@ -147,15 +146,13 @@ export default function ChatsPage() {
         </div>
       )}
       {!loading && !error && sortedRooms.length === 0 && (
-        <div className="card empty-wrap">
-          <div className="big">💬</div>
-          <h3>No chats yet</h3>
-          <p>Start a room or slide into someone's DMs to get the conversation going.</p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn btn-ghost" onClick={() => setShowNewDm(true)}>New DM</button>
-            <button className="btn" onClick={() => setShowNewRoom(true)}>Create a room</button>
-          </div>
-        </div>
+        <GrandEmpty
+          icon="💬"
+          title="Silence… for now"
+          copy="No chats yet. Start a room or slide into someone's DMs — every empire starts with a conversation."
+          cta="Create a Room"
+          onCta={() => setShowNewRoom(true)}
+        />
       )}
 
       {!loading && !error && sortedRooms.length > 0 && (

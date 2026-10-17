@@ -75,7 +75,7 @@ function Dice({ value, rolling }: { value: number; rolling: boolean }) {
 
 export default function GamblePage() {
   usePageTitle('Gamble Face');
-  const { user } = useAuth();
+  const { user, bumpLocalXp } = useAuth();
   const [tab, setTab] = useState<'dice' | 'history'>('dice');
   const [games, setGames] = useState<Game[]>([]);
   const [history, setHistory] = useState<any[]>([]);
@@ -129,10 +129,17 @@ export default function GamblePage() {
           sfx.bigWin();
           haptic([40, 40, 80]);
           celebrate(`🏆 You won ${r.payout.toLocaleString()} tokens!`, true);
-          setMsg(`🏆 You rolled ${r.playerRoll} vs house ${r.houseRoll} — won ${r.payout.toLocaleString()} tokens!`);
+          let winMsg = `🏆 You rolled ${r.playerRoll} vs house ${r.houseRoll} — won ${r.payout.toLocaleString()} tokens!`;
+          if ((r as any).firstWinBonus) {
+            winMsg += `\n🎯 FIRST WIN OF THE DAY! +50 bonus XP!`;
+            celebrate(`🎯 First win of the day! +50 XP bonus!`, true);
+          }
+          setMsg(winMsg);
+          bumpLocalXp(30 + ((r as any).firstWinBonus ? 50 : 0)); // dice_solo_win + first-win bonus
         } else {
           sfx.error();
           setMsg(`You rolled ${r.playerRoll} vs house ${r.houseRoll}. House wins this one.`);
+          bumpLocalXp(10); // dice_solo_play
         }
         load();
       }, 1200);
@@ -214,7 +221,9 @@ export default function GamblePage() {
         haptic([40, 40, 80]);
         document.body.classList.add('fx-shake');
         setTimeout(() => document.body.classList.remove('fx-shake'), 600);
+        bumpLocalXp(30); // dice_win
       } else {
+        bumpLocalXp(10); // dice_play
       }
       load();
     };
@@ -226,7 +235,7 @@ export default function GamblePage() {
       socket.off('gamble:created', load);
       socket.off('gamble:cancelled', load);
     };
-  }, []);
+  }, [bumpLocalXp]);
 
   const create = async (e: FormEvent) => {
     e.preventDefault();
@@ -403,16 +412,17 @@ export default function GamblePage() {
 
       {tab === 'dice' && (
       <>
-      {/* Quick dice game (original 1v1) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', position: 'relative' }}>
-        <img
+      {/* Quick dice game (original 1v1) — the high-roller table */}
+      <div className="home-hero" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+        <img loading="lazy"
           src="/probus-lion.webp"
           alt="Probus the Lion - Gamble Face dealer"
-          style={{ width: 80, height: 80, borderRadius: '50%', border: '3px solid var(--gold)', objectFit: 'cover', boxShadow: '0 0 20px rgba(201,162,39,0.6)' }}
+          style={{ width: 80, height: 80, borderRadius: '50%', border: '3px solid var(--gold)', objectFit: 'cover', boxShadow: '0 0 20px rgba(201,162,39,0.6)', flexShrink: 0 }}
         />
-        <div className="page-head" style={{ flex: 1, marginBottom: 0 }}>
-          <h1 className="page-title">🎲 Gamble Face</h1>
-          <p className="page-sub">Probus the Lion runs this table 🦁</p>
+        <div style={{ flex: 1 }}>
+          <div className="hero-kicker">🎲 The High-Roller Table</div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 900, margin: 0 }}>Gamble Face</h1>
+          <p className="page-sub" style={{ margin: '0.2rem 0 0' }}>Probus the Lion runs this table 🦁</p>
         </div>
         <button
           className={`btn btn-sm ${musicOn ? '' : 'btn-ghost'}`}

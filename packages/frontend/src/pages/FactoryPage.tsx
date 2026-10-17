@@ -169,7 +169,7 @@ export default function FactoryPage() {
         {assets.map((a) => (
           <div key={a.id} className="card" style={{ padding: '0.9rem' }}>
             {a.image_url && (
-              <img src={a.image_url} alt={a.prompt} style={{ width: '100%', borderRadius: 8, marginBottom: '0.6rem' }} />
+              <img loading="lazy" src={a.image_url} alt={a.prompt} style={{ width: '100%', borderRadius: 8, marginBottom: '0.6rem' }} />
             )}
             <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.4rem' }}>{a.prompt}</div>
             <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>

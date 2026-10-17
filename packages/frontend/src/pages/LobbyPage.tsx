@@ -6,6 +6,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import Avatar, { facePhotoOf } from '../components/Avatar';
 import Pulse from '../components/Pulse';
+import GrandLoader, { GrandEmpty } from '../components/GrandStates';
 
 /**
  * Lobby — the real social hub of Big Face.
@@ -42,8 +43,8 @@ export default function LobbyPage() {
 
   if (loading) {
     return (
-      <div className="page" style={{ textAlign: 'center', padding: '3rem' }}>
-        <p>Entering the lobby…</p>
+      <div className="page">
+        <GrandLoader text="Entering the Lobby" />
       </div>
     );
   }
@@ -102,10 +103,13 @@ export default function LobbyPage() {
         Who's Here
       </h3>
       {onlineUsers.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
-          <p className="form-note">No one's here yet — be the first.</p>
-          <button className="btn" onClick={() => navigate('/rooms')}>Find a Room</button>
-        </div>
+        <GrandEmpty
+          icon="👥"
+          title="The floor is quiet… for now"
+          copy="No one's in the lobby yet. Jump into a room and start the party — the first one through the door gets noticed."
+          cta="Find a Room"
+          onCta={() => navigate('/chats')}
+        />
       ) : (
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
@@ -144,11 +148,17 @@ export default function LobbyPage() {
       {/* Active rooms */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
         <h3 style={{ margin: 0 }}>🔥 Active Rooms</h3>
-        <button className="btn btn-sm" onClick={() => navigate('/rooms')}>View All</button>
+        <button className="btn btn-sm" onClick={() => navigate('/chats')}>View All</button>
       </div>
       {rooms.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '2rem', marginBottom: '2rem' }}>
-          <p className="form-note">No active rooms right now.</p>
+        <div style={{ marginBottom: '2rem' }}>
+          <GrandEmpty
+            icon="🔥"
+            title="No rooms heating up"
+            copy="The rooms are empty right now. Start the conversation — every legend started with the first message."
+            cta="Start Chatting"
+            onCta={() => navigate('/chats')}
+          />
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '0.8rem', marginBottom: '2rem' }}>

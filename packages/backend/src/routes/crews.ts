@@ -121,6 +121,14 @@ router.post(
       [rows[0].id, req.user!.id]
     );
     await awardXp(req.user!.id, 50, 'crew_founded').catch(() => undefined);
+
+    // Engagement: ticker entry for the new crew
+    try {
+      const { publishActivity } = await import('./engagement');
+      await publishActivity(req.user!.id, 'crew_formed', `formed a new crew: ${rows[0].name} ${rows[0].tag ? `[${rows[0].tag}]` : ''}`);
+    } catch {
+      /* engagement is best-effort */
+    }
     res.status(201).json({ crew: { id: rows[0].id, name: rows[0].name, tag: rows[0].tag } });
   })
 );
@@ -197,6 +205,35 @@ router.post(
       [mine[0].id, req.params.crewId, endsAt.toISOString()]
     );
     emitToAll('crew:war', { warId: rows[0].id, challenger: mine[0].id, defender: req.params.crewId });
+
+    // Engagement: ticker + push every defender crew member (best-effort)
+    try {
+      const { rows: names } = await pool.query(
+        `SELECT c1.name AS challenger_name, c2.name AS defender_name
+         FROM crews c1, crews c2 WHERE c1.id = $1 AND c2.id = $2`,
+        [mine[0].id, req.params.crewId]
+      );
+      const { publishActivity } = await import('./engagement');
+      await publishActivity(
+        req.user!.id, 'crew_battle',
+        `⚔️ WAR! ${names[0]?.challenger_name || 'A crew'} declared war on ${names[0]?.defender_name || 'a crew'}!`
+      );
+      const { rows: defenders } = await pool.query(
+        'SELECT user_id FROM crew_members WHERE crew_id = $1', [req.params.crewId]
+      );
+      const { pushToUser } = await import('../services/push');
+      await Promise.allSettled(
+        defenders
+          .filter((d: any) => d.user_id !== req.user!.id)
+          .map((d: any) => pushToUser(d.user_id, {
+            title: '⚔️ Your crew is under attack!',
+            body: `${names[0]?.challenger_name || 'An enemy crew'} declared war. Score XP to defend!`,
+            url: '/crews',
+          }).catch(() => undefined))
+      );
+    } catch {
+      /* engagement is best-effort */
+    }
     res.status(201).json({ war: { id: rows[0].id, endsAt: endsAt.toISOString() } });
   })
 );

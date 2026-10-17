@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import type { LeaderboardEntry, User } from '../types';
 import Avatar, { facePhotoOf } from '../components/Avatar';
 import LegendaryBadge from '../components/LegendaryBadge';
+import GrandLoader, { GrandEmpty } from '../components/GrandStates';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -87,7 +88,7 @@ export default function LeaderboardPage() {
         <RoyalCard title="Face Queen" crown="👸" person={queen} role="queen" loading={loading} />
       </div>
 
-      {loading && <div className="loading-wrap"><div className="spinner" /><p>Counting XP…</p></div>}
+      {loading && <GrandLoader text="Counting XP" />}
       {error && !loading && (
         <div className="error-wrap">
           <p>😕 {error}</p>
@@ -95,11 +96,13 @@ export default function LeaderboardPage() {
         </div>
       )}
       {!loading && !error && entries.length === 0 && (
-        <div className="card empty-wrap">
-          <div className="big">🏆</div>
-          <h3>Nobody's on the board yet</h3>
-          <p>Be the first to earn XP — send a message and take the lead.</p>
-        </div>
+        <GrandEmpty
+          icon="🏆"
+          title="The throne is empty"
+          copy="Nobody's on the board yet. Send a message, win a game, and claim the top spot — legends are made here."
+          cta="Start Earning XP"
+          onCta={() => window.location.href = '/gamble'}
+        />
       )}
       {!loading && !error && entries.length > 0 && (
         <div className="card" style={{ padding: '0.6rem' }}>
@@ -111,7 +114,7 @@ export default function LeaderboardPage() {
                 key={e.user.id}
                 to={`/u/${e.user.id}`}
                 className={`lb-row${topClass}`}
-                style={isMe ? { outline: '1px dashed var(--blue)', outlineOffset: -1 } : undefined}
+                style={isMe ? { outline: '2px solid var(--gold)', outlineOffset: -2, boxShadow: '0 0 16px rgba(255,201,77,0.3)' } : undefined}
               >
                 <div className="lb-rank">{i < 3 ? MEDALS[i] : `#${e.rank}`}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', minWidth: 0 }}>

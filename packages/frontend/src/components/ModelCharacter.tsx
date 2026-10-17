@@ -155,7 +155,6 @@ export default function ModelCharacter({ img, name, width = 280, height = 380, i
           src={img}
           alt={name}
           draggable={false}
-          loading="lazy"
           style={{
             position: 'absolute', inset: '8%',
             width: '84%', height: '84%',

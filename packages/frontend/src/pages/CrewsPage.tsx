@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { crewsApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import GrandLoader from '../components/GrandStates';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 interface CrewListItem {
@@ -100,7 +101,7 @@ export default function CrewsPage() {
     }
   };
 
-  if (loading) return <div className="page"><p>Loading crews…</p></div>;
+  if (loading) return <div className="page"><GrandLoader text="Loading crews" /></div>;
 
   return (
     <div className="page">

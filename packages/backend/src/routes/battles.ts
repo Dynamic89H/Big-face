@@ -49,6 +49,18 @@ router.post(
       [b.id, req.user!.id]
     );
     emitToAll('battle:created', { battleId: b.id, title: b.title, hostId: req.user!.id });
+
+    // Engagement: ticker entry for the new battle
+    try {
+      const { rows: hostRows } = await pool.query(
+        'SELECT display_name, username FROM users WHERE id = $1', [req.user!.id]
+      );
+      const hostName = hostRows[0]?.display_name || hostRows[0]?.username || 'Someone';
+      const { publishActivity } = await import('./engagement');
+      await publishActivity(req.user!.id, 'battle_start', `⚔️ ${hostName} started a battle: "${b.title}"`);
+    } catch {
+      /* engagement is best-effort */
+    }
     res.status(201).json({ battle: { id: b.id, title: b.title, status: b.status } });
   })
 );
@@ -136,6 +148,18 @@ router.post(
       // Publish to win feed
       const { publishWin } = await import('./engagement');
       await publishWin(winnerId, 'battle', 100, 'battle victory').catch(() => undefined);
+      // Tournament scoring: battle wins count toward active battle tournaments
+      await pool.query(
+        `UPDATE tournament_entries te
+         SET score = score + 100, wins = wins + 1
+         FROM tournaments t
+         WHERE te.tournament_id = t.id
+           AND te.user_id = $1
+           AND t.kind = 'battle'
+           AND t.status IN ('open', 'running')
+           AND t.ends_at > now()`,
+        [winnerId]
+      ).catch(() => undefined);
     }
 
     emitToAll('battle:ended', { battleId: b.id, winnerId });

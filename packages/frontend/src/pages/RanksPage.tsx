@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ranksApi } from '../api/client';
+import { ranksApi, usersApi } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
+import ThroneSeat, { sitterFromUser } from '../components/ThroneSeat';
+import RankJourney from '../components/RankJourney';
 
 interface Rank {
   name: string;
@@ -83,11 +86,14 @@ export function RankBadge({ level, size = 'md', gender }: { level: number; size?
  * RanksPage — the come up. All ranks, perks, leaderboard.
  */
 export default function RanksPage() {
+  const { user, refreshUser } = useAuth();
   const [data, setData] = useState<RankData | null>(null);
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [rankTab, setRankTab] = useState<'my-rank' | 'ladder' | 'top'>('my-rank');
   const [rankLoading, setRankLoading] = useState(true);
   const [rankError, setRankError] = useState<string | null>(null);
+  const [claiming, setClaiming] = useState(false);
+  const [justClaimed, setJustClaimed] = useState(false);
 
   const loadRanks = () => {
     setRankLoading(true);
@@ -104,6 +110,50 @@ export default function RanksPage() {
   useEffect(() => {
     loadRanks();
   }, []);
+
+  // ---- Throne logic ----
+  // The throne belongs to the highest-level Face King/Queen (level 40+).
+  // leaders are already sorted level DESC by the API.
+  const sitter = leaders.find((l) => l.level >= 40) ?? null;
+  const userLevel = user?.level ?? data?.level ?? 0;
+  const userEligible = userLevel >= 40;
+  const isUserSitter = !!(user && sitter && user.id === sitter.id);
+  // The current user can claim when they're 40+ and they're the top 40+ player
+  // (or no one else has reached 40 yet).
+  const canClaim = userEligible && (!sitter || isUserSitter);
+  const seatedFlag = (user?.avatarConfig as Record<string, unknown> | null)?.throneSeated === true;
+
+  const claimThrone = async () => {
+    if (!user || claiming) return;
+    setClaiming(true);
+    try {
+      const cfg = { ...((user.avatarConfig ?? {}) as Record<string, unknown>), throneSeated: true };
+      await usersApi.updateMe({ avatarConfig: cfg });
+      await refreshUser().catch(() => undefined);
+      setJustClaimed(true);
+      // Epic celebration
+      import('../components/Celebration').then((m) => m.celebrate('👑 LONG LIVE THE FACE KING!', true)).catch(() => undefined);
+      import('../utils/chime').then((m) => m.playLevelUp?.()).catch(() => undefined);
+    } catch {
+      /* best-effort */
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  // Build the sitter display info: full user data when it's you, leaderboard row otherwise.
+  const sitterInfo = sitter
+    ? isUserSitter && user
+      ? sitterFromUser(user)
+      : {
+          id: sitter.id,
+          displayName: sitter.display_name || sitter.username,
+          profileColor: sitter.profile_color,
+          level: sitter.level,
+          photoUrl: null as string | null,
+          isYou: false,
+        }
+    : null;
 
   return (
     <div className="page section-ranks" style={{ maxWidth: 700, margin: '0 auto' }}>
@@ -179,6 +229,10 @@ export default function RanksPage() {
         </div>
       )}
 
+      {rankTab === 'my-rank' && !rankLoading && !rankError && (
+        <RankJourney level={userLevel} gender={user?.gender} />
+      )}
+
       {rankTab === 'ladder' && (
       <>
       <h2 style={{ margin: '0 0 1rem', fontSize: '1.2rem' }}>All Ranks</h2>
@@ -212,6 +266,32 @@ export default function RanksPage() {
                 boxShadow: isCrown ? '0 0 30px rgba(255,215,0,0.3)' : undefined,
               }}
             >
+              {isCrown && (
+                <div style={{ marginBottom: '1rem' }} key={`throne-${justClaimed ? 'claimed' : 'idle'}-${sitter?.id ?? 'empty'}`}>
+                  <ThroneSeat
+                    sitter={sitterInfo}
+                    crownIcon={rank.name === 'Face Queen' ? '👸' : '👑'}
+                    claimable={canClaim && !seatedFlag && !justClaimed}
+                    claiming={claiming}
+                    onClaim={claimThrone}
+                  />
+                  <div style={{ marginTop: '0.5rem', color: '#ffd700', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                    👑 THE BIG FACE THRONE 👑
+                  </div>
+                  <div style={{ color: '#888', fontSize: '0.9rem' }}>
+                    {sitterInfo
+                      ? sitterInfo.isYou
+                        ? 'You rule Big Face. Long may you reign.'
+                        : `${sitterInfo.displayName} currently holds the throne — reach Level 40 and out-grind them to take it.`
+                      : 'No one has reached Level 40 yet. The throne awaits its first ruler.'}
+                  </div>
+                  {!userEligible && (
+                    <div style={{ color: '#aaa', fontSize: '0.8rem', marginTop: '0.4rem' }}>
+                      Reach Level 40 to claim the throne
+                    </div>
+                  )}
+                </div>
+              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ fontSize: isCrown ? '3.5rem' : '2rem' }}>{rank.icon}</div>
                 <div style={{ flex: 1 }}>

@@ -251,4 +251,192 @@ router.post(
   })
 );
 
+// ============ ACTIVITY FEED (bigger ticker) ============
+// General activity publisher — every significant action lands in the live ticker.
+// kinds: gamble | battle | spin | crew_battle | join | level_up | gift | friend_request
+//        | friend_accept | crew_formed | battle_start | record | challenge_complete | crown
+export async function publishActivity(
+  userId: string,
+  kind: string,
+  detail: string,
+  amountTokens: number = 0
+): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO win_feed (user_id, kind, amount_tokens, detail) VALUES ($1, $2, $3, $4)`,
+      [userId, kind, amountTokens, detail]
+    );
+    // Keep feed trimmed to last 300
+    await pool.query(
+      `DELETE FROM win_feed WHERE id NOT IN (SELECT id FROM win_feed ORDER BY created_at DESC LIMIT 300)`
+    );
+    emitToAll('engagement:feed', { kind });
+  } catch {
+    /* activity feed is best-effort */
+  }
+}
+
+// ============ DAILY CHALLENGES ("Today on Big Face") ============
+interface DailyChallengeDef {
+  key: string;
+  title: string;
+  description: string;
+  target: number;
+  tokenReward: number;
+  xpReward: number;
+}
+
+const DAILY_CHALLENGES: DailyChallengeDef[] = [
+  { key: 'spin_wheel', title: '🎡 Daily Spinner', description: 'Spin the daily wheel', target: 1, tokenReward: 250, xpReward: 15 },
+  { key: 'dice_wins', title: '🎲 Dice Shark', description: 'Win 3 solo dice games', target: 3, tokenReward: 500, xpReward: 25 },
+  { key: 'chatter', title: '💬 Social Butterfly', description: 'Send 10 messages', target: 10, tokenReward: 300, xpReward: 20 },
+  { key: 'gift_giver', title: '🎁 Generous Heart', description: 'Send 1 gift to someone', target: 1, tokenReward: 400, xpReward: 20 },
+  { key: 'high_roller', title: '💰 High Roller', description: 'Win 1,000+ tokens in a single dice roll', target: 1, tokenReward: 600, xpReward: 30 },
+  { key: 'crew_player', title: '🛡️ Crew Loyalist', description: 'Be in an active crew battle', target: 1, tokenReward: 400, xpReward: 20 },
+  { key: 'early_bird', title: '🔥 On a Roll', description: 'Win 5 solo dice games', target: 5, tokenReward: 750, xpReward: 40 },
+];
+
+/** Today's challenge, rotating deterministically by day of year. */
+export function getDailyChallenge(date = new Date()): DailyChallengeDef {
+  const dayOfYear = Math.floor(date.getTime() / 86400000);
+  return DAILY_CHALLENGES[dayOfYear % DAILY_CHALLENGES.length];
+}
+
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Compute a user's live progress for a challenge key (today only). */
+async function computeChallengeProgress(userId: string, key: string): Promise<number> {
+  const { rows } = await pool.query(
+    `SELECT
+       (SELECT COUNT(*)::int FROM daily_spins WHERE user_id = $1 AND spun_at > now() - interval '24 hours') AS spins,
+       (SELECT COUNT(*)::int FROM token_transactions WHERE user_id = $1 AND kind = 'dice_win' AND created_at > now() - interval '24 hours') AS dice_wins,
+       (SELECT COUNT(*)::int FROM token_transactions WHERE user_id = $1 AND kind = 'dice_win' AND amount >= 1000 AND created_at > now() - interval '24 hours') AS big_wins,
+       (SELECT COUNT(*)::int FROM messages WHERE sender_id = $1 AND created_at > now() - interval '24 hours') AS messages,
+       (SELECT COUNT(*)::int FROM gifts WHERE sender_id = $1 AND created_at > now() - interval '24 hours') AS gifts,
+       (SELECT COUNT(*)::int FROM crew_battles cb
+          JOIN crew_members cm ON cm.crew_id IN (cb.challenger_crew_id, cb.defender_crew_id)
+        WHERE cm.user_id = $1 AND cb.status = 'active' AND cb.ends_at > now()) AS crew_active`,
+    [userId]
+  );
+  const r = rows[0] || {};
+  switch (key) {
+    case 'spin_wheel': return Math.min(r.spins ?? 0, 1);
+    case 'dice_wins': return Math.min(r.dice_wins ?? 0, 3);
+    case 'chatter': return Math.min(r.messages ?? 0, 10);
+    case 'gift_giver': return Math.min(r.gifts ?? 0, 1);
+    case 'high_roller': return Math.min(r.big_wins ?? 0, 1);
+    case 'crew_player': return (r.crew_active ?? 0) > 0 ? 1 : 0;
+    case 'early_bird': return Math.min(r.dice_wins ?? 0, 5);
+    default: return 0;
+  }
+}
+
+/** Full "Today on Big Face" status: login bonus, spin, daily challenge. */
+router.get(
+  '/daily',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const userId = req.user!.id;
+    const challenge = getDailyChallenge();
+    const progress = await computeChallengeProgress(userId, challenge.key).catch(() => 0);
+
+    // Upsert progress row
+    const date = todayStr();
+    await pool.query(
+      `INSERT INTO daily_challenge_progress (user_id, challenge_date, challenge_key, progress, completed)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, challenge_date, challenge_key)
+       DO UPDATE SET progress = GREATEST(daily_challenge_progress.progress, $4),
+                     completed = daily_challenge_progress.completed OR $5,
+                     updated_at = now()`,
+      [userId, date, challenge.key, progress, progress >= challenge.target]
+    ).catch(() => undefined);
+    const { rows: prog } = await pool.query(
+      `SELECT progress, completed, claimed FROM daily_challenge_progress
+       WHERE user_id = $1 AND challenge_date = $2 AND challenge_key = $3`,
+      [userId, date, challenge.key]
+    ).catch(() => ({ rows: [] as any[] }));
+    const prow = prog[0] || { progress, completed: progress >= challenge.target, claimed: false };
+
+    // Spin status
+    const { rows: spins } = await pool.query(
+      `SELECT spun_at, streak FROM daily_spins WHERE user_id = $1 ORDER BY spun_at DESC LIMIT 1`,
+      [userId]
+    ).catch(() => ({ rows: [] as any[] }));
+    const last = spins[0];
+    let canSpin = true;
+    let spinStreak = 0;
+    if (last) {
+      const daysDiff = Math.floor((Date.now() - new Date(last.spun_at).getTime()) / 86400000);
+      if (daysDiff === 0) canSpin = false;
+      else if (daysDiff === 1) spinStreak = last.streak;
+    }
+
+    // Login bonus status
+    const { rows: loginTx } = await pool.query(
+      `SELECT id FROM token_transactions WHERE user_id = $1 AND kind = 'bonus' AND reference = $2 LIMIT 1`,
+      [userId, `daily_login:${date}`]
+    ).catch(() => ({ rows: [] as any[] }));
+    const { rows: ustreak } = await pool.query(
+      'SELECT login_streak FROM users WHERE id = $1', [userId]
+    ).catch(() => ({ rows: [{ login_streak: 0 }] }));
+
+    res.json({
+      date,
+      login: { claimed: loginTx.length > 0, streak: ustreak[0]?.login_streak ?? 0 },
+      spin: { canSpin, streak: spinStreak },
+      challenge: {
+        key: challenge.key,
+        title: challenge.title,
+        description: challenge.description,
+        target: challenge.target,
+        progress: prow.progress,
+        completed: prow.completed,
+        claimed: prow.claimed,
+        tokenReward: challenge.tokenReward,
+        xpReward: challenge.xpReward,
+      },
+    });
+  })
+);
+
+// Claim a completed daily challenge.
+router.post(
+  '/daily/challenge/claim',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const userId = req.user!.id;
+    const challenge = getDailyChallenge();
+    const date = todayStr();
+    const progress = await computeChallengeProgress(userId, challenge.key).catch(() => 0);
+
+    const { rows } = await pool.query(
+      `SELECT completed, claimed FROM daily_challenge_progress
+       WHERE user_id = $1 AND challenge_date = $2 AND challenge_key = $3`,
+      [userId, date, challenge.key]
+    );
+    const row = rows[0];
+    const completed = row?.completed || progress >= challenge.target;
+    if (!completed) throw new HttpError(400, 'Challenge not complete yet.');
+    if (row?.claimed) {
+      res.json({ ok: true, alreadyClaimed: true });
+      return;
+    }
+
+    await addTokens(userId, challenge.tokenReward, 'bonus', { reference: `challenge:${date}:${challenge.key}` });
+    await awardXp(userId, challenge.xpReward, 'daily_challenge_complete').catch(() => undefined);
+    await pool.query(
+      `INSERT INTO daily_challenge_progress (user_id, challenge_date, challenge_key, progress, completed, claimed)
+       VALUES ($1, $2, $3, $4, true, true)
+       ON CONFLICT (user_id, challenge_date, challenge_key)
+       DO UPDATE SET claimed = true, completed = true, progress = GREATEST(daily_challenge_progress.progress, $4), updated_at = now()`,
+      [userId, date, challenge.key, progress]
+    );
+    await publishActivity(userId, 'challenge_complete', `completed today's challenge: ${challenge.title}!`, challenge.tokenReward);
+    res.json({ ok: true, tokens: challenge.tokenReward, xp: challenge.xpReward });
+  })
+);
+
 export default router;

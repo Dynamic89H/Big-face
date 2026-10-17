@@ -65,6 +65,8 @@ router.post(
       'INSERT INTO tournament_entries (tournament_id, user_id) VALUES ($1, $2)',
       [req.params.id, req.user!.id]
     );
+    // XP for entering a tournament
+    await awardXp(req.user!.id, 20, 'tournament_entered').catch(() => undefined);
 
     emitToAll('competition:tournament-update', { tournamentId: req.params.id });
     res.json({ ok: true });
@@ -84,6 +86,48 @@ router.get(
       [req.params.id]
     );
     res.json({ leaderboard: rows });
+  })
+);
+
+// Current tournaments (weekly + weekend) with countdown + user's entry status
+router.get(
+  '/tournaments/current',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT t.*, u.display_name AS winner_name,
+              (SELECT COUNT(*)::int FROM tournament_entries te WHERE te.tournament_id = t.id) AS player_count,
+              (SELECT json_build_object('score', te.score, 'wins', te.wins)
+               FROM tournament_entries te
+               WHERE te.tournament_id = t.id AND te.user_id = $1) AS my_entry,
+              EXTRACT(EPOCH FROM (t.ends_at - now()))::int AS seconds_left
+       FROM tournaments t LEFT JOIN users u ON u.id = t.winner_id
+       WHERE t.status IN ('open', 'running') AND t.ends_at > now()
+       ORDER BY t.ends_at ASC LIMIT 5`,
+      [req.user!.id]
+    );
+    // Also return the user's tournament tier
+    const { rows: me } = await pool.query(
+      'SELECT tournament_tier FROM users WHERE id = $1',
+      [req.user!.id]
+    );
+    res.json({ tournaments: rows, myTier: me[0]?.tournament_tier || 'Rookie' });
+  })
+);
+
+// Past tournament winners (hall of champions)
+router.get(
+  '/tournaments/past',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT t.id, t.name, t.tier, t.schedule, t.prize_pool, t.ends_at,
+              u.display_name AS winner_name, u.profile_color AS winner_color
+       FROM tournaments t LEFT JOIN users u ON u.id = t.winner_id
+       WHERE t.status = 'finished'
+       ORDER BY t.ends_at DESC LIMIT 20`
+    );
+    res.json({ past: rows });
   })
 );
 

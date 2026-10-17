@@ -11,6 +11,10 @@ export interface User {
   xp: number;
   level: number;
   loginStreak?: number;
+  xpStreak?: number;
+  bestXpStreak?: number;
+  streakFreezes?: number;
+  trophies?: number;
   profileBackground?: string;
   createdAt: string;
 }

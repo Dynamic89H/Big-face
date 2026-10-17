@@ -9,6 +9,10 @@ import { backgroundCss } from '../profileBackgrounds';
 import GiftDialog from '../components/GiftDialog';
 import ReportDialog from '../components/ReportDialog';
 import { usePageTitle } from '../hooks/usePageTitle';
+import StreakFlame from '../components/StreakFlame';
+import { xpProgress } from '../utils/xp';
+import AbilitiesPanel, { AbilityAura } from '../components/AbilitiesPanel';
+import { avatarApi, type Ability } from '../api/client';
 
 export default function ProfilePage() {
   usePageTitle('Profile');
@@ -29,6 +33,7 @@ export default function ProfilePage() {
   const [friendStatus, setFriendStatus] = useState<string | null>(null);
   const [friendBusy, setFriendBusy] = useState(false);
   const [lifestyle, setLifestyle] = useState<Array<{ kind: string; name: string; rarity: string }>>([]);
+  const [equippedAbility, setEquippedAbility] = useState<Ability | null>(null);
 
   const isMe = id === me?.id;
 
@@ -86,6 +91,13 @@ export default function ProfilePage() {
         setLifestyle(assets.slice(0, 6));
       } catch {
         /* no lifestyle yet */
+      }
+      // Load equipped ability aura (best-effort).
+      try {
+        const { ability } = await avatarApi.equippedAbility(id);
+        setEquippedAbility(ability);
+      } catch {
+        /* no ability equipped */
       }
       setProfile(user);
       setStats(stats);
@@ -166,7 +178,9 @@ export default function ProfilePage() {
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="profile-cover" style={{ background: backgroundCss(profile.profileBackground, profile.profileColor) }} />
         <div className="profile-head">
-          <Avatar displayName={profile.displayName} profileColor={profile.profileColor} size="xl" photoUrl={facePhotoOf(profile)} />
+          <AbilityAura ability={equippedAbility}>
+            <Avatar displayName={profile.displayName} profileColor={profile.profileColor} size="xl" photoUrl={facePhotoOf(profile)} />
+          </AbilityAura>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.6rem', marginTop: '0.7rem' }}>
             <div>
               <h1 className="page-title">{profile.displayName}</h1>
@@ -177,13 +191,40 @@ export default function ProfilePage() {
           {profile.bio && <p style={{ marginTop: '0.7rem', lineHeight: 1.5 }}>{profile.bio}</p>}
 
           <div className="stat-row">
-            <div className="stat"><div className="num">{profile.xp}</div><div className="lbl">XP</div></div>
+            <div className="stat"><div className="num">{profile.xp.toLocaleString()}</div><div className="lbl">XP</div></div>
+            <div className="stat"><div className="num"><StreakFlame size="sm" /></div><div className="lbl">Streak</div></div>
             <div className="stat"><div className="num">{likeCount}</div><div className="lbl">Likes</div></div>
             <div className="stat"><div className="num">{stats?.mediaCount ?? 0}</div><div className="lbl">Posts</div></div>
+            {(profile.trophies ?? 0) > 0 && (
+              <div className="stat"><div className="num">🏆{profile.trophies}</div><div className="lbl">Trophies</div></div>
+            )}
             {stats?.rank !== null && stats?.rank !== undefined && (
               <div className="stat"><div className="num">#{stats.rank}</div><div className="lbl">Rank</div></div>
             )}
           </div>
+
+          {/* XP progress to next level — always visible, feels alive */}
+          {(() => {
+            const p = xpProgress(profile.xp, profile.level);
+            return (
+              <div className="xp-progress-card">
+                <div className="xp-progress-row">
+                  <span style={{ color: 'var(--gold)', fontWeight: 800 }}>
+                    ⚡ {profile.xp.toLocaleString()} XP
+                  </span>
+                  <span className="form-note">
+                    {p.remaining.toLocaleString()} XP to Level {profile.level + 1} · {p.percent}%
+                  </span>
+                </div>
+                <div className="xp-progress-track">
+                  <div className="xp-progress-fill" style={{ width: `${p.percent}%` }} />
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Abilities — equip on own profile, view-only on others */}
+          <AbilitiesPanel userId={profile.id} editable={isMe} />
 
           {!isMe && (
             <div className="profile-actions">

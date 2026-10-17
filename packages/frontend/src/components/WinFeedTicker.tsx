@@ -15,7 +15,45 @@ const KIND_ICON: Record<string, string> = {
   battle: '⚔️',
   spin: '🎡',
   crew_battle: '🛡️',
+  join: '👋',
+  level_up: '⬆️',
+  gift: '🎁',
+  friend_request: '🤝',
+  friend_accept: '🤝',
+  crew_formed: '🛡️',
+  battle_start: '⚔️',
+  record: '🔥',
+  challenge_complete: '✅',
+  crown: '👑',
 };
+
+// Kinds that are announcements, not wins — rendered without "won N tokens".
+const ANNOUNCEMENT_KINDS = new Set([
+  'join', 'level_up', 'friend_request', 'friend_accept',
+  'crew_formed', 'battle_start', 'record', 'challenge_complete',
+]);
+
+/** Render one feed item smartly: wins show amounts, announcements show the detail. */
+function renderItem(item: FeedItem) {
+  const icon = KIND_ICON[item.kind] || '🏆';
+  const name = (
+    <strong style={{ color: item.user.profileColor }}>{item.user.displayName}</strong>
+  );
+  if (ANNOUNCEMENT_KINDS.has(item.kind)) {
+    // Detail already contains the full message (e.g. "👋 X joined Big Face!")
+    return (
+      <span>
+        {icon} {name} {item.detail ? item.detail.replace(/^👋 |^⬆️ |^⚔️ |^🔥 |^✅ /, '') : ''}
+      </span>
+    );
+  }
+  return (
+    <span>
+      {icon} {name} won <strong className="win-ticker-amount">{item.amount.toLocaleString()}</strong> tokens
+      {item.detail && <span className="win-ticker-detail"> ({item.detail})</span>}
+    </span>
+  );
+}
 
 /**
  * WinFeedTicker — live scrolling win feed, visible on every page.
@@ -68,10 +106,7 @@ export default function WinFeedTicker() {
           <div className="win-ticker-track">
             {items.map((item) => (
               <span key={item.id} className="win-ticker-item">
-                {KIND_ICON[item.kind] || '🏆'}{' '}
-                <strong style={{ color: item.user.profileColor }}>{item.user.displayName}</strong>
-                {' '}won <strong className="win-ticker-amount">{item.amount.toLocaleString()}</strong> tokens
-                {item.detail && <span className="win-ticker-detail"> ({item.detail})</span>}
+                {renderItem(item)}
               </span>
             ))}
           </div>

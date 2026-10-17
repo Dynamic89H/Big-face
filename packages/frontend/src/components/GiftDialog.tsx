@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { giftsApi, walletApi, ApiError, type Gift } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import type { GiftCatalogItem } from '../types';
 import { playGiftSound } from '../utils/chime';
 
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export default function GiftDialog({ receiverId, receiverName, onClose, onSent }: Props) {
+  const { bumpLocalXp } = useAuth();
   const [catalog, setCatalog] = useState<GiftCatalogItem[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [message, setMessage] = useState('');
@@ -89,6 +91,7 @@ export default function GiftDialog({ receiverId, receiverName, onClose, onSent }
       });
       setDone(true);
       playGiftSound();
+      bumpLocalXp(2); // gift sent
       onSent?.(gift);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not send the gift. Please try again.');

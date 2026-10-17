@@ -170,7 +170,7 @@ export default function StoriesPage() {
               <span style={{ opacity: 0.6, fontSize: '0.8rem' }}>👁️ {current.viewCount}</span>
             </div>
             {/* Media */}
-            <img
+            <img loading="lazy"
               src={current.mediaUrl}
               alt="Story"
               style={{

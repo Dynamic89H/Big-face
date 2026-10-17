@@ -91,7 +91,6 @@ export default function ItemVisual({ slot, style, name, size = 100, interactive 
             width: size, height: size, objectFit: 'contain',
             filter: shimmer ? 'drop-shadow(0 0 8px rgba(255,215,0,0.6))' : 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))',
           }}
-          loading="lazy"
         />
       </div>
     );

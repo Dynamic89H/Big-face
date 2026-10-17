@@ -73,12 +73,9 @@ export default function HomeHub() {
     <div style={{ paddingBottom: '2rem' }}>
       {SECTIONS.map((section) => (
         <div key={section.title} style={{ marginBottom: '1.5rem' }}>
-          <h2 style={{
-            fontSize: '1.1rem', margin: '0 0 0.6rem 0.2rem',
-            color: 'var(--gold)', letterSpacing: '0.05em',
-          }}>
-            {section.title}
-          </h2>
+          <div className="section-head">
+            <h2>{section.title}</h2>
+          </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',

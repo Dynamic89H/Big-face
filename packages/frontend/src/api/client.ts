@@ -111,7 +111,7 @@ export interface SignupInput {
 export const authApi = {
   signup: (input: SignupInput) => post<{ token: string; user: User }>('/auth/signup', input),
   login: (identifier: string, password: string) =>
-    post<{ token: string; user: User; dailyReward: { streak: number; xp: number } | null }>('/auth/login', { identifier, password }),
+    post<{ token: string; user: User; dailyReward: { streak: number; xp: number } | null; comeback: { tokens: number; xp: number; multiplierEndsAt: string } | null }>('/auth/login', { identifier, password }),
   me: () => get<{ user: User }>('/auth/me'),
   changePassword: (currentPassword: string, newPassword: string) =>
     post<{ ok: boolean }>('/auth/change-password', { currentPassword, newPassword }),
@@ -223,7 +223,26 @@ export const avatarApi = {
   acquire: (itemId: string) => post<{ ok: boolean }>('/avatar/acquire', { itemId }),
   equip: (itemId: string) => post<{ ok: boolean }>('/avatar/equip', { itemId }),
   unequip: (slot: string) => post<{ ok: boolean }>('/avatar/unequip', { slot }),
+  abilities: () => get<{ abilities: Ability[] }>('/avatar/abilities'),
+  equipAbility: (abilityKey: string) => post<{ ok: boolean; ability: Ability }>('/avatar/abilities/equip', { abilityKey }),
+  unequipAbility: () => post<{ ok: boolean }>('/avatar/abilities/unequip', {}),
+  equippedAbility: (userId: string) => get<{ ability: Ability | null }>(`/avatar/abilities/equipped/${userId}`),
 };
+
+export interface Ability {
+  id: string;
+  key: string;
+  name: string;
+  icon: string;
+  description: string;
+  minLevel: number;
+  effectType: string;
+  effectValue: number;
+  effectLabel: string;
+  cssClass: string;
+  unlocked: boolean;
+  equipped: boolean;
+}
 
 // --- Wallet / Gifts ---
 export const walletApi = {
@@ -285,6 +304,30 @@ export const ranksApi = {
     xpProgress: { current: number; needed: number; remaining: number; percent: number } | null;
   }>('/ranks'),
   leaderboard: () => get<{ leaders: Array<{ id: string; username: string; display_name: string; level: number; profile_color: string }> }>('/ranks/leaderboard'),
+};
+
+// --- Engagement ("Today on Big Face") ---
+export interface DailyStatus {
+  date: string;
+  login: { claimed: boolean; streak: number };
+  spin: { canSpin: boolean; streak: number };
+  challenge: {
+    key: string;
+    title: string;
+    description: string;
+    target: number;
+    progress: number;
+    completed: boolean;
+    claimed: boolean;
+    tokenReward: number;
+    xpReward: number;
+  };
+}
+
+export const engagementApi = {
+  daily: () => get<DailyStatus>('/engagement/daily'),
+  claimChallenge: () => post<{ ok: boolean; alreadyClaimed?: boolean; tokens?: number; xp?: number }>('/engagement/daily/challenge/claim', {}),
+  feed: (limit = 20) => get<{ feed: Array<{ id: string; kind: string; amount: number; detail?: string; at: string; user: { displayName: string; profileColor: string } }> }>(`/engagement/feed?limit=${limit}`),
 };
 
 // --- Cee-lo Match Mode ---
@@ -369,6 +412,27 @@ export const earningsApi = {
 export const throneApi = {
   me: () => get<ThroneInfo>('/throne/me'),
   legendary: () => get<{ king: User | null; queen: User | null; weekStart: string }>('/throne/legendary'),
+};
+
+// --- XP engagement (streaks, multipliers, milestones, period leaderboards) ---
+export const xpApi = {
+  streak: () => get<{ streak: number; best: number; lastDate: string | null; nextMilestone: number | null }>('/xp/streak'),
+  multipliers: () => get<{
+    active: { id: string; name: string; description: string; multiplier: number; starts_at: string; ends_at: string | null }[];
+    currentMultiplier: number;
+    currentName: string;
+  }>('/xp/multipliers'),
+  milestones: () => get<{
+    xp: number;
+    milestones: { xp: number; hit: boolean; claimed: boolean; progress: number }[];
+  }>('/xp/milestones'),
+  firstWin: () => get<{ claimed: boolean }>('/xp/first-win'),
+  leaderboard: (period: 'daily' | 'weekly' | 'monthly' | 'alltime' = 'weekly') =>
+    get<{
+      period: string;
+      leaders: { id: string; username: string; displayName: string; level: number; xp: number; periodXp: number; profileColor: string }[];
+      myRank: number | null;
+    }>(`/xp/leaderboard?period=${period}`),
 };
 
 // --- Moderation ---

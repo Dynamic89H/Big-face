@@ -6,6 +6,7 @@ import type { StringKey } from '../i18n/strings';
 import { getSocket, type GiftReceivedPayload, type RankUpPayload } from '../api/socket';
 import RedCarpetBanner from './RedCarpetBanner';
 import DailyRewardBanner from './DailyRewardBanner';
+import ComebackBanner from './ComebackBanner';
 import WinFeedTicker from './WinFeedTicker';
 import SpinWheel from './SpinWheel';
 import WelcomeFlow from './WelcomeFlow';
@@ -15,6 +16,15 @@ import { GIFT_EMOJI } from './GiftDialog';
 import WhatIsBigFace from './WhatIsBigFace';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { celebrate } from './Celebration';
+import RankUpOverlay from './RankUpOverlay';
+import { xpProgress } from '../utils/xp';
+
+/** Rank name → brand color for the epic rank-up overlay. */
+const RANK_COLORS: Record<string, string> = {
+  Rookie: '#cd7f32', Grinder: '#c0c0c0', Hustler: '#ffd700',
+  Boss: '#00d4ff', Kingpin: '#ff6b00', Legend: '#ff00ff',
+  'Face King': '#ffd700', 'Face Queen': '#ffd700',
+};
 
 interface Toast {
   id: number;
@@ -68,7 +78,8 @@ const BOTTOM_NAV: { to: string; key: StringKey; icon: string }[] = [
 let toastId = 0;
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, xpFlash } = useAuth();
+  const xpBar = user ? xpProgress(user.xp, user.level) : null;
   const { t, lang, setLang } = useLang();
   const navigate = useNavigate();
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -112,18 +123,61 @@ export default function Layout() {
       const who = p.userId === user?.id ? 'You' : 'Someone';
       pushToast(`🎉 ${who} ranked up!`, `${who === 'You' ? 'You are' : 'They are'} now Level ${p.level} — ${p.tier}.`);
       if (p.userId === user?.id) {
-        celebrate(`🎉 LEVEL ${p.level}!`, true);
+        if (p.rankChanged && p.rank) {
+          // EPIC rank-up overlay — a new RANK, not just a level. This is the big one.
+          window.dispatchEvent(new CustomEvent('bigface:rank-up', {
+            detail: {
+              rankName: p.rank,
+              rankIcon: p.rankIcon || '🏆',
+              rankColor: RANK_COLORS[p.rank] || '#ffd700',
+              level: p.level,
+              tokensWon: p.tokensWon || 0,
+              gender: user?.gender,
+            },
+          }));
+        } else {
+          celebrate(`🎉 LEVEL ${p.level}!`, true);
+        }
       }
     };
-    const onGift = (p: GiftReceivedPayload) => {
-      const emoji = GIFT_EMOJI[p.gift.giftKey] ?? '🎁';
-      pushToast(`${emoji} Gift received!`, `Someone sent you a gift${p.gift.message ? `: “${p.gift.message}”` : ''}. +10 XP!`);
+    const onGift = (p: any) => {
+      // Handle both gift shapes: full gift object and level-up reward
+      const giftKey = p.gift?.giftKey || p.giftKey || 'gift';
+      const giftLabel = p.gift?.gift_label || p.giftLabel || p.gift || 'a gift';
+      const emoji = GIFT_EMOJI[giftKey] ?? '🎁';
+      const from = p.from || 'Someone';
+      const msg = p.message || p.gift?.message || '';
+      pushToast(`${emoji} Gift from ${from}!`, `${giftLabel}${msg ? `: "${msg}"` : ''} +10 XP!`);
+      if (p.count > 1) {
+        pushToast(`🎁 ${p.count}x ${giftLabel}!`, `Level ${p.level} milestone reward!`);
+      }
     };
     s.on('user:rank-up', onRankUp);
     s.on('gift:received', onGift);
+    // XP engagement: milestones, streaks
+    const onXpMilestone = (p: any) => {
+      const who = p.userId === user?.id ? 'You' : p.displayName || 'Someone';
+      pushToast(`🌟 ${who} hit ${Number(p.milestone).toLocaleString()} XP!`, 'XP Milestone reached!');
+      if (p.userId === user?.id) {
+        celebrate(`🌟 ${Number(p.milestone).toLocaleString()} XP!`, true);
+      }
+    };
+    const onStreakMilestone = (p: any) => {
+      pushToast(`🔥 ${p.streak}-day XP streak!`, `+${p.bonus} bonus XP! Keep it going!`);
+      celebrate(`🔥 ${p.streak} DAY STREAK!`, true);
+    };
+    const onFriendRequest = (p: { fromUserId: string; fromName: string }) => {
+      pushToast('🤝 New friend request!', `${p.fromName} wants to be friends. Check the Friends tab!`);
+    };
+    s.on('xp:milestone', onXpMilestone);
+    s.on('xp:streak-milestone', onStreakMilestone);
+    s.on('friend:request', onFriendRequest);
     return () => {
       s.off('user:rank-up', onRankUp);
       s.off('gift:received', onGift);
+      s.off('xp:milestone', onXpMilestone);
+      s.off('xp:streak-milestone', onStreakMilestone);
+      s.off('friend:request', onFriendRequest);
     };
   }, [user?.id]);
 
@@ -159,6 +213,18 @@ export default function Layout() {
       // The user's profile color drives accent theming across the shell.
       style={{ '--accent': user.profileColor || '#0066FF' } as CSSProperties}
     >
+      {/* Persistent XP progress — visible on every page, mobile + desktop */}
+      {xpBar && (
+        <div className="xp-topbar" title={`Level ${user!.level} · ${user!.xp.toLocaleString()} XP (${xpBar.percent}% to Level ${user!.level + 1})`}>
+          <div className="xp-topbar-fill" style={{ width: `${xpBar.percent}%` }} />
+        </div>
+      )}
+      {/* Floating "+N XP" feedback on every XP gain */}
+      {xpFlash && (
+        <div key={xpFlash.key} className="xp-flash" aria-live="polite">
+          +{xpFlash.amount} XP
+        </div>
+      )}
       {showExplainer && <WhatIsBigFace onClose={closeExplainer} />}
       {showWelcome && (
         <WelcomeFlow
@@ -193,7 +259,12 @@ export default function Layout() {
           <Avatar displayName={user.displayName} profileColor={user.profileColor} online photoUrl={facePhotoOf(user)} />
           <div className="meta">
             <div className="name">{user.displayName}</div>
-            <div className="level">Level {user.level} · {user.xp} XP</div>
+            <div className="level">Level {user.level} · {user.xp.toLocaleString()} XP</div>
+            {xpBar && (
+              <div className="xp-chip-bar" title={`${xpBar.current.toLocaleString()} / ${xpBar.needed.toLocaleString()} XP`}>
+                <div className="xp-chip-fill" style={{ width: `${xpBar.percent}%` }} />
+              </div>
+            )}
           </div>
           <button className="icon-btn" title="Edit profile" onClick={() => navigate('/profile/edit')}>✏️</button>
           <button className="icon-btn" title="Log out" onClick={handleLogout}>⏻</button>
@@ -247,9 +318,11 @@ export default function Layout() {
 
       <RedCarpetBanner />
       <DailyRewardBanner />
+      <ComebackBanner />
       {/* Engagement engine — every page, every position */}
       <SpinWheel />
       <GiftRain />
+      <RankUpOverlay />
     </div>
   );
 }

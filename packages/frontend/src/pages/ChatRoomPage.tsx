@@ -24,7 +24,7 @@ const PAGE_SIZE = 50;
 export default function ChatRoomPage() {
   usePageTitle('Chat');
   const { id: roomId } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, bumpLocalXp } = useAuth();
   const navigate = useNavigate();
 
   const [room, setRoom] = useState<Room | null>(null);
@@ -261,6 +261,8 @@ export default function ChatRoomPage() {
       setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       setDraft('');
       setPending([]);
+      bumpLocalXp(5); // message sent
+      if (typingTimeout.current) window.clearTimeout(typingTimeout.current);
       if (typingTimeout.current) window.clearTimeout(typingTimeout.current);
       emitTyping(roomId, false);
       emitMessageRead(roomId, message.id);
@@ -504,7 +506,7 @@ export default function ChatRoomPage() {
             {pending.map((p) => (
               <div key={p.url} className="pending-chip">
                 {p.mime.startsWith('image/') ? (
-                  <img src={p.url} alt={p.name} />
+                  <img loading="lazy" src={p.url} alt={p.name} />
                 ) : (
                   <span className="file-chip">📎 {p.name}</span>
                 )}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { sfx, haptic } from '../utils/sfx';
+import { useAuth } from '../auth/AuthContext';
 
 interface SpinStatus {
   canSpin: boolean;
@@ -11,6 +12,7 @@ interface SpinStatus {
  * Smooth CSS animation, lightweight, no jank.
  */
 export default function SpinWheel() {
+  const { bumpLocalXp } = useAuth();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<SpinStatus>({ canSpin: true, streak: 0 });
   const [spinning, setSpinning] = useState(false);
@@ -60,6 +62,7 @@ export default function SpinWheel() {
         if (res.ok) {
           setResult(data);
           setStatus({ canSpin: false, streak: data.streak });
+          bumpLocalXp(10); // daily_spin
           if (data.jackpot > 0) {
             sfx.jackpot();
             haptic([50, 50, 50, 50, 200]);

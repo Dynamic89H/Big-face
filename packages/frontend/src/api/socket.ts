@@ -19,7 +19,11 @@ export interface VideoPeerJoinedPayload { userId: string; socketId: string; isLe
 export interface VideoPeerLeftPayload { socketId: string }
 export interface VideoSignalPayload { from: string; signal: unknown }
 export interface RedCarpetPayload { king: User | null; queen: User | null; weekStart: string }
-export interface RankUpPayload { userId: string; level: number; tier: string }
+export interface RankUpPayload {
+  userId: string; level: number; tier: string;
+  displayName?: string; rank?: string; rankIcon?: string;
+  tokensWon?: number; rankChanged?: boolean;
+}
 export interface GiftReceivedPayload { gift: Gift }
 
 export interface ServerToClientEvents {
@@ -34,6 +38,9 @@ export interface ServerToClientEvents {
   'red:carpet': (payload: RedCarpetPayload) => void;
   'user:rank-up': (payload: RankUpPayload) => void;
   'gift:received': (payload: GiftReceivedPayload) => void;
+  'friend:request': (payload: { fromUserId: string; fromName: string }) => void;
+  'xp:milestone': (payload: { userId: string; displayName?: string; milestone: number }) => void;
+  'xp:streak-milestone': (payload: { userId: string; streak: number; bonus: number }) => void;
   'gift:rain': (payload: { giftKey: string; giftLabel: string; senderName: string; receiverName: string }) => void;
   'battle:created': (payload: { battleId: string }) => void;
   'battle:started': (payload: { battleId: string }) => void;

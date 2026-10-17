@@ -249,6 +249,53 @@ router.post(
       await awardXp(userId, 30, 'dice_solo_win').catch(() => undefined);
       const { publishWin } = await import('./engagement');
       await publishWin(userId, 'gamble', payout, `${bet} token solo dice`).catch(() => undefined);
+      // Tournament scoring: add payout to score in active dice tournaments the user entered
+      await pool.query(
+        `UPDATE tournament_entries te
+         SET score = score + $1, wins = wins + 1
+         FROM tournaments t
+         WHERE te.tournament_id = t.id
+           AND te.user_id = $2
+           AND t.kind = 'dice'
+           AND t.status IN ('open', 'running')
+           AND t.ends_at > now()`,
+        [payout, userId]
+      ).catch(() => undefined);
+
+      // All-time high score: biggest solo payout ever. New record = global push.
+      try {
+        const { rows: rec } = await pool.query(
+          `INSERT INTO user_records (user_id, best_solo_payout, best_solo_bet)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (user_id) DO UPDATE
+             SET best_solo_payout = GREATEST(user_records.best_solo_payout, $2),
+                 best_solo_bet = GREATEST(user_records.best_solo_bet, $3),
+                 updated_at = now()
+           RETURNING best_solo_payout`,
+          [userId, payout, bet]
+        ).catch(() => ({ rows: [] as any[] }));
+        if (rec.length) {
+          const { rows: global } = await pool.query(
+            `SELECT MAX(best_solo_payout)::int AS max_payout FROM user_records`
+          ).catch(() => ({ rows: [{ max_payout: 0 }] }));
+          if (payout >= (global[0]?.max_payout ?? 0) && payout > 0) {
+            const { rows: u } = await pool.query(
+              'SELECT display_name, username FROM users WHERE id = $1', [userId]
+            ).catch(() => ({ rows: [] as any[] }));
+            const nm = u[0]?.display_name || u[0]?.username || 'Someone';
+            const { publishActivity } = await import('./engagement');
+            await publishActivity(userId, 'record', `🔥 NEW ALL-TIME RECORD! ${nm} won ${payout.toLocaleString()} tokens on solo dice!`, payout);
+            const { pushToAll } = await import('../services/push');
+            await pushToAll({
+              title: '🔥 New Big Face record!',
+              body: `${nm} just won ${payout.toLocaleString()} tokens on solo dice — the biggest win ever!`,
+              url: '/gamble',
+            }).catch(() => undefined);
+          }
+        }
+      } catch {
+        /* records are best-effort */
+      }
     } else {
       await awardXp(userId, 10, 'dice_solo_play').catch(() => undefined);
     }

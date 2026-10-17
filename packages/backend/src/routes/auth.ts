@@ -115,6 +115,14 @@ router.post(
     }
 
     res.status(201).json({ token: signToken(user.id), user: toUser(user) });
+
+    // Engagement: ticker entry for the new join (best-effort, after response)
+    try {
+      const { publishActivity } = await import('./engagement');
+      await publishActivity(user.id, 'join', `👋 ${user.displayName} (@${user.username}) joined Big Face!`);
+    } catch {
+      /* engagement is best-effort */
+    }
   })
 );
 
@@ -136,8 +144,38 @@ router.post(
     if (!ok) throw new HttpError(401, 'Invalid credentials');
 
     const daily = await awardDailyLoginXp(rows[0].id);
+
+    // COMEBACK: 7+ days absent => "Welcome Back" package:
+    // 2,000 tokens + 100 XP + personal 2x XP boost for 24h
+    let comeback: { tokens: number; xp: number; multiplierEndsAt: string } | null = null;
+    try {
+      const lastLogin = rows[0].last_login_at ? new Date(rows[0].last_login_at).getTime() : null;
+      const sevenDaysAgo = Date.now() - 7 * 86400000;
+      if (lastLogin !== null && lastLogin < sevenDaysAgo) {
+        const { addTokens } = await import('../services/tokens');
+        const { awardXp } = await import('../services/xp');
+        await addTokens(rows[0].id, 2000, 'bonus', { reference: 'comeback_package' }).catch(() => undefined);
+        await awardXp(rows[0].id, 100, 'comeback').catch(() => undefined);
+        const endsAt = new Date(Date.now() + 24 * 3600000);
+        await pool.query(
+          `INSERT INTO xp_multipliers (name, description, multiplier, starts_at, ends_at, user_id)
+           VALUES ('Welcome Back Boost', '2x XP for 24 hours — welcome back!', 2.0, now(), $1, $2)
+           ON CONFLICT DO NOTHING`,
+          [endsAt.toISOString(), rows[0].id]
+        ).catch(() => undefined);
+        comeback = { tokens: 2000, xp: 100, multiplierEndsAt: endsAt.toISOString() };
+        const { emitToUser } = await import('../sockets');
+        emitToUser(rows[0].id, 'user:comeback', comeback);
+        await pool.query(
+          `INSERT INTO win_feed (user_id, kind, amount_tokens, detail) VALUES ($1, 'comeback', 2000, $2)`,
+          [rows[0].id, `🎉 Welcome back! Here's 2,000 tokens + 2x XP for 24h!`]
+        ).catch(() => undefined);
+      }
+    } catch { /* comeback is best-effort */ }
+    await pool.query('UPDATE users SET last_login_at = now() WHERE id = $1', [rows[0].id]).catch(() => undefined);
+
     const fresh = await pool.query('SELECT * FROM users WHERE id = $1', [rows[0].id]);
-    res.json({ token: signToken(rows[0].id), user: toUser(fresh.rows[0]), dailyReward: daily.awarded ? { streak: daily.streak, xp: daily.xp } : null });
+    res.json({ token: signToken(rows[0].id), user: toUser(fresh.rows[0]), dailyReward: daily.awarded ? { streak: daily.streak, xp: daily.xp } : null, comeback });
   })
 );
 

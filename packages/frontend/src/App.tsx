@@ -2,42 +2,6 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { LangProvider } from './i18n/LangContext';
 import Layout from './components/Layout';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import ChatsPage from './pages/ChatsPage';
-import ChatRoomPage from './pages/ChatRoomPage';
-import VideoPage from './pages/VideoPage';
-import LeaderboardPage from './pages/LeaderboardPage';
-import HallOfFamePage from './pages/HallOfFamePage';
-const AvatarStudioPage = lazy(() => import('./pages/AvatarStudioPage'));
-import ThroneRoomPage from './pages/ThroneRoomPage';
-import FameTrackerPage from './pages/FameTrackerPage';
-import FriendsPage from './pages/FriendsPage';
-import LifestylePage from './pages/LifestylePage';
-import ShopPage from './pages/ShopPage';
-import CompetitionPage from './pages/CompetitionPage';
-import SocialPage from './pages/SocialPage';
-import StoriesPage from './pages/StoriesPage';
-import VaultPage from './pages/VaultPage';
-import VisionPage from './pages/VisionPage';
-import SettingsPage from './pages/SettingsPage';
-import RanksPage, { RankBadge } from './pages/RanksPage';
-import SeasonsPage from './pages/SeasonsPage';
-import { BattlesPage, BattleRoomPage } from './pages/BattlePage';
-import CrewsPage from './pages/CrewsPage';
-import ArtistsPage from './pages/ArtistsPage';
-import GamblePage from './pages/GamblePage';
-import FactoryPage from './pages/FactoryPage';
-import LobbyPage from './pages/LobbyPage';
-import HomePage from './pages/HomePage';
-import InsightsPage from './pages/InsightsPage';
-import PrivacyPage from './pages/PrivacyPage';
-import DJBoothPage from './pages/DJBoothPage';
-import SafetyPage from './pages/SafetyPage';
-import WalletPage from './pages/WalletPage';
-import EarningsPage from './pages/EarningsPage';
-import ProfilePage from './pages/ProfilePage';
-import ProfileEditPage from './pages/ProfileEditPage';
 import type { ReactNode } from 'react';
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -114,6 +78,59 @@ import OfflineBanner from './components/OfflineBanner';
 // Lazy-load 3D engines — keeps initial bundle lean, loads Three.js only when needed
 const EngineCanvas = lazy(() => import('./components/EngineCanvas'));
 
+// Lazy-load all pages — initial bundle only ships auth shell + chats entry point.
+// Each page loads on demand, keeping first paint under 2s on 4G.
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignupPage = lazy(() => import('./pages/SignupPage'));
+const ChatsPage = lazy(() => import('./pages/ChatsPage'));
+const ChatRoomPage = lazy(() => import('./pages/ChatRoomPage'));
+const VideoPage = lazy(() => import('./pages/VideoPage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
+const HallOfFamePage = lazy(() => import('./pages/HallOfFamePage'));
+const AvatarStudioPage = lazy(() => import('./pages/AvatarStudioPage'));
+const ThroneRoomPage = lazy(() => import('./pages/ThroneRoomPage'));
+const FameTrackerPage = lazy(() => import('./pages/FameTrackerPage'));
+const FriendsPage = lazy(() => import('./pages/FriendsPage'));
+const LifestylePage = lazy(() => import('./pages/LifestylePage'));
+const ShopPage = lazy(() => import('./pages/ShopPage'));
+const CompetitionPage = lazy(() => import('./pages/CompetitionPage'));
+const SocialPage = lazy(() => import('./pages/SocialPage'));
+const StoriesPage = lazy(() => import('./pages/StoriesPage'));
+const VaultPage = lazy(() => import('./pages/VaultPage'));
+const VisionPage = lazy(() => import('./pages/VisionPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const RanksPage = lazy(() => import('./pages/RanksPage'));
+const SeasonsPage = lazy(() => import('./pages/SeasonsPage'));
+const BattlesPage = lazy(() => import('./pages/BattlePage').then((m) => ({ default: m.BattlesPage })));
+const BattleRoomPage = lazy(() => import('./pages/BattlePage').then((m) => ({ default: m.BattleRoomPage })));
+const CrewsPage = lazy(() => import('./pages/CrewsPage'));
+const ArtistsPage = lazy(() => import('./pages/ArtistsPage'));
+const GamblePage = lazy(() => import('./pages/GamblePage'));
+const FactoryPage = lazy(() => import('./pages/FactoryPage'));
+const LobbyPage = lazy(() => import('./pages/LobbyPage'));
+const HomePage = lazy(() => import('./pages/HomePage'));
+const InsightsPage = lazy(() => import('./pages/InsightsPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const DJBoothPage = lazy(() => import('./pages/DJBoothPage'));
+const SafetyPage = lazy(() => import('./pages/SafetyPage'));
+const WalletPage = lazy(() => import('./pages/WalletPage'));
+const EarningsPage = lazy(() => import('./pages/EarningsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const ProfileEditPage = lazy(() => import('./pages/ProfileEditPage'));
+
+// Lightweight page-loading fallback — matches the app's blue brand
+function PageLoader() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <div style={{
+        width: 44, height: 44, borderRadius: '50%',
+        border: '3px solid rgba(0,150,255,0.2)', borderTopColor: '#0096ff',
+        animation: 'blueSpin 0.9s linear infinite',
+      }} />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -126,9 +143,9 @@ export default function App() {
       <LangProvider>
       <AuthProvider>
         <Routes>
-          <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
-          <Route path="/signup" element={<PublicOnly><SignupPage /></PublicOnly>} />
-          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/login" element={<PublicOnly><Suspense fallback={<PageLoader />}><LoginPage /></Suspense></PublicOnly>} />
+          <Route path="/signup" element={<PublicOnly><Suspense fallback={<PageLoader />}><SignupPage /></Suspense></PublicOnly>} />
+          <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><PrivacyPage /></Suspense>} />
           <Route
             path="/*"
             element={
@@ -138,42 +155,42 @@ export default function App() {
             }
           >
             <Route index element={<Navigate to="/chats" replace />} />
-            <Route path="chats" element={<ChatsPage />} />
-            <Route path="chats/:id" element={<ChatRoomPage />} />
-            <Route path="video" element={<VideoPage />} />
-            <Route path="leaderboard" element={<LeaderboardPage />} />
-            <Route path="hall-of-fame" element={<HallOfFamePage />} />
-            <Route path="avatar-studio" element={<AvatarStudioPage />} />
-            <Route path="throne" element={<ThroneRoomPage />} />
-            <Route path="fame" element={<FameTrackerPage />} />
-            <Route path="friends" element={<FriendsPage />} />
-            <Route path="lifestyle" element={<LifestylePage />} />
-            <Route path="shop" element={<ShopPage />} />
-            <Route path="competition" element={<CompetitionPage />} />
-            <Route path="social" element={<SocialPage />} />
-            <Route path="stories" element={<StoriesPage />} />
-            <Route path="vault" element={<VaultPage />} />
-            <Route path="vision" element={<VisionPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="ranks" element={<RanksPage />} />
-            <Route path="seasons" element={<SeasonsPage />} />
-            <Route path="battles" element={<BattlesPage />} />
-            <Route path="battles/:id" element={<BattleRoomPage />} />
-            <Route path="crews" element={<CrewsPage />} />
-            <Route path="artists" element={<ArtistsPage />} />
-            <Route path="gamble" element={<GamblePage />} />
-            <Route path="factory" element={<FactoryPage />} />
+            <Route path="chats" element={<Suspense fallback={<PageLoader />}><ChatsPage /></Suspense>} />
+            <Route path="chats/:id" element={<Suspense fallback={<PageLoader />}><ChatRoomPage /></Suspense>} />
+            <Route path="video" element={<Suspense fallback={<PageLoader />}><VideoPage /></Suspense>} />
+            <Route path="leaderboard" element={<Suspense fallback={<PageLoader />}><LeaderboardPage /></Suspense>} />
+            <Route path="hall-of-fame" element={<Suspense fallback={<PageLoader />}><HallOfFamePage /></Suspense>} />
+            <Route path="avatar-studio" element={<Suspense fallback={<PageLoader />}><AvatarStudioPage /></Suspense>} />
+            <Route path="throne" element={<Suspense fallback={<PageLoader />}><ThroneRoomPage /></Suspense>} />
+            <Route path="fame" element={<Suspense fallback={<PageLoader />}><FameTrackerPage /></Suspense>} />
+            <Route path="friends" element={<Suspense fallback={<PageLoader />}><FriendsPage /></Suspense>} />
+            <Route path="lifestyle" element={<Suspense fallback={<PageLoader />}><LifestylePage /></Suspense>} />
+            <Route path="shop" element={<Suspense fallback={<PageLoader />}><ShopPage /></Suspense>} />
+            <Route path="competition" element={<Suspense fallback={<PageLoader />}><CompetitionPage /></Suspense>} />
+            <Route path="social" element={<Suspense fallback={<PageLoader />}><SocialPage /></Suspense>} />
+            <Route path="stories" element={<Suspense fallback={<PageLoader />}><StoriesPage /></Suspense>} />
+            <Route path="vault" element={<Suspense fallback={<PageLoader />}><VaultPage /></Suspense>} />
+            <Route path="vision" element={<Suspense fallback={<PageLoader />}><VisionPage /></Suspense>} />
+            <Route path="settings" element={<Suspense fallback={<PageLoader />}><SettingsPage /></Suspense>} />
+            <Route path="ranks" element={<Suspense fallback={<PageLoader />}><RanksPage /></Suspense>} />
+            <Route path="seasons" element={<Suspense fallback={<PageLoader />}><SeasonsPage /></Suspense>} />
+            <Route path="battles" element={<Suspense fallback={<PageLoader />}><BattlesPage /></Suspense>} />
+            <Route path="battles/:id" element={<Suspense fallback={<PageLoader />}><BattleRoomPage /></Suspense>} />
+            <Route path="crews" element={<Suspense fallback={<PageLoader />}><CrewsPage /></Suspense>} />
+            <Route path="artists" element={<Suspense fallback={<PageLoader />}><ArtistsPage /></Suspense>} />
+            <Route path="gamble" element={<Suspense fallback={<PageLoader />}><GamblePage /></Suspense>} />
+            <Route path="factory" element={<Suspense fallback={<PageLoader />}><FactoryPage /></Suspense>} />
             <Route path="character-studio" element={<Navigate to="/avatar-studio" replace />} />
-            <Route path="lobby" element={<LobbyPage />} />
-            <Route path="home" element={<HomePage />} />
-            <Route path="insights" element={<InsightsPage />} />
-            <Route path="dj-booth" element={<DJBoothPage />} />
-            <Route path="safety" element={<SafetyPage />} />
-            <Route path="wallet" element={<WalletPage />} />
-            <Route path="earnings" element={<EarningsPage />} />
-            <Route path="u/:id" element={<ProfilePage />} />
+            <Route path="lobby" element={<Suspense fallback={<PageLoader />}><LobbyPage /></Suspense>} />
+            <Route path="home" element={<Suspense fallback={<PageLoader />}><HomePage /></Suspense>} />
+            <Route path="insights" element={<Suspense fallback={<PageLoader />}><InsightsPage /></Suspense>} />
+            <Route path="dj-booth" element={<Suspense fallback={<PageLoader />}><DJBoothPage /></Suspense>} />
+            <Route path="safety" element={<Suspense fallback={<PageLoader />}><SafetyPage /></Suspense>} />
+            <Route path="wallet" element={<Suspense fallback={<PageLoader />}><WalletPage /></Suspense>} />
+            <Route path="earnings" element={<Suspense fallback={<PageLoader />}><EarningsPage /></Suspense>} />
+            <Route path="u/:id" element={<Suspense fallback={<PageLoader />}><ProfilePage /></Suspense>} />
             <Route path="profile" element={<ProfileRedirect />} />
-            <Route path="profile/edit" element={<ProfileEditPage />} />
+            <Route path="profile/edit" element={<Suspense fallback={<PageLoader />}><ProfileEditPage /></Suspense>} />
             <Route path="*" element={<Navigate to="/chats" replace />} />
           </Route>
         </Routes>

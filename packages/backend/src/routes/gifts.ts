@@ -198,6 +198,22 @@ router.post(
     }
 
     res.status(201).json({ gift: shaped });
+
+    // Engagement: ticker entry + push to the receiver (best-effort, after response)
+    try {
+      const senderName = senderRes.rows[0]?.display_name || senderRes.rows[0]?.username || 'Someone';
+      const receiverName = receiverRes.rows[0]?.display_name || receiverRes.rows[0]?.username || 'someone';
+      const { publishActivity } = await import('./engagement');
+      await publishActivity(senderId, 'gift', `${senderName} sent ${receiverName} a ${gift.label} 🎁`, gift.tokenCost);
+      const { pushToUser } = await import('../services/push');
+      await pushToUser(body.receiverId, {
+        title: '🎁 You got a gift!',
+        body: `${senderName} sent you a ${gift.label} on Big Face!`,
+        url: '/chats',
+      }).catch(() => undefined);
+    } catch {
+      /* engagement is best-effort */
+    }
   })
 );
 

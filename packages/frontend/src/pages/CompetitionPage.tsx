@@ -1,15 +1,58 @@
 import { useEffect, useState } from 'react';
+import WeeklyTournamentCard from '../components/WeeklyTournamentCard';
 
 interface Tournament {
   id: string;
   name: string;
   kind: string;
+  tier: string;
+  schedule: string;
   entry_fee: number;
   prize_pool: number;
   max_players: number;
   player_count: number;
   status: string;
   starts_at: string;
+  ends_at: string;
+  seconds_left?: number;
+  my_entry?: { score: number; wins: number } | null;
+}
+
+interface PastTournament {
+  id: string;
+  name: string;
+  tier: string;
+  schedule: string;
+  prize_pool: number;
+  ends_at: string;
+  winner_name: string | null;
+  winner_color: string | null;
+}
+
+const TIER_ICONS: Record<string, string> = {
+  Rookie: '🥉',
+  Pros: '🥈',
+  Legend: '🥇',
+  Boss: '💎',
+  Masters: '👑',
+};
+
+const TIER_COLORS: Record<string, string> = {
+  Rookie: '#cd7f32',
+  Pros: '#c0c0c0',
+  Legend: '#ffd700',
+  Boss: '#00d4ff',
+  Masters: '#ff00ff',
+};
+
+function formatCountdown(totalSeconds: number): string {
+  if (totalSeconds <= 0) return 'Ending soon…';
+  const d = Math.floor(totalSeconds / 86400);
+  const h = Math.floor((totalSeconds % 86400) / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h left`;
+  if (h > 0) return `${h}h ${m}m left`;
+  return `${m}m left`;
 }
 
 interface ThroneReign {
@@ -37,7 +80,7 @@ interface Prediction {
   resolves_at: string;
 }
 
-type Tab = 'tournaments' | 'throne' | 'legends' | 'predictions';
+type Tab = 'weekly' | 'tournaments' | 'throne' | 'legends' | 'predictions';
 
 const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('bigface.token')}` });
 
@@ -46,28 +89,61 @@ const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('bigface.tok
  * Everything competitive in Big Face, all premium, no Legos.
  */
 export default function CompetitionPage() {
-  const [tab, setTab] = useState<Tab>('tournaments');
+  const [tab, setTab] = useState<Tab>('weekly');
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [pastTournaments, setPastTournaments] = useState<PastTournament[]>([]);
+  const [myTier, setMyTier] = useState('Rookie');
   const [reigns, setReigns] = useState<ThroneReign[]>([]);
   const [legends, setLegends] = useState<Legend[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [weekly, setWeekly] = useState<{
+    tournament: any; entered: boolean; myScore: number; myRank: number | null; top: any[];
+  } | null>(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = async () => {
     try {
-      const [t, r, l, p] = await Promise.all([
+      const [t, r, l, p, w, c, pt] = await Promise.all([
         fetch('/api/competition/tournaments', { headers: auth() }).then((x) => x.json()),
         fetch('/api/competition/throne/current', { headers: auth() }).then((x) => x.json()),
         fetch('/api/competition/hall-of-fame', { headers: auth() }).then((x) => x.json()),
         fetch('/api/competition/predictions/open', { headers: auth() }).then((x) => x.json()),
+        fetch('/api/engagement2/weekly', { headers: auth() }).then((x) => x.json()).catch(() => null),
+        fetch('/api/competition/tournaments/current', { headers: auth() }).then((x) => x.json()).catch(() => null),
+        fetch('/api/competition/tournaments/past', { headers: auth() }).then((x) => x.json()).catch(() => null),
       ]);
-      setTournaments(t.tournaments || []);
+      // Prefer the enriched current endpoint (has countdown + entry status + tiers)
+      if (c?.tournaments?.length) {
+        setTournaments(c.tournaments);
+        setMyTier(c.myTier || 'Rookie');
+      } else {
+        setTournaments(t.tournaments || []);
+      }
+      if (pt?.past) setPastTournaments(pt.past);
       setReigns(r.reigns || []);
       setLegends(l.legends || []);
       setPredictions(p.predictions || []);
+      if (w?.tournament) setWeekly(w);
     } catch {
       /* offline */
+    }
+  };
+
+  const joinWeekly = async () => {
+    setBusy('weekly');
+    try {
+      const res = await fetch('/api/engagement2/weekly/join', {
+        method: 'POST',
+        headers: auth(),
+      });
+      const data = await res.json();
+      setMessage(res.ok ? '🏆 You\'re in the Weekly Showdown! Earn XP all week to climb!' : data.error || 'Failed to join');
+      if (res.ok) load();
+    } catch {
+      setMessage('Connection failed');
+    } finally {
+      setBusy(null);
     }
   };
 
@@ -154,20 +230,35 @@ export default function CompetitionPage() {
       )}
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-        {(['tournaments', 'throne', 'legends', 'predictions'] as Tab[]).map((t) => (
+        {(['weekly', 'tournaments', 'throne', 'legends', 'predictions'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={tab === t ? 'btn' : 'btn btn-ghost'}
             style={{ textTransform: 'capitalize' }}
           >
-            {t === 'tournaments' ? '🎯 Tournaments' : t === 'throne' ? '👑 Throne' : t === 'legends' ? '⭐ Legends' : '🔮 Predictions'}
+            {t === 'weekly' ? '🏆 Weekly' : t === 'tournaments' ? '🎯 Tournaments' : t === 'throne' ? '👑 Throne' : t === 'legends' ? '⭐ Legends' : '🔮 Predictions'}
           </button>
         ))}
       </div>
 
+      {tab === 'weekly' && (
+        <WeeklyTournamentCard weekly={weekly} onJoin={joinWeekly} busy={busy === 'weekly'} />
+      )}
+
       {tab === 'tournaments' && (
         <div style={{ display: 'grid', gap: '1rem', maxWidth: 600, margin: '0 auto' }}>
+          {/* My tournament tier */}
+          <div className="card" style={{ padding: '1rem', textAlign: 'center', borderColor: TIER_COLORS[myTier] || '#c9a227' }}>
+            <span style={{ fontSize: '1.5rem' }}>{TIER_ICONS[myTier] || '🥉'}</span>
+            <div style={{ fontWeight: 800, marginTop: '0.25rem' }}>
+              Your Tournament Tier: <span style={{ color: TIER_COLORS[myTier] || '#c9a227' }}>{myTier}</span>
+            </div>
+            <div className="form-note" style={{ fontSize: '0.8rem' }}>
+              Win a tournament to climb: Rookie → Pros → Legend → Boss → Masters
+            </div>
+          </div>
+
           {tournaments.length === 0 && (
             <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
               <p className="form-note">No tournaments right now. Check back soon!</p>
@@ -175,21 +266,74 @@ export default function CompetitionPage() {
           )}
           {tournaments.map((t) => (
             <div key={t.id} className="card glow-gold" style={{ padding: '1.5rem' }}>
-              <h3 style={{ margin: '0 0 0.5rem' }}>🎯 {t.name}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <h3 style={{ margin: 0 }}>🎯 {t.name}</h3>
+                <span style={{
+                  background: TIER_COLORS[t.tier] || '#666',
+                  color: '#000',
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '1rem',
+                }}>
+                  {TIER_ICONS[t.tier] || '🥉'} {t.tier || 'Rookie'}
+                </span>
+              </div>
+              {t.schedule && (
+                <div className="form-note" style={{ marginBottom: '0.5rem', textTransform: 'capitalize' }}>
+                  {t.schedule === 'weekend' ? '⚡ Weekend Tournament' : '📅 Weekly Tournament'}
+                  {t.seconds_left != null && (
+                    <span style={{ color: 'var(--gold)', fontWeight: 700, marginLeft: '0.5rem' }}>
+                      ⏱️ {formatCountdown(t.seconds_left)}
+                    </span>
+                  )}
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                 <span>💰 Prize: <strong style={{ color: 'var(--gold)' }}>{t.prize_pool.toLocaleString()}</strong></span>
                 <span>🎫 Entry: {t.entry_fee.toLocaleString()}</span>
                 <span>👥 {t.player_count}/{t.max_players}</span>
               </div>
+              {t.my_entry && (
+                <div style={{ marginBottom: '1rem', padding: '0.5rem', background: 'rgba(201,162,39,0.1)', borderRadius: '0.5rem', textAlign: 'center' }}>
+                  ✅ You're in! Score: <strong>{t.my_entry.score.toLocaleString()}</strong> • Wins: <strong>{t.my_entry.wins}</strong>
+                </div>
+              )}
               <button
                 className="btn btn-block"
                 onClick={() => enterTournament(t.id, t.entry_fee)}
-                disabled={busy === t.id || t.status !== 'open'}
+                disabled={busy === t.id || t.status !== 'open' || !!t.my_entry}
               >
-                {busy === t.id ? 'Entering…' : t.status === 'open' ? 'Enter Tournament' : 'In Progress'}
+                {busy === t.id ? 'Entering…' : t.my_entry ? 'Entered ✓' : t.status === 'open' ? 'Enter Tournament' : 'In Progress'}
               </button>
             </div>
           ))}
+
+          {/* Past champions */}
+          {pastTournaments.length > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <h3 style={{ textAlign: 'center', marginBottom: '1rem' }}>🏆 Past Champions</h3>
+              {pastTournaments.map((p) => (
+                <div key={p.id} className="card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '2rem' }}>{TIER_ICONS[p.tier] || '🏆'}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700 }}>{p.name}</div>
+                    <div className="form-note" style={{ fontSize: '0.8rem', textTransform: 'capitalize' }}>
+                      {p.schedule} • {p.tier} tier • {new Date(p.ends_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 800, color: p.winner_color || 'var(--gold)' }}>
+                      {p.winner_name || 'No winner'}
+                    </div>
+                    <div className="form-note" style={{ fontSize: '0.8rem' }}>
+                      💰 {Number(p.prize_pool).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

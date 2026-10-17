@@ -161,12 +161,11 @@ export default function WalletPage() {
 
       {!loading && !error && (
         <>
-          <div className="card" style={{ marginBottom: '1.4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div className="form-note">Token balance</div>
-              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--gold)' }}>💰 {balance ?? 0}</div>
-            </div>
-            <div className="form-note" style={{ textAlign: 'right' }}>
+          <div className="home-hero" style={{ marginBottom: '1.4rem' }}>
+            <div className="hero-kicker">💰 Your Vault</div>
+            <div className="stat-hero">💰 {(balance ?? 0).toLocaleString()}</div>
+            <div className="stat-hero-label">Tokens in your empire</div>
+            <div className="form-note" style={{ marginTop: '0.8rem', textAlign: 'right' }}>
               100 tokens = $1.00<br />in creator payouts
             </div>
           </div>

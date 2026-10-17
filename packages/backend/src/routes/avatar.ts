@@ -145,4 +145,109 @@ router.post(
   })
 );
 
+// ============ ABILITIES ============
+
+function toAbility(row: any) {
+  return {
+    id: String(row.id),
+    key: row.key,
+    name: row.name,
+    icon: row.icon,
+    description: row.description,
+    minLevel: Number(row.min_level),
+    effectType: row.effect_type,
+    effectValue: Number(row.effect_value),
+    effectLabel: row.effect_label,
+    cssClass: row.css_class,
+  };
+}
+
+// List all abilities + user's unlocked/equipped status.
+// Auto-unlocks any abilities the user now qualifies for (by level).
+router.get(
+  '/abilities',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const userId = req.user!.id;
+    const { rows: u } = await pool.query('SELECT level FROM users WHERE id = $1', [userId]);
+    const level = Number(u[0]?.level ?? 1);
+
+    // Auto-unlock newly qualified abilities
+    await pool.query(
+      `INSERT INTO user_abilities (user_id, ability_id)
+       SELECT $1, a.id FROM abilities a
+       WHERE a.min_level <= $2
+         AND NOT EXISTS (
+           SELECT 1 FROM user_abilities ua
+           WHERE ua.user_id = $1 AND ua.ability_id = a.id
+         )`,
+      [userId, level]
+    );
+
+    const { rows } = await pool.query(
+      `SELECT a.*, ua.equipped, ua.unlocked_at IS NOT NULL AS unlocked
+       FROM abilities a
+       LEFT JOIN user_abilities ua ON ua.ability_id = a.id AND ua.user_id = $1
+       ORDER BY a.sort_order`,
+      [userId]
+    );
+    res.json({
+      abilities: rows.map((r) => ({ ...toAbility(r), unlocked: Boolean(r.unlocked), equipped: Boolean(r.equipped) })),
+    });
+  })
+);
+
+const equipAbilitySchema = z.object({ abilityKey: z.string().min(1) });
+
+// Equip an unlocked ability (only one equipped at a time — it's your aura).
+router.post(
+  '/abilities/equip',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { abilityKey } = equipAbilitySchema.parse(req.body);
+    const userId = req.user!.id;
+    const { rows } = await pool.query('SELECT * FROM abilities WHERE key = $1', [abilityKey]);
+    if (!rows.length) throw new HttpError(404, 'Ability not found');
+    const { rows: u } = await pool.query('SELECT level FROM users WHERE id = $1', [userId]);
+    const level = Number(u[0]?.level ?? 1);
+    if (level < Number(rows[0].min_level)) throw new HttpError(403, `Requires level ${rows[0].min_level}`);
+    const owned = await pool.query(
+      'SELECT 1 FROM user_abilities WHERE user_id = $1 AND ability_id = $2',
+      [userId, rows[0].id]
+    );
+    if (!owned.rows.length) throw new HttpError(403, 'Ability not unlocked yet');
+
+    // One aura at a time
+    await pool.query('UPDATE user_abilities SET equipped = false WHERE user_id = $1', [userId]);
+    await pool.query(
+      'UPDATE user_abilities SET equipped = true WHERE user_id = $1 AND ability_id = $2',
+      [userId, rows[0].id]
+    );
+    res.json({ ok: true, ability: toAbility(rows[0]) });
+  })
+);
+
+router.post(
+  '/abilities/unequip',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    await pool.query('UPDATE user_abilities SET equipped = false WHERE user_id = $1', [req.user!.id]);
+    res.json({ ok: true });
+  })
+);
+
+// Get a user's equipped ability (public — shown on profiles).
+router.get(
+  '/abilities/equipped/:userId',
+  asyncHandler(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT a.* FROM abilities a
+       JOIN user_abilities ua ON ua.ability_id = a.id
+       WHERE ua.user_id = $1 AND ua.equipped = true LIMIT 1`,
+      [req.params.userId]
+    );
+    res.json({ ability: rows.length ? toAbility(rows[0]) : null });
+  })
+);
+
 export default router;

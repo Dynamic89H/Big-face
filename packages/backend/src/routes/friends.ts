@@ -156,6 +156,26 @@ router.post(
       [me, other]
     );
     await awardXp(me, 2, 'friend_request_sent').catch(() => undefined);
+
+    // Engagement: ticker + live socket + push for the recipient
+    try {
+      const { rows: senderRows } = await pool.query(
+        'SELECT display_name, username FROM users WHERE id = $1', [me]
+      );
+      const senderName = senderRows[0]?.display_name || senderRows[0]?.username || 'Someone';
+      const { publishActivity } = await import('./engagement');
+      await publishActivity(me, 'friend_request', `${senderName} sent a friend request`);
+      const { emitToUser } = await import('../sockets');
+      emitToUser(other, 'friend:request', { fromUserId: me, fromName: senderName });
+      const { pushToUser } = await import('../services/push');
+      await pushToUser(other, {
+        title: '🤝 New friend request',
+        body: `${senderName} wants to be friends on Big Face!`,
+        url: '/friends',
+      }).catch(() => undefined);
+    } catch {
+      /* engagement is best-effort */
+    }
     res.json({ ok: true });
   })
 );

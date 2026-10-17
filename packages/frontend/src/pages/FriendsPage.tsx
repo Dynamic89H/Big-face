@@ -4,6 +4,7 @@ import { friendsApi, roomsApi, usersApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { User } from '../types';
 import Avatar, { facePhotoOf } from '../components/Avatar';
+import GrandLoader, { GrandEmpty } from '../components/GrandStates';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 function UserRow({ person, children }: { person: User; children?: React.ReactNode }) {
@@ -156,7 +157,7 @@ export default function FriendsPage() {
         <p className="page-sub">Your people. Add friends, accept requests, start chatting.</p>
       </div>
 
-      {loading && <div className="loading-wrap"><div className="spinner" /><p>Finding your people…</p></div>}
+      {loading && <GrandLoader text="Finding your people" />}
       {error && !loading && (
         <div className="error-wrap">
           <p>😕 {error}</p>
@@ -227,7 +228,11 @@ export default function FriendsPage() {
                   Active players you haven't connected with yet.
                 </p>
                 {discoverUsers.length === 0 ? (
-                  <p className="form-note">No suggestions right now. Check back later!</p>
+                  <GrandEmpty
+                    icon="🔍"
+                    title="No new faces right now"
+                    copy="Check back soon — new players join Big Face every day. Your next rival or best friend could walk in any minute."
+                  />
                 ) : (
                   discoverUsers.map((p) => (
                     <UserRow key={p.id} person={p}>
@@ -294,9 +299,13 @@ export default function FriendsPage() {
           <div className="card" style={{ marginBottom: '1.2rem' }}>
             <h3 style={{ margin: '0 0 0.4rem' }}>👥 My friends ({friends.length})</h3>
             {friends.length === 0 ? (
-              <p className="form-note">
-                No friends yet. Visit someone's profile and hit <strong>Add Friend</strong> — you'll earn +2 XP per request.
-              </p>
+              <GrandEmpty
+                icon="👥"
+                title="Your circle starts here"
+                copy="No friends yet. Visit someone's profile and hit Add Friend — you'll earn +2 XP per request, and the grind is better together."
+                cta="Discover People"
+                onCta={() => document.querySelector('[data-tab="discover"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))}
+              />
             ) : (
               friends.map((f) => (
                 <UserRow key={f.id} person={f}>
