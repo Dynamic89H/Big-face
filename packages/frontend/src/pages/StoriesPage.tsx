@@ -18,7 +18,7 @@ interface StoryGroup {
   stories: Story[];
 }
 
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('bigface.token')}` });
 
 /**
  * StoriesPage — 24-hour disappearing stories, Instagram-style.
@@ -204,7 +204,7 @@ export default function StoriesPage() {
                       fetch(`/api/stories/${current.id}/reply`, {
                         method: 'POST',
                         headers: {
-                          Authorization: `Bearer ${localStorage.getItem('token')}`,
+                          Authorization: `Bearer ${localStorage.getItem('bigface.token')}`,
                           'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({ message: msg }),

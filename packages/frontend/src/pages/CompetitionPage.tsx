@@ -39,7 +39,7 @@ interface Prediction {
 
 type Tab = 'tournaments' | 'throne' | 'legends' | 'predictions';
 
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('bigface.token')}` });
 
 /**
  * CompetitionPage — tournaments, throne battles, hall of fame, predictions.

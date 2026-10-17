@@ -10,7 +10,7 @@ interface VaultStatus {
   recentWinners: { display_name: string; profile_color: string; amount: number; won_at: string }[];
 }
 
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('bigface.token')}` });
 
 /**
  * VaultPage — The Big Face Vault. Community jackpot.

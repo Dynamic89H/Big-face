@@ -27,7 +27,7 @@ interface CreatorFund {
 
 type Tab = 'watch' | 'heist' | 'creators' | 'shoutout';
 
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('bigface.token')}` });
 
 /**
  * SocialPage — watch parties, crew heists, creator fund, shoutouts.

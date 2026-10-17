@@ -36,7 +36,7 @@ export default function WinFeedTicker() {
       }
       try {
         const res = await fetch('/api/engagement/feed?limit=10', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem('bigface.token')}` },
         });
         if (res.ok) {
           const data = await res.json();

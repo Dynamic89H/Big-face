@@ -23,7 +23,7 @@ export default function SeasonsPage() {
 
   useEffect(() => {
     fetch('/api/seasons/current', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('bigface.token')}` },
     })
       .then((r) => r.json())
       .then(setData)

@@ -20,7 +20,7 @@ export default function SpinWheel() {
   const loadStatus = async () => {
     try {
       const res = await fetch('/api/engagement/spin/status', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('bigface.token')}` },
       });
       if (res.ok) setStatus(await res.json());
     } catch {
@@ -45,7 +45,7 @@ export default function SpinWheel() {
     try {
       const res = await fetch('/api/engagement/spin', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('bigface.token')}` },
       });
       const data = await res.json();
       // Show result after spin animation

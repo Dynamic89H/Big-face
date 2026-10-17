@@ -44,7 +44,7 @@ export default function WelcomeFlow({ onDone }: { onDone: () => void }) {
     try {
       const res = await fetch('/api/engagement/welcome-bonus', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('bigface.token')}` },
       });
       if (res.ok) {
         setClaimed(true);

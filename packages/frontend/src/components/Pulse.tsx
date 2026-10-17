@@ -20,7 +20,7 @@ export default function Pulse() {
   const load = async () => {
     try {
       const res = await fetch('/api/pulse', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('bigface.token')}` },
       });
       if (res.ok) {
         const data = await res.json();

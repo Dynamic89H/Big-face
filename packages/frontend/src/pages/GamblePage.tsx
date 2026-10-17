@@ -179,7 +179,7 @@ export default function GamblePage() {
       // Load hot games
       try {
         const res = await fetch('/api/gamble/hot', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem('bigface.token')}` },
         });
         if (res.ok) {
           const data = await res.json();

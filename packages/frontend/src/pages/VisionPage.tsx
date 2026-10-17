@@ -52,7 +52,7 @@ interface Clip {
 
 type Tab = 'live' | 'spaces' | 'market' | 'events' | 'clips';
 
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('bigface.token')}` });
 const json = (b: unknown) => ({ ...auth(), 'Content-Type': 'application/json' });
 
 /**
