@@ -29,6 +29,7 @@ export default function ChatsPage() {
   const [candidates, setCandidates] = useState<User[]>([]);
   const [dmError, setDmError] = useState<string | null>(null);
   const [startingDm, setStartingDm] = useState<string | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -48,12 +49,13 @@ export default function ChatsPage() {
   };
 
   const joinPublicRoom = async (roomId: string) => {
+    setJoinError(null);
     try {
       await roomsApi.join(roomId);
       await load();
       navigate(`/chats/${roomId}`);
-    } catch {
-      /* join failed */
+    } catch (e) {
+      setJoinError(e instanceof Error ? e.message : 'Could not join this room. Try again.');
     }
   };
 
@@ -169,7 +171,7 @@ export default function ChatsPage() {
                   {r.lastMessageAt ? `Last activity ${timeAgo(r.lastMessageAt)}` : 'No messages yet — say hi!'}
                 </div>
               </div>
-              {r.unreadCount > 0 && <span className="unread-badge">{r.unreadCount}</span>}
+              {r.unreadCount > 0 && <span className="unread-badge">{r.unreadCount > 99 ? '99+' : r.unreadCount}</span>}
             </div>
           ))}
         </div>
@@ -181,6 +183,11 @@ export default function ChatsPage() {
           <p className="form-note" style={{ margin: '0 0.6rem 0.6rem' }}>
             Jump in, start talking. Hosts can remove anyone they don't want in their room.
           </p>
+          {joinError && (
+            <p className="form-note" style={{ color: 'var(--danger, #ff5c5c)', margin: '0 0.6rem 0.6rem' }}>
+              ⚠️ {joinError}
+            </p>
+          )}
           {publicRooms.map((r) => (
             <div key={r.id} className="room-item">
               <Avatar displayName={r.name} profileColor="#0096ff" size="sm" />
@@ -240,7 +247,13 @@ export default function ChatsPage() {
                 value={dmQuery}
                 onChange={(e) => setDmQuery(e.target.value)}
                 placeholder="Type at least 2 characters…"
-                autoFocus
+                ref={(el) => {
+                  // Autofocus on desktop only — on touch devices it pops the
+                  // keyboard and covers the modal.
+                  if (el && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                    el.focus();
+                  }
+                }}
               />
             </div>
             {dmError && <div className="form-error">{dmError}</div>}

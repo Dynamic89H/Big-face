@@ -71,8 +71,6 @@ function Toggle({ label, desc, value, onChange }: {
   );
 }
 
-export default function SettingsPage() {
-
 // Password field with show/hide toggle — defined OUTSIDE SettingsPage so
 // React doesn't remount the input on every keystroke (which drops the keyboard).
 function PwField({ index, placeholder, value, onChange, autoComplete, showPw, setShowPw }: {

@@ -48,6 +48,24 @@ export default function ChatRoomPage() {
   const [reportMsg, setReportMsg] = useState<string | null>(null);
   const [newMsgCount, setNewMsgCount] = useState(0);
 
+  // Close the message menu on outside click or Escape.
+  useEffect(() => {
+    if (!menuFor) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest('.msg-menu-btn') && !t.closest('.msg-menu-pop')) setMenuFor(null);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuFor(null); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuFor]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<number | null>(null);
@@ -108,7 +126,7 @@ export default function ChatRoomPage() {
       if (stick) {
         requestAnimationFrame(() => scrollToBottom());
         setNewMsgCount(0);
-      } else if (p.message.senderId !== user?.id) {
+      } else if (p.message.sender.id !== user?.id) {
         // User is scrolled up — show the "new messages" pill
         setNewMsgCount((c) => c + 1);
       }
@@ -427,12 +445,12 @@ export default function ChatRoomPage() {
                           {r.emoji} {r.count}
                         </button>
                       ))}
-                      <button className="reaction-pill" onClick={() => toggleReaction(m, '❤️')} title="Quick react ❤️">＋</button>
+                      <button className="reaction-pill reaction-add" onClick={() => toggleReaction(m, '❤️')} title="Quick react ❤️">＋</button>
                     </div>
                   )}
                   {m.reactions.length === 0 && (
                     <div className="reactions">
-                      <button className="reaction-pill" onClick={() => toggleReaction(m, '❤️')} title="React ❤️">＋</button>
+                      <button className="reaction-pill reaction-add" onClick={() => toggleReaction(m, '❤️')} title="React ❤️">＋</button>
                     </div>
                   )}
                   {own && seenByOthers > 0 && (
@@ -447,7 +465,7 @@ export default function ChatRoomPage() {
                   ⋯
                 </button>
                 {menuFor === m.id && (
-                  <div className="card" style={{ position: 'absolute', top: '1.8rem', right: '0.4rem', zIndex: 20, padding: '0.4rem', minWidth: 150 }}>
+                  <div className="card msg-menu-pop" style={{ position: 'absolute', top: '1.8rem', right: '0.4rem', zIndex: 20, padding: '0.4rem', minWidth: 150 }}>
                     <button className="btn btn-ghost btn-sm btn-block" style={{ marginBottom: '0.3rem' }}
                       onClick={() => { if (m.body) navigator.clipboard?.writeText(m.body).catch(() => undefined); setMenuFor(null); }}>
                       📋 Copy text

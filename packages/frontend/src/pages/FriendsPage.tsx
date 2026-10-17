@@ -144,8 +144,8 @@ export default function FriendsPage() {
     try {
       const { room } = await roomsApi.create({ name: friend.displayName, memberIds: [friend.id] });
       navigate(`/chats/${room.id}`);
-    } catch {
-      navigate('/chats');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : `Could not start a chat with ${friend.displayName}.`);
     }
   };
 
