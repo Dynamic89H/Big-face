@@ -165,11 +165,8 @@ export async function awardDailyLoginXp(userId: string): Promise<{ awarded: bool
 
   // 7-day streak bonus: 100 tokens.
   if (streak % 7 === 0) {
-    await pool.query(
-      `INSERT INTO wallet_transactions (user_id, kind, amount, reason)
-       VALUES ($1, 'credit', 100, 'weekly_streak_bonus')`,
-      [userId]
-    ).catch(() => undefined);
+    const { addTokens } = await import('./tokens');
+    await addTokens(userId, 100, 'bonus', { reference: 'weekly_streak_bonus' }).catch(() => undefined);
   }
 
   return { awarded: true, streak, xp };

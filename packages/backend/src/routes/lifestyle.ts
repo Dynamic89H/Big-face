@@ -70,31 +70,19 @@ router.post(
 
     // Check token balance.
     const { rows: bal } = await pool.query(
-      `SELECT COALESCE(SUM(CASE WHEN kind = 'credit' THEN amount ELSE -amount END), 0) AS balance
-       FROM wallet_transactions WHERE user_id = $1`,
-      [me]
+      'SELECT token_balance FROM users WHERE id = $1', [me]
     );
-    const balance = Number(bal[0]?.balance ?? 0);
+    const balance = Number(bal[0]?.token_balance ?? 0);
     if (balance < asset.token_price) {
       throw new HttpError(402, `Not enough tokens (need ${asset.token_price})`);
     }
 
-    await pool.query('BEGIN');
-    try {
-      await pool.query(
-        `INSERT INTO wallet_transactions (user_id, kind, amount, reason)
-         VALUES ($1, 'debit', $2, $3)`,
-        [me, asset.token_price, `lifestyle_purchase:${asset.name}`]
-      );
-      await pool.query(
-        'INSERT INTO user_lifestyle_assets (user_id, asset_id) VALUES ($1, $2)',
-        [me, asset.id]
-      );
-      await pool.query('COMMIT');
-    } catch (e) {
-      await pool.query('ROLLBACK');
-      throw e;
-    }
+    const { addTokens } = await import('../services/tokens');
+    await addTokens(me, -asset.token_price, 'purchase', { reference: `lifestyle_purchase:${asset.name}` });
+    await pool.query(
+      'INSERT INTO user_lifestyle_assets (user_id, asset_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [me, asset.id]
+    );
 
     await awardXp(me, 30, 'lifestyle_purchase').catch(() => undefined);
     res.json({ ok: true, name: asset.name });
@@ -160,22 +148,12 @@ router.post(
     }
 
     const col = category === 'rims' ? 'custom_rims' : category === 'paint' ? 'custom_paint' : 'custom_interior';
-    await pool.query('BEGIN');
-    try {
-      await pool.query(
-        `INSERT INTO wallet_transactions (user_id, kind, amount, reason)
-         VALUES ($1, 'debit', $2, $3)`,
-        [me, item.token_price, `custom_shop:${item.name}`]
-      );
-      await pool.query(
-        `UPDATE user_lifestyle_assets SET ${col} = $1 WHERE user_id = $2 AND asset_id = $3`,
-        [item.name, me, req.params.assetId]
-      );
-      await pool.query('COMMIT');
-    } catch (e) {
-      await pool.query('ROLLBACK');
-      throw e;
-    }
+    const { addTokens: addShopTokens } = await import('../services/tokens');
+    await addShopTokens(me, -item.token_price, 'purchase', { reference: `custom_shop:${item.name}` });
+    await pool.query(
+      `UPDATE user_lifestyle_assets SET ${col} = $1 WHERE user_id = $2 AND asset_id = $3`,
+      [item.name, me, req.params.assetId]
+    );
 
     await awardXp(me, 15, 'car_customized').catch(() => undefined);
     res.json({ ok: true, applied: item.name });

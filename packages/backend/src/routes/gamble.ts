@@ -191,8 +191,17 @@ router.post(
     );
     const balance = Number(bal[0]?.token_balance || 0);
 
-    // Broke-state rescue: at 0 tokens, give 2,000 on the house instead of a dead end
+    // Broke-state rescue: at 0 tokens, give 2,000 on the house — max once per 24h
     if (balance < MIN_BET) {
+      const { rows: recentRescue } = await pool.query(
+        `SELECT id FROM token_transactions
+         WHERE user_id = $1 AND kind = 'bonus' AND reference = 'broke_rescue'
+         AND created_at > now() - interval '24 hours' LIMIT 1`,
+        [userId]
+      );
+      if (recentRescue.length > 0) {
+        throw new HttpError(400, 'Out of tokens. Come back tomorrow for a rescue refill, or spin the daily wheel!');
+      }
       await addTokens(userId, 2000, 'bonus', { reference: 'broke_rescue' });
       // Continue with the roll using the rescue tokens
     }
@@ -218,9 +227,11 @@ router.post(
     const playerRoll = 1 + Math.floor(Math.random() * 6);
     let houseRoll: number;
     if (isNewPlayer) {
-      // Guaranteed win: house rolls lower
-      houseRoll = Math.max(1, playerRoll - 1 - Math.floor(Math.random() * 2));
-      if (houseRoll >= playerRoll) houseRoll = Math.max(1, playerRoll - 1);
+      // Guaranteed win: house always rolls strictly lower (no ties)
+      houseRoll = Math.max(1, playerRoll - 1);
+      if (playerRoll > 1 && Math.random() < 0.5) {
+        houseRoll = Math.max(1, playerRoll - 2);
+      }
     } else {
       houseRoll = 1 + Math.floor(Math.random() * 6);
       while (houseRoll === playerRoll) {

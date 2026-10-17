@@ -72,8 +72,17 @@ router.post(
       body: parsed.body,
       attachments: parsed.attachments as Attachment[] | undefined,
     });
-    // Message sent: +5 XP.
-    const xpRes = await awardXp(req.user!.id, 5, 'message sent');
+    // Message sent: +5 XP, rate-limited to 50 XP/hour to prevent botting.
+    const { rows: recentXp } = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0)::int AS total FROM xp_transactions
+       WHERE user_id = $1 AND reason = 'message sent'
+       AND created_at > now() - interval '1 hour'`,
+      [req.user!.id]
+    ).catch(() => ({ rows: [{ total: 0 }] }));
+    let xpRes = { leveledUp: false, level: 0, xp: 0 };
+    if (Number(recentXp[0]?.total || 0) < 50) {
+      xpRes = await awardXp(req.user!.id, 5, 'message sent');
+    }
     emitToRoom(req.params.id, 'message:new', { message });
     maybeEmitRankUp(req.user!.id, xpRes);
     res.status(201).json({ message });

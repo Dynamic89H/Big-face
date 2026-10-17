@@ -76,11 +76,8 @@ router.post(
           await awardXp(ref[0].id, 50, 'referral_bonus').catch(() => undefined);
           await awardXp(user.id, 25, 'referral_welcome').catch(() => undefined);
           // Bonus tokens for the referrer.
-          await pool.query(
-            `INSERT INTO wallet_transactions (user_id, kind, amount, reason)
-             VALUES ($1, 'credit', 100, 'referral_bonus')`,
-            [ref[0].id]
-          ).catch(() => undefined);
+          const { addTokens: addRefTokens } = await import('../services/tokens');
+          await addRefTokens(ref[0].id, 100, 'bonus', { reference: 'referral_bonus' }).catch(() => undefined);
         }
       } catch {
         /* referral is best-effort */
