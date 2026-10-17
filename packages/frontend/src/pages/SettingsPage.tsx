@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -118,12 +118,13 @@ export default function SettingsPage() {
   const [pwConfirm, setPwConfirm] = useState('');
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pwBusy, setPwBusy] = useState(false);
-  const [showPw, setShowPw] = useState([false, false, false]);
+  const [showPw, setShowPw] = useState([false, false, false, false]);
   const [delStep, setDelStep] = useState<0 | 1 | 2>(0);
   const [delPw, setDelPw] = useState('');
   const [delConfirm, setDelConfirm] = useState('');
   const [delMsg, setDelMsg] = useState<string | null>(null);
   const [delBusy, setDelBusy] = useState(false);
+  const savedTimer = useRef<number | null>(null);
 
   const deleteAccount = async () => {
     setDelMsg(null);
@@ -189,36 +190,13 @@ export default function SettingsPage() {
     setSettings(next);
     localStorage.setItem('bigface.settings', JSON.stringify(next));
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    if (savedTimer.current) window.clearTimeout(savedTimer.current);
+    savedTimer.current = window.setTimeout(() => setSaved(false), 2000);
   };
 
-  const Toggle = ({ label, desc, value, onChange }: {
-    label: string; desc: string; value: boolean; onChange: (v: boolean) => void;
-  }) => (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '1rem 0', borderBottom: '1px solid var(--border)',
-    }}>
-      <div>
-        <div style={{ fontWeight: 700 }}>{label}</div>
-        <div className="form-note" style={{ fontSize: '0.85rem' }}>{desc}</div>
-      </div>
-      <button
-        onClick={() => onChange(!value)}
-        style={{
-          width: 50, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-          background: value ? 'var(--gold)' : 'rgba(255,255,255,0.2)',
-          position: 'relative', transition: 'background 0.2s',
-        }}
-      >
-        <div style={{
-          width: 22, height: 22, borderRadius: '50%', background: 'white',
-          position: 'absolute', top: 3, left: value ? 25 : 3,
-          transition: 'left 0.2s',
-        }} />
-      </button>
-    </div>
-  );
+  useEffect(() => () => {
+    if (savedTimer.current) window.clearTimeout(savedTimer.current);
+  }, []);
 
   return (
     <div className="page" style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -412,7 +390,7 @@ export default function SettingsPage() {
                   onChange={(e) => setDelConfirm(e.target.value)}
                   autoComplete="off"
                 />
-                <PwField index={0} placeholder="Your password" value={delPw}
+                <PwField index={3} placeholder="Your password" value={delPw}
                   onChange={setDelPw} autoComplete="current-password"
                   showPw={showPw} setShowPw={setShowPw} />
                 <div style={{ display: 'flex', gap: '0.75rem' }}>

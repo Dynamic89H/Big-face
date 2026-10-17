@@ -53,32 +53,47 @@ export default function RealisticAvatar3D({
 
     const stage = new THREE.Group();
 
-    // Character photo — floating naturally, NO frame
+    // Character photo — floating naturally, NO frame.
+    // Has an onError path: if the image 404s, render a gold silhouette disc
+    // so the stage never sits empty.
     const loader = new THREE.TextureLoader();
-    loader.load(characterImg, (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      const aspect = tex.image.width / tex.image.height;
-      const h = 3.4;
-      const w = h * aspect;
+    loader.load(
+      characterImg,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        const aspect = tex.image.width / tex.image.height;
+        const h = 3.4;
+        const w = h * aspect;
 
-      const photoMat = new THREE.MeshStandardMaterial({
-        map: tex, roughness: 0.5, metalness: 0.05,
-        transparent: true,
-      });
-      const photo = new THREE.Mesh(new THREE.PlaneGeometry(w, h), photoMat);
-      stage.add(photo);
+        const photoMat = new THREE.MeshStandardMaterial({
+          map: tex, roughness: 0.5, metalness: 0.05,
+          transparent: true,
+        });
+        const photo = new THREE.Mesh(new THREE.PlaneGeometry(w, h), photoMat);
+        stage.add(photo);
 
-      // Soft glow behind character (not a frame)
-      const halo = new THREE.Mesh(
-        new THREE.PlaneGeometry(w + 0.6, h + 0.6),
-        new THREE.MeshBasicMaterial({
-          color: 0xc9a227, transparent: true, opacity: 0.12,
-          blending: THREE.AdditiveBlending, depthWrite: false,
-        })
-      );
-      halo.position.z = -0.2;
-      stage.add(halo);
-    });
+        // Soft glow behind character (not a frame)
+        const halo = new THREE.Mesh(
+          new THREE.PlaneGeometry(w + 0.6, h + 0.6),
+          new THREE.MeshBasicMaterial({
+            color: 0xc9a227, transparent: true, opacity: 0.12,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        halo.position.z = -0.2;
+        stage.add(halo);
+      },
+      undefined,
+      () => {
+        // Fallback: gold silhouette disc with the character's initial
+        const fallbackMat = new THREE.MeshStandardMaterial({
+          color: 0xc9a227, roughness: 0.4, metalness: 0.6,
+          transparent: true, opacity: 0.85,
+        });
+        const fallback = new THREE.Mesh(new THREE.CircleGeometry(1.2, 48), fallbackMat);
+        stage.add(fallback);
+      }
+    );
 
     // Floating particles around the stage
     const pCount = 60;

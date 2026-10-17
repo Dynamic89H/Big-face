@@ -46,6 +46,7 @@ export default function ChatRoomPage() {
   const [onlineIds, setOnlineIds] = useState<string[]>([]);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [reportMsg, setReportMsg] = useState<string | null>(null);
+  const [newMsgCount, setNewMsgCount] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -104,7 +105,13 @@ export default function ChatRoomPage() {
         if (prev.some((m) => m.id === p.message.id)) return prev; // dedupe own echo
         return [...prev, p.message];
       });
-      if (stick) requestAnimationFrame(() => scrollToBottom());
+      if (stick) {
+        requestAnimationFrame(() => scrollToBottom());
+        setNewMsgCount(0);
+      } else if (p.message.senderId !== user?.id) {
+        // User is scrolled up — show the "new messages" pill
+        setNewMsgCount((c) => c + 1);
+      }
       scheduleMarkRead();
     };
 
@@ -338,7 +345,9 @@ export default function ChatRoomPage() {
         </button>
       </div>
 
-      <div className="messages" ref={scrollRef}>
+      <div className="messages" ref={scrollRef}
+        onScroll={() => { if (isNearBottom()) setNewMsgCount(0); }}
+      >
         {hasMore && messages.length > 0 && (
           <div style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
             <button className="btn btn-ghost btn-sm" onClick={loadOlder} disabled={loadingOlder}>
@@ -460,6 +469,16 @@ export default function ChatRoomPage() {
       <div className="typing-bar">
         {typingNames.length > 0 && `${typingNames.join(', ')} ${typingNames.length === 1 ? 'is' : 'are'} typing…`}
       </div>
+
+      {newMsgCount > 0 && (
+        <button
+          className="new-msg-pill"
+          onClick={() => { scrollToBottom(); setNewMsgCount(0); }}
+          aria-label={`${newMsgCount} new messages — jump to bottom`}
+        >
+          ↓ {newMsgCount} new message{newMsgCount === 1 ? '' : 's'}
+        </button>
+      )}
 
       <div className="composer">
         {pending.length > 0 && (
