@@ -22,6 +22,24 @@ const CHARACTERS = [
   { id: 'male-sporty', name: 'Ball Player', img: '/avatar-male-sporty.webp' },
 ];
 
+// Human-friendly labels for gear slots.
+const SLOT_LABELS: Record<string, string> = {
+  chain: '⛓️ Chains',
+  grill: '😁 Grills',
+  earring: '💎 Earrings',
+  hair: '💇 Hair',
+  top: '👕 Tops',
+  bottom: '👖 Bottoms',
+  shoes: '👟 Shoes',
+  hat: '🧢 Hats',
+  watch: '⌚ Watches',
+  glasses: '🕶️ Glasses',
+  ring: '💍 Rings',
+};
+
+const slotLabel = (slot: string) =>
+  SLOT_LABELS[slot] ?? slot.charAt(0).toUpperCase() + slot.slice(1);
+
 export default function AvatarStudioPage() {
   usePageTitle('Avatar Studio');
   const { user, refreshUser } = useAuth();
@@ -41,6 +59,17 @@ export default function AvatarStudioPage() {
   const [characterId, setCharacterId] = useState<string>('male-street');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // --- Big-operation studio features ---
+  const [previewItem, setPreviewItem] = useState<AvatarItem | null>(null);
+  const [search, setSearch] = useState('');
+  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'owned' | 'unowned'>('all');
+  const [rarityFilter, setRarityFilter] = useState<'all' | AvatarItem['rarity']>('all');
+  const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'newest'>('featured');
+  const [detailItem, setDetailItem] = useState<AvatarItem | null>(null);
+  const [fits, setFits] = useState<Array<{ name: string; items: Record<string, string> }>>([]);
+  const [fitName, setFitName] = useState('');
+  const [stripping, setStripping] = useState(false);
 
   const character = CHARACTERS.find((c) => c.id === characterId) ?? CHARACTERS[0];
 
@@ -100,17 +129,52 @@ export default function AvatarStudioPage() {
 
   useEffect(() => {
     load();
+    try {
+      const raw = localStorage.getItem('bigface.fits.v1');
+      if (raw) setFits(JSON.parse(raw));
+    } catch { /* ignore */ }
   }, []);
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = items.filter((item) => {
+      if (q && !item.name.toLowerCase().includes(q) && !item.slot.toLowerCase().includes(q)) return false;
+      if (ownershipFilter === 'owned' && !ownedIds.has(item.id)) return false;
+      if (ownershipFilter === 'unowned' && ownedIds.has(item.id)) return false;
+      if (rarityFilter !== 'all' && item.rarity !== rarityFilter) return false;
+      return true;
+    });
+    if (sortBy === 'price-asc') list = [...list].sort((a, b) => a.tokenPrice - b.tokenPrice);
+    else if (sortBy === 'price-desc') list = [...list].sort((a, b) => b.tokenPrice - a.tokenPrice);
+    else if (sortBy === 'newest') list = [...list].reverse();
+    return list;
+  }, [items, search, ownershipFilter, rarityFilter, sortBy, ownedIds]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, AvatarItem[]>();
-    for (const item of items) {
+    for (const item of filteredItems) {
       const list = map.get(item.slot) ?? [];
       list.push(item);
       map.set(item.slot, list);
     }
     return [...map.entries()];
-  }, [items]);
+  }, [filteredItems]);
+
+  // The 3D stage shows the try-before-buy preview layered over the real equipped set.
+  const stageEquipped = useMemo(
+    () => (previewItem ? { ...equipped, [previewItem.slot]: previewItem } : equipped),
+    [equipped, previewItem]
+  );
+
+  // Deterministic fake "owned by N players" count for the detail modal.
+  const fakeOwnerCount = (id: string) => {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 9973;
+    return 48 + (h % 2350);
+  };
+
+  const itemBlurb = (item: AvatarItem) =>
+    `A ${item.rarity} ${item.slot} piece for the collection.${item.minLevel > 1 ? ` Unlocks at level ${item.minLevel}.` : ''}`;
 
   const acquire = async (item: AvatarItem) => {
     setBusyId(item.id);
@@ -118,6 +182,7 @@ export default function AvatarStudioPage() {
     try {
       await avatarApi.acquire(item.id);
       setOwnedIds((s) => new Set(s).add(item.id));
+      setPreviewItem((p) => (p?.id === item.id ? null : p));
       const { balance } = await walletApi.get();
       setBalance(balance);
       refreshUser().catch(() => undefined);
@@ -160,6 +225,59 @@ export default function AvatarStudioPage() {
     }
   };
 
+  // Unequip everything at once.
+  const stripAll = async () => {
+    const slots = Object.keys(equipped);
+    if (slots.length === 0) return;
+    setStripping(true);
+    setActionError(null);
+    try {
+      await Promise.all(slots.map((slot) => avatarApi.unequip(slot)));
+      setEquipped({});
+      refreshUser().catch(() => undefined);
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : 'Could not strip your look.');
+    } finally {
+      setStripping(false);
+    }
+  };
+
+  // --- My Fits (saved outfits, localStorage) ---
+  const persistFits = (next: Array<{ name: string; items: Record<string, string> }>) => {
+    setFits(next);
+    try { localStorage.setItem('bigface.fits.v1', JSON.stringify(next)); } catch { /* ignore */ }
+  };
+
+  const saveFit = () => {
+    if (fits.length >= 3) { setActionError('You have 3 fit slots. Delete one to save a new look.'); return; }
+    const saved: Record<string, string> = {};
+    for (const [slot, item] of Object.entries(equipped)) saved[slot] = item.id;
+    if (Object.keys(saved).length === 0) { setActionError('Equip some gear first, then save the fit.'); return; }
+    const name = fitName.trim() || `Fit ${fits.length + 1}`;
+    persistFits([...fits, { name, items: saved }]);
+    setFitName('');
+  };
+
+  const loadFit = async (fit: { name: string; items: Record<string, string> }) => {
+    setBusyId('fit-load');
+    setActionError(null);
+    try {
+      const ids = Object.values(fit.items).filter((id) => ownedIds.has(id));
+      await Promise.all(ids.map((id) => avatarApi.equip(id).catch(() => ({ ok: false }))));
+      const { equipped: fresh } = await avatarApi.mine();
+      setEquipped(fresh);
+      refreshUser().catch(() => undefined);
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : `Could not load "${fit.name}".`);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const deleteFit = (idx: number) => {
+    persistFits(fits.filter((_, i) => i !== idx));
+  };
+
   const equippedList = Object.values(equipped);
 
   return (
@@ -185,15 +303,74 @@ export default function AvatarStudioPage() {
       {!loading && !error && (
         <div className="studio-layout">
           <div>
+            {/* Search / filter / sort toolbar */}
+            <div className="card" style={{ padding: '0.9rem', marginBottom: '1.2rem' }}>
+              <input
+                className="input"
+                placeholder="🔍 Search gear…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ marginBottom: '0.7rem' }}
+              />
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+                {(['all', 'owned', 'unowned'] as const).map((f) => (
+                  <button
+                    key={f}
+                    className={`btn btn-sm ${ownershipFilter === f ? '' : 'btn-ghost'}`}
+                    onClick={() => setOwnershipFilter(f)}
+                  >
+                    {f === 'all' ? 'All' : f === 'owned' ? '✓ Owned' : 'Not owned'}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+                {(['all', 'common', 'rare', 'epic', 'legendary'] as const).map((r) => (
+                  <button
+                    key={r}
+                    className={`btn btn-sm ${rarityFilter === r ? '' : 'btn-ghost'}`}
+                    onClick={() => setRarityFilter(r)}
+                    style={rarityFilter === r && r !== 'all' ? { borderColor: RARITY_COLORS[r] } : undefined}
+                  >
+                    {r === 'all' ? 'All rarities' : r[0].toUpperCase() + r.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span className="form-note" style={{ margin: 0, whiteSpace: 'nowrap' }}>Sort:</span>
+                <select
+                  className="select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  style={{ flex: 1 }}
+                >
+                  <option value="featured">Featured</option>
+                  <option value="price-asc">Price: low → high</option>
+                  <option value="price-desc">Price: high → low</option>
+                  <option value="newest">Newest</option>
+                </select>
+              </div>
+              {(search || ownershipFilter !== 'all' || rarityFilter !== 'all') && (
+                <p className="form-note" style={{ margin: '0.6rem 0 0' }}>
+                  {filteredItems.length} result{filteredItems.length === 1 ? '' : 's'}{' '}
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ marginLeft: '0.4rem' }}
+                    onClick={() => { setSearch(''); setOwnershipFilter('all'); setRarityFilter('all'); }}
+                  >
+                    Clear
+                  </button>
+                </p>
+              )}
+            </div>
             {grouped.length === 0 && (
               <div className="card empty-wrap">
                 <div className="big">🎨</div>
-                <p>No avatar items are available right now. Check back soon.</p>
+                <p>{items.length === 0 ? 'No avatar items are available right now. Check back soon.' : 'No gear matches your search. Try clearing the filters.'}</p>
               </div>
             )}
             {grouped.map(([slot, slotItems]) => (
               <div key={slot} style={{ marginBottom: '1.4rem' }}>
-                <h3 style={{ textTransform: 'capitalize', margin: '0 0 0.7rem' }}>{slot}</h3>
+                <h3 style={{ margin: '0 0 0.7rem' }}>{slotLabel(slot)}</h3>
                 <div className="grid-3">
                   {slotItems.map((item) => {
                     const owned = ownedIds.has(item.id);
@@ -201,13 +378,16 @@ export default function AvatarStudioPage() {
                     const locked = (user?.level ?? 1) < item.minLevel;
                     const rarity = RARITY_COLORS[item.rarity] ?? '#9aa3b2';
                     return (
-                      <div key={item.id} className="card item-card" style={{ borderColor: isEquipped ? rarity : undefined }}>
+                      <div key={item.id} className="card item-card" style={{ borderColor: previewItem?.id === item.id ? 'var(--gold)' : isEquipped ? rarity : undefined }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span className="rarity-tag" style={{ color: rarity }}>{item.rarity}</span>
                           {isEquipped && <span className="badge badge-blue">Equipped</span>}
+                          {previewItem?.id === item.id && <span className="badge badge-gold">Previewing</span>}
                         </div>
-                        <ItemVisual slot={item.slot} style={item.style as Record<string, unknown>} name={item.name} size={90} interactive={isEquipped} />
-                        <div className="item-name">{item.name}</div>
+                        <div onClick={() => setDetailItem(item)} style={{ cursor: 'pointer' }} title="View details">
+                          <ItemVisual slot={item.slot} style={item.style as Record<string, unknown>} name={item.name} size={90} interactive={isEquipped} />
+                          <div className="item-name">{item.name} <span style={{ opacity: 0.45, fontSize: '0.8em' }}>ⓘ</span></div>
+                        </div>
                         <div className="item-meta">
                           {item.minLevel > 1 && <div>🔒 Level {item.minLevel}+ required</div>}
                           {item.tokenPrice > 0 && <div>💰 {item.tokenPrice} tokens</div>}
@@ -218,11 +398,11 @@ export default function AvatarStudioPage() {
                             <button
                               className="btn btn-sm"
                               style={{ flex: 1 }}
-                              disabled={locked || busyId === item.id}
-                              onClick={() => acquire(item)}
-                              title={locked ? `Reach level ${item.minLevel} to unlock` : undefined}
+                              disabled={locked || previewItem?.id === item.id}
+                              onClick={() => setPreviewItem(item)}
+                              title={locked ? `Reach level ${item.minLevel} to unlock` : 'Try it on your character first'}
                             >
-                              {busyId === item.id ? '…' : locked ? `🔒 Lv ${item.minLevel}` : item.tokenPrice > 0 ? `Acquire · ${item.tokenPrice} 🪙` : 'Acquire'}
+                              {locked ? `🔒 Lv ${item.minLevel}` : previewItem?.id === item.id ? '👁️ On stage…' : '👁️ Try it on'}
                             </button>
                           ) : isEquipped ? (
                             <button className="btn btn-ghost btn-sm" style={{ flex: 1 }} disabled={busyId === `unequip-${slot}`} onClick={() => unequip(slot)}>
@@ -244,6 +424,25 @@ export default function AvatarStudioPage() {
 
           <div className="card preview-stage">
             <h3 style={{ margin: 0 }}>Your character</h3>
+            {previewItem && (
+              <div className="card" style={{ borderColor: 'var(--gold)', background: 'rgba(212,175,55,0.08)', margin: '0.7rem 0 0', padding: '0.8rem', textAlign: 'center' }}>
+                <div style={{ fontWeight: 800 }}>👁️ Previewing: {previewItem.name}</div>
+                <p className="form-note" style={{ margin: '0.3rem 0 0.7rem' }}>Liking the look? Make it yours.</p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    className="btn btn-sm"
+                    style={{ flex: 1 }}
+                    disabled={busyId === previewItem.id || (user?.level ?? 1) < previewItem.minLevel}
+                    onClick={() => acquire(previewItem)}
+                  >
+                    {busyId === previewItem.id ? '…' : (user?.level ?? 1) < previewItem.minLevel ? `🔒 Lv ${previewItem.minLevel}` : previewItem.tokenPrice > 0 ? `Buy · ${previewItem.tokenPrice} 🪙` : 'Claim free'}
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setPreviewItem(null)}>
+                    ✕ Cancel
+                  </button>
+                </div>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', margin: '0.6rem 0' }}>
               <button
                 className={`btn btn-sm ${view3D ? '' : 'btn-ghost'}`}
@@ -265,7 +464,7 @@ export default function AvatarStudioPage() {
                 characterImg={character.img}
                 characterName={character.name}
                 equipped={equipped}
-                showBody={false}
+                facePhotoUrl={facePhotoUrl || undefined}
               />
             ) : (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
@@ -291,7 +490,7 @@ export default function AvatarStudioPage() {
             {/* All 9 character models — browse and select */}
             <h4 style={{ textAlign: 'center', margin: '1rem 0 0.6rem' }}>Your Character Models</h4>
             <p className="form-note" style={{ textAlign: 'center', marginBottom: '0.8rem' }}>
-              👆 Move your finger over them — they're real 3D models
+              👆 Move your finger over them — watch them come alive
             </p>
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
@@ -307,9 +506,19 @@ export default function AvatarStudioPage() {
                     filter: c.id === characterId ? 'none' : 'saturate(0.8)',
                     transition: 'opacity 0.2s',
                     width: '100%',
+                    position: 'relative',
                   }}
                 >
                   <ModelCharacter img={c.img} name={c.name} width="100%" height="auto" />
+                  <div style={{
+                    position: 'absolute', top: '0.4rem', left: '0.4rem',
+                    background: 'var(--green)', color: '#fff',
+                    fontSize: '0.65rem', fontWeight: 800,
+                    padding: '0.15rem 0.5rem', borderRadius: 8,
+                    letterSpacing: '0.05em',
+                  }}>
+                    FREE
+                  </div>
                   {c.id === characterId && (
                     <div style={{
                       textAlign: 'center', marginTop: '0.4rem', fontWeight: 800,

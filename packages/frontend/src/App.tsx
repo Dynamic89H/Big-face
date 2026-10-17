@@ -28,7 +28,6 @@ import CrewsPage from './pages/CrewsPage';
 import ArtistsPage from './pages/ArtistsPage';
 import GamblePage from './pages/GamblePage';
 import FactoryPage from './pages/FactoryPage';
-import CharacterStudioPage from './pages/CharacterStudioPage';
 import LobbyPage from './pages/LobbyPage';
 import HomePage from './pages/HomePage';
 import InsightsPage from './pages/InsightsPage';
@@ -164,7 +163,7 @@ export default function App() {
             <Route path="artists" element={<ArtistsPage />} />
             <Route path="gamble" element={<GamblePage />} />
             <Route path="factory" element={<FactoryPage />} />
-            <Route path="character-studio" element={<CharacterStudioPage />} />
+            <Route path="character-studio" element={<Navigate to="/avatar-studio" replace />} />
             <Route path="lobby" element={<LobbyPage />} />
             <Route path="home" element={<HomePage />} />
             <Route path="insights" element={<InsightsPage />} />

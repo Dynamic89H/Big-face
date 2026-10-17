@@ -7,21 +7,44 @@ interface RealisticAvatar3DProps {
   height?: number;
   characterImg: string;
   characterName: string;
-  skinTone?: string;
   equipped?: Record<string, AvatarItem>;
-  showBody?: boolean; // false = realistic photo on 3D stage, true = full 3D body
+  facePhotoUrl?: string;
+}
+
+// Maps item slot to product image (same as ItemVisual)
+function gearImageFor(item: AvatarItem): string | null {
+  const n = item.name.toLowerCase();
+  switch (item.slot) {
+    case 'hair':
+      if (n.includes('dread') || n.includes('loc') || n.includes('braid')) return '/gear/hair-dreads.webp';
+      return '/gear/hair-fade.webp';
+    case 'top':
+      if (n.includes('hoodie')) return '/gear/top-hoodie.webp';
+      if (n.includes('jacket') || n.includes('leather') || n.includes('blazer')) return '/gear/top-jacket.webp';
+      return '/gear/top-hoodie.webp';
+    case 'bottom': return '/gear/bottom-jeans.webp';
+    case 'shoes': return '/gear/shoes-jordan.webp';
+    case 'chain': return '/gear/chain-cuban.webp';
+    case 'ring': return '/gear/ring-diamond.webp';
+    case 'earring': return '/gear/earring-stud.webp';
+    case 'grill': return '/gear/grill-gold.webp';
+    case 'hat': return '/gear/hat-snapback.webp';
+    case 'watch': return '/gear/watch-gold.webp';
+    case 'glasses': return '/gear/glasses-aviator.webp';
+    default: return null;
+  }
 }
 
 /**
  * RealisticAvatar3D — the user's actual character in realistic 3D.
  * Uses their chosen character photo as the face texture.
- * Shows their equipped gear: clothes, shoes, jewelry.
- * Brave heroic pose with visible breathing.
+ * Shows equipped gear as floating item badges around the character.
+ * If facePhotoUrl is provided, composites it as a circular badge on the stage.
  */
 export default function RealisticAvatar3D({
   width = 280, height = 400,
-  characterImg, characterName, skinTone = '#8d5524',
-  equipped = {}, showBody = false,
+  characterImg, characterName,
+  equipped = {}, facePhotoUrl,
 }: RealisticAvatar3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -52,11 +75,61 @@ export default function RealisticAvatar3D({
     scene.add(glow);
 
     const stage = new THREE.Group();
+    const loader = new THREE.TextureLoader();
+
+    // Equipped gear: floating item badges around the character
+    const gearItems = Object.values(equipped);
+    const gearSprites: THREE.Mesh[] = [];
+    gearItems.forEach((item, i) => {
+      const imgUrl = gearImageFor(item);
+      if (!imgUrl) return;
+      // Position in a circle around the character
+      const angle = (i / Math.max(gearItems.length, 1)) * Math.PI * 2 - Math.PI / 2;
+      const gx = Math.cos(angle) * 2.2;
+      const gy = Math.sin(angle) * 1.8 + 0.3;
+      loader.load(imgUrl, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        const badge = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.7, 0.7),
+          new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+        );
+        badge.position.set(gx, gy, 0.5);
+        badge.userData.baseY = gy;
+        badge.userData.phase = i * 1.3;
+        // Gold ring behind badge
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.36, 0.42, 32),
+          new THREE.MeshBasicMaterial({ color: 0xc9a227, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+        );
+        ring.position.z = -0.01;
+        badge.add(ring);
+        stage.add(badge);
+        gearSprites.push(badge);
+      });
+    });
+
+    // Face photo badge (if uploaded) — circular badge at top
+    if (facePhotoUrl) {
+      loader.load(facePhotoUrl, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        const faceBadge = new THREE.Mesh(
+          new THREE.CircleGeometry(0.5, 32),
+          new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+        );
+        faceBadge.position.set(0, 2.2, 0.5);
+        const faceRing = new THREE.Mesh(
+          new THREE.RingGeometry(0.5, 0.58, 32),
+          new THREE.MeshBasicMaterial({ color: 0xc9a227, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+        );
+        faceRing.position.z = -0.01;
+        faceBadge.add(faceRing);
+        stage.add(faceBadge);
+      });
+    }
 
     // Character photo — floating naturally, NO frame.
     // Has an onError path: if the image 404s, render a gold silhouette disc
     // so the stage never sits empty.
-    const loader = new THREE.TextureLoader();
     loader.load(
       characterImg,
       (tex) => {
@@ -139,6 +212,12 @@ export default function RealisticAvatar3D({
       }
       pos.needsUpdate = true;
 
+      // Gear badges bob gently
+      for (const sprite of gearSprites) {
+        sprite.position.y = sprite.userData.baseY + Math.sin(t * 1.2 + sprite.userData.phase) * 0.12;
+        sprite.rotation.y = Math.sin(t * 0.8 + sprite.userData.phase) * 0.2;
+      }
+
       // Glow pulse
       (disc.material as THREE.MeshBasicMaterial).opacity = 0.08 + Math.sin(t * 1.5) * 0.04;
 
@@ -166,7 +245,7 @@ export default function RealisticAvatar3D({
       mount.removeChild(renderer.domElement);
       renderer.dispose();
     };
-  }, [characterImg, width, height]);
+  }, [characterImg, width, height, JSON.stringify(Object.keys(equipped).sort()), facePhotoUrl]);
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -179,7 +258,10 @@ export default function RealisticAvatar3D({
         }}
       />
       <p style={{ fontWeight: 700, margin: '0.5rem 0 0', fontSize: '0.95rem' }}>{characterName}</p>
-      <p className="form-note" style={{ margin: '0.2rem 0 0' }}>✨ Your character on the 3D stage</p>
+      <p className="form-note" style={{ margin: '0.2rem 0 0' }}>
+        ✨ Your character on the 3D stage
+        {Object.keys(equipped).length > 0 && ` · ${Object.keys(equipped).length} item${Object.keys(equipped).length === 1 ? '' : 's'} equipped`}
+      </p>
     </div>
   );
 }

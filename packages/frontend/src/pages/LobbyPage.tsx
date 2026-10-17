@@ -177,7 +177,6 @@ export default function LobbyPage() {
         {[
           { icon: '💬', label: 'Start Chat', path: '/chats' },
           { icon: '🎨', label: 'My Avatar', path: '/avatar-studio' },
-          { icon: '📸', label: 'New Character', path: '/character-studio' },
           { icon: '⚔️', label: 'Battles', path: '/battles' },
           { icon: '🎰', label: 'Gamble Face', path: '/gamble' },
           { icon: '🏭', label: 'Factory', path: '/factory' },

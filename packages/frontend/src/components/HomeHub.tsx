@@ -39,7 +39,6 @@ const SECTIONS: Section[] = [
     icon: '🎨',
     items: [
       { label: 'Avatar Studio', icon: '🎨', to: '/avatar-studio' },
-      { label: 'Character Studio', icon: '🧍', to: '/character-studio' },
       { label: 'Factory', icon: '🏭', to: '/factory' },
       { label: 'DJ Booth', icon: '🎧', to: '/dj-booth' },
       { label: 'Artists', icon: '🎤', to: '/artists' },

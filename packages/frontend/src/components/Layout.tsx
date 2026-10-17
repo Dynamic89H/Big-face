@@ -46,7 +46,7 @@ const NAV: { to: string; key: string; icon: string }[] = [
   { to: '/seasons', key: 'nav_seasons', icon: '🗓️' },
   { to: '/settings', key: 'nav_settings', icon: '⚙️' },
   { to: '/factory', key: 'nav_factory', icon: '🏭' },
-  { to: '/character-studio', key: 'nav_creator', icon: '🎭' },
+  { to: '/avatar-studio', key: 'nav_creator', icon: '🎭' },
   { to: '/lobby', key: 'nav_lobby', icon: '🏛️' },
   { to: '/insights', key: 'nav_insights', icon: '📊' },
   { to: '/dj-booth', key: 'nav_dj', icon: '🎧' },
