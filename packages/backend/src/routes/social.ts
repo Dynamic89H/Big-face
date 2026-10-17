@@ -292,8 +292,18 @@ router.post(
         [req.params.id]
       );
       const share = Math.floor(updated[0].target_value / participants.length);
-      for (const p of participants) {
-        await addTokens(p.user_id, share, 'bonus', { reference: `heist:${req.params.id}` });
+      if (participants.length > 0) {
+        const userIds = participants.map((p) => p.user_id);
+        // Batch: one UPDATE + one INSERT instead of N sequential addTokens calls
+        await pool.query(
+          'UPDATE users SET token_balance = token_balance + $1, updated_at = now() WHERE id = ANY($2)',
+          [share, userIds]
+        );
+        await pool.query(
+          `INSERT INTO token_transactions (user_id, amount, kind, reference)
+           SELECT unnest($1::uuid[]), $2, 'bonus', $3`,
+          [userIds, share, `heist:${req.params.id}`]
+        );
       }
       emitToAll('social:heist-complete', { heistId: req.params.id, prize: updated[0].target_value });
       return res.json({ ok: true, complete: true, share });

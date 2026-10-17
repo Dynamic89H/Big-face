@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface ModelCharacterProps {
   img: string;
   name: string;
-  width?: number;
-  height?: number;
+  width?: number | string;
+  height?: number | string;
   interactive?: boolean;
 }
 
@@ -21,7 +21,6 @@ export default function ModelCharacter({ img, name, width = 280, height = 380, i
   const cardRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const shineRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     let raf = 0;
@@ -71,6 +70,13 @@ export default function ModelCharacter({ img, name, width = 280, height = 380, i
           rotateY(${currentTilt.y}deg)
           translateZ(0)
         `;
+        // Glow intensity follows tilt — direct DOM update, no React re-render
+        const glow = 0.1 + Math.abs(currentTilt.y) / 200;
+        cardRef.current.style.boxShadow = `
+          0 20px 60px rgba(0,0,0,0.6),
+          0 0 40px rgba(201,162,39,${glow}),
+          inset 0 1px 0 rgba(255,255,255,0.1)
+        `;
       }
 
       if (imgRef.current) {
@@ -97,8 +103,6 @@ export default function ModelCharacter({ img, name, width = 280, height = 380, i
             transparent 60%)
         `;
       }
-
-      setTilt({ x: currentTilt.x, y: currentTilt.y });
     };
     animate(start);
 
@@ -117,7 +121,8 @@ export default function ModelCharacter({ img, name, width = 280, height = 380, i
     <div
       ref={containerRef}
       style={{
-        width, height, margin: '0 auto',
+        width, height: height === 'auto' ? undefined : height, margin: '0 auto',
+        aspectRatio: height === 'auto' ? '170 / 220' : undefined,
         perspective: '900px', cursor: interactive ? 'grab' : 'default',
       }}
     >
@@ -131,7 +136,7 @@ export default function ModelCharacter({ img, name, width = 280, height = 380, i
           border: '1px solid rgba(201,162,39,0.3)',
           boxShadow: `
             0 20px 60px rgba(0,0,0,0.6),
-            0 0 40px rgba(201,162,39,${0.1 + Math.abs(tilt.y) / 200}),
+            0 0 40px rgba(201,162,39,0.1),
             inset 0 1px 0 rgba(255,255,255,0.1)
           `,
           willChange: 'transform',

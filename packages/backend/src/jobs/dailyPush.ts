@@ -27,17 +27,18 @@ export async function sendDailyPush(): Promise<{ users: number; sent: number; fa
   let sent = 0;
   let failed = 0;
 
-  for (const { id, preferred_lang } of rows) {
-    try {
-      const msg = getDailyMessage(preferred_lang);
-      const n = await pushToUser(id, {
-        ...msg,
-        url: '/',
-      });
-      sent += n;
-    } catch (e) {
-      failed++;
-      console.error(`[daily-push] Failed for user ${id}:`, e);
+  // Batch with concurrency cap to avoid serial timeout at scale
+  const CONCURRENCY = 20;
+  for (let i = 0; i < rows.length; i += CONCURRENCY) {
+    const batch = rows.slice(i, i + CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map(({ id, preferred_lang }) =>
+        pushToUser(id, { ...getDailyMessage(preferred_lang), url: '/' })
+      )
+    );
+    for (const r of results) {
+      if (r.status === 'fulfilled') sent += r.value;
+      else { failed++; console.error('[daily-push] Batch send failed:', r.reason); }
     }
   }
 

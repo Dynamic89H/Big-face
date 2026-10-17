@@ -206,7 +206,7 @@ export default function AvatarStudioPage() {
                           <span className="rarity-tag" style={{ color: rarity }}>{item.rarity}</span>
                           {isEquipped && <span className="badge badge-blue">Equipped</span>}
                         </div>
-                        <ItemVisual slot={item.slot} style={item.style as Record<string, unknown>} name={item.name} size={90} />
+                        <ItemVisual slot={item.slot} style={item.style as Record<string, unknown>} name={item.name} size={90} interactive={isEquipped} />
                         <div className="item-name">{item.name}</div>
                         <div className="item-meta">
                           {item.minLevel > 1 && <div>🔒 Level {item.minLevel}+ required</div>}
@@ -294,7 +294,7 @@ export default function AvatarStudioPage() {
               👆 Move your finger over them — they're real 3D models
             </p>
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
               gap: '1rem', marginBottom: '1rem',
             }}>
               {CHARACTERS.map((c) => (
@@ -306,9 +306,10 @@ export default function AvatarStudioPage() {
                     opacity: c.id === characterId ? 1 : 0.7,
                     filter: c.id === characterId ? 'none' : 'saturate(0.8)',
                     transition: 'opacity 0.2s',
+                    width: '100%',
                   }}
                 >
-                  <ModelCharacter img={c.img} name={c.name} width={170} height={220} />
+                  <ModelCharacter img={c.img} name={c.name} width="100%" height="auto" />
                   {c.id === characterId && (
                     <div style={{
                       textAlign: 'center', marginTop: '0.4rem', fontWeight: 800,
@@ -341,7 +342,7 @@ export default function AvatarStudioPage() {
             </button>
             {equippedList.length === 0 ? (
               <p className="form-note" style={{ textAlign: 'center' }}>
-                Nothing equipped yet.<br />Grab gear below and watch your character come alive.
+                Nothing equipped yet.<br />Grab gear below to dress up your character.
               </p>
             ) : (
               <p className="form-note" style={{ textAlign: 'center' }}>

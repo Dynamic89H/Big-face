@@ -33,25 +33,36 @@ interface Leader {
   profile_color: string;
 }
 
+const RANKS: Rank[] = [
+  { name: 'Rookie', icon: '🥉', minLevel: 1, maxLevel: 2, color: '#cd7f32', perk: '' },
+  { name: 'Grinder', icon: '🥈', minLevel: 3, maxLevel: 5, color: '#c0c0c0', perk: '' },
+  { name: 'Hustler', icon: '🥇', minLevel: 6, maxLevel: 10, color: '#ffd700', perk: '' },
+  { name: 'Boss', icon: '💎', minLevel: 11, maxLevel: 20, color: '#00d4ff', perk: '' },
+  { name: 'Kingpin', icon: '👑', minLevel: 21, maxLevel: 30, color: '#ff6b00', perk: '' },
+  { name: 'Legend', icon: '🌟', minLevel: 31, maxLevel: 39, color: '#ff00ff', perk: '' },
+  { name: 'Face King', icon: '🤴', minLevel: 40, maxLevel: 999, color: '#ffd700', perk: 'OFFICIAL — crowned live for all players' },
+];
+
+/** Gender-aware pinnacle rank: Face King (male) / Face Queen (female). */
+export function crownRank(gender?: string): Rank {
+  const isQueen = gender === 'female';
+  return {
+    name: isQueen ? 'Face Queen' : 'Face King',
+    icon: isQueen ? '👸' : '🤴',
+    minLevel: 40, maxLevel: 999, color: '#ffd700',
+    perk: 'OFFICIAL — crowned live for all players',
+  };
+}
+
+export function rankForLevel(level: number, gender?: string): Rank {
+  if (level >= 40) return crownRank(gender);
+  return RANKS.find((r) => level >= r.minLevel && level <= r.maxLevel) || RANKS[0];
+}
+
 /** Rank badge component — shows rank icon + name with rank color */
-export function RankBadge({ level, size = 'md' }: { level: number; size?: 'sm' | 'md' | 'lg' }) {
-  const [rank, setRank] = useState<Rank | null>(null);
-
-  useEffect(() => {
-    // Derive rank client-side for instant display
-    const ranks: Rank[] = [
-      { name: 'Rookie', icon: '🥉', minLevel: 1, maxLevel: 2, color: '#cd7f32', perk: '' },
-      { name: 'Grinder', icon: '🥈', minLevel: 3, maxLevel: 5, color: '#c0c0c0', perk: '' },
-      { name: 'Hustler', icon: '🥇', minLevel: 6, maxLevel: 10, color: '#ffd700', perk: '' },
-      { name: 'Boss', icon: '💎', minLevel: 11, maxLevel: 20, color: '#00d4ff', perk: '' },
-      { name: 'Kingpin', icon: '👑', minLevel: 21, maxLevel: 30, color: '#ff6b00', perk: '' },
-      { name: 'Legend', icon: '🌟', minLevel: 31, maxLevel: 39, color: '#ff00ff', perk: '' },
-      { name: 'Face King', icon: '🤴', minLevel: 40, maxLevel: 999, color: '#ffd700', perk: 'OFFICIAL — crowned live for all players' },
-    ];
-    setRank(ranks.find((r) => level >= r.minLevel && level <= r.maxLevel) || ranks[0]);
-  }, [level]);
-
-  if (!rank) return null;
+export function RankBadge({ level, size = 'md', gender }: { level: number; size?: 'sm' | 'md' | 'lg'; gender?: string }) {
+  // Derived synchronously so badges render on the first paint — no flash.
+  const rank = rankForLevel(level, gender);
 
   const fontSize = size === 'sm' ? '0.7rem' : size === 'lg' ? '1.1rem' : '0.85rem';
 

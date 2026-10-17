@@ -39,6 +39,40 @@ const LANGUAGES = [
  * Notifications, privacy, display, account.
  */
 
+// Toggle switch — hoisted out of SettingsPage so React doesn't remount
+// it on every keystroke elsewhere in the form.
+function Toggle({ label, desc, value, onChange }: {
+  label: string; desc: string; value: boolean; onChange: (v: boolean) => void;
+}) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '1rem 0', borderBottom: '1px solid var(--border)',
+    }}>
+      <div>
+        <div style={{ fontWeight: 700 }}>{label}</div>
+        <div className="form-note" style={{ fontSize: '0.85rem' }}>{desc}</div>
+      </div>
+      <button
+        onClick={() => onChange(!value)}
+        style={{
+          width: 50, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+          background: value ? 'var(--gold)' : 'rgba(255,255,255,0.2)',
+          position: 'relative', transition: 'background 0.2s',
+        }}
+      >
+        <div style={{
+          width: 22, height: 22, borderRadius: '50%', background: 'white',
+          position: 'absolute', top: 3, left: value ? 25 : 3,
+          transition: 'left 0.2s',
+        }} />
+      </button>
+    </div>
+  );
+}
+
+export default function SettingsPage() {
+
 // Password field with show/hide toggle — defined OUTSIDE SettingsPage so
 // React doesn't remount the input on every keystroke (which drops the keyboard).
 function PwField({ index, placeholder, value, onChange, autoComplete, showPw, setShowPw }: {
@@ -188,9 +222,11 @@ export default function SettingsPage() {
 
   return (
     <div className="page" style={{ maxWidth: 600, margin: '0 auto' }}>
-      <h1 className="shine-text" style={{ fontSize: '2rem', margin: '0 0 1.5rem', textAlign: 'center' }}>
-        ⚙️ Settings
-      </h1>
+      <div className="page-head" style={{ textAlign: 'center' }}>
+        <h1 className="page-title">
+          ⚙️ Settings
+        </h1>
+      </div>
 
       {saved && (
         <div className="card" style={{
@@ -326,10 +362,9 @@ export default function SettingsPage() {
             📄 Privacy Policy
           </button>
           <button
-            className="btn btn-block"
-            style={{ background: '#cc0000', borderColor: '#cc0000' }}
+            className="btn btn-ghost btn-block"
             onClick={() => {
-              if (confirm('Log out of Big Face?')) logout();
+              if (window.confirm('Log out of Big Face?')) logout();
             }}
           >
             🚪 Log Out

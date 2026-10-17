@@ -9,7 +9,16 @@ import { usePageTitle } from '../hooks/usePageTitle';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-function RoyalCard({ title, crown, person, role }: { title: string; crown: string; person: User | null; role: 'king' | 'queen' }) {
+function RoyalCard({ title, crown, person, role, loading }: { title: string; crown: string; person: User | null; role: 'king' | 'queen'; loading?: boolean }) {
+  if (loading) {
+    return (
+      <div className="card royal-card">
+        <div className="crown">{crown}</div>
+        <h3 style={{ margin: '0.4rem 0' }}>{title}</h3>
+        <div className="loading-wrap" style={{ margin: 0 }}><div className="spinner" /></div>
+      </div>
+    );
+  }
   if (!person) {
     return (
       <div className="card royal-card">
@@ -74,8 +83,8 @@ export default function LeaderboardPage() {
       </div>
 
       <div className="grid-2" style={{ marginBottom: '1.4rem' }}>
-        <RoyalCard title="Face King" crown="🤴" person={king} role="king" />
-        <RoyalCard title="Face Queen" crown="👸" person={queen} role="queen" />
+        <RoyalCard title="Face King" crown="🤴" person={king} role="king" loading={loading} />
+        <RoyalCard title="Face Queen" crown="👸" person={queen} role="queen" loading={loading} />
       </div>
 
       {loading && <div className="loading-wrap"><div className="spinner" /><p>Counting XP…</p></div>}

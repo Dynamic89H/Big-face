@@ -65,6 +65,23 @@ export default function FriendsPage() {
     }
   };
 
+  // Silent refresh after actions — keeps the list mounted, no full-page spinner.
+  const refreshLists = async () => {
+    try {
+      const [{ friends: f }, { received: r, sent: s }, { users: d }] = await Promise.all([
+        friendsApi.list(),
+        friendsApi.requests(),
+        friendsApi.discover().catch(() => ({ users: [] as User[] })),
+      ]);
+      setFriends(f);
+      setReceived(r);
+      setSent(s);
+      setDiscoverUsers(d);
+    } catch {
+      /* keep existing list on failure */
+    }
+  };
+
   const doSearch = async (q: string) => {
     setSearchQuery(q);
     if (q.trim().length < 2) {
@@ -115,7 +132,7 @@ export default function FriendsPage() {
     setBusyId(id);
     try {
       await fn(id);
-      await load();
+      await refreshLists();
     } catch {
       /* non-fatal */
     } finally {

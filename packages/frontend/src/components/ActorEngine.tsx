@@ -217,7 +217,7 @@ export function ActorSpeech({ line }: { line: ActorLine | null }) {
     <div
       style={{
         position: 'fixed',
-        bottom: '2rem',
+        bottom: '4.5rem',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 999,

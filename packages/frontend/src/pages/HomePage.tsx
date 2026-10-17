@@ -10,17 +10,9 @@ export default function HomePage() {
 
   return (
     <div className="page">
-      <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-        <h1 style={{
-          fontSize: '2rem', margin: 0,
-          background: 'linear-gradient(135deg, #bf953f, #fcf6ba, #b38728)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontWeight: 800,
-        }}>
-          BIG FACE
-        </h1>
-        <p className="form-note" style={{ margin: '0.3rem 0 0' }}>
+      <div className="page-head" style={{ textAlign: 'center' }}>
+        <h1 className="page-title">BIG FACE</h1>
+        <p className="page-sub">
           What are you getting into today?
         </p>
       </div>

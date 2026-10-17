@@ -15,25 +15,34 @@ export default function ShopPage() {
   const [gifts, setGifts] = useState<GiftCatalogItem[]>([]);
   const [assets, setAssets] = useState<LifestyleAsset[]>([]);
   const [balance, setBalance] = useState(0);
+  const [walletLoaded, setWalletLoaded] = useState(false);
+  const [shopLoading, setShopLoading] = useState(true);
+  const [shopError, setShopError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
+  const loadShop = async () => {
+    setShopLoading(true);
+    setShopError(null);
+    try {
+      const [giftData, assetData, wallet] = await Promise.all([
+        giftsApi.catalog(),
+        lifestyleApi.assets(),
+        walletApi.get(),
+      ]);
+      setGifts(giftData.gifts || []);
+      setAssets(assetData.assets || []);
+      setBalance(wallet.balance || 0);
+      setWalletLoaded(true);
+    } catch {
+      setShopError('Could not load the shop. Check your connection and try again.');
+    } finally {
+      setShopLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [giftData, assetData, wallet] = await Promise.all([
-          giftsApi.catalog(),
-          lifestyleApi.assets(),
-          walletApi.get(),
-        ]);
-        setGifts(giftData.gifts || []);
-        setAssets(assetData.assets || []);
-        setBalance(wallet.balance || 0);
-      } catch {
-        /* offline */
-      }
-    };
-    load();
+    loadShop();
   }, []);
 
   const buyGift = async (gift: GiftCatalogItem) => {
@@ -91,20 +100,33 @@ export default function ShopPage() {
 
   return (
     <div className="page section-shop">
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <h1 className="shine-text" style={{ fontSize: '2.2rem', margin: '0 0 0.5rem' }}>
+      <div className="page-head" style={{ textAlign: 'center' }}>
+        <h1 className="page-title">
           🛍️ Token Shop
         </h1>
-        <p className="form-note">Spend your tokens. Flex on everyone.</p>
+        <p className="page-sub">Spend your tokens. Flex on everyone.</p>
         <div className="card glow-gold" style={{
           display: 'inline-block', padding: '0.75rem 1.5rem', marginTop: '0.75rem',
         }}>
           <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>Your balance</span>
           <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--gold)' }}>
-            🪙 {balance.toLocaleString()}
+            {walletLoaded ? `🪙 ${balance.toLocaleString()}` : '🪙 …'}
           </div>
         </div>
       </div>
+
+      {shopLoading && (
+        <div className="loading-wrap"><div className="spinner" /><p>Loading the shop…</p></div>
+      )}
+      {shopError && !shopLoading && (
+        <div className="error-wrap">
+          <p>😕 {shopError}</p>
+          <button className="btn" onClick={loadShop}>Try again</button>
+        </div>
+      )}
+
+      {!shopLoading && !shopError && (
+      <>
 
       {message && (
         <div className="card" style={{
@@ -194,6 +216,8 @@ export default function ShopPage() {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   );

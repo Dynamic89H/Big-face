@@ -124,7 +124,7 @@ h1:not(.wordmark) {
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
 }
 .sidebar .wordmark { padding: 0 0.6rem 1.1rem; display: block; }
-.nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.nav { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; min-height: 0; }
 .nav-link {
   display: flex;
   align-items: center;
@@ -162,6 +162,8 @@ h1:not(.wordmark) {
   padding: 0.45rem 0.6rem;
   cursor: pointer;
   font-size: 0.9rem;
+  min-width: 44px; min-height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 .icon-btn:hover { color: var(--text); border-color: var(--muted); }
 
@@ -444,7 +446,7 @@ input[type="password"].input {
 }
 
 /* ---------- Chat ---------- */
-.chat-layout { display: grid; grid-template-columns: 300px 1fr; gap: 1.2rem; height: calc(100vh - 4.5rem); }
+.chat-layout { display: grid; grid-template-columns: 300px 1fr; gap: 1.2rem; height: calc(100dvh - 4.5rem); }
 .room-list { display: flex; flex-direction: column; min-height: 0; }
 .room-list .rooms { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; margin-top: 0.8rem; }
 .room-item {
@@ -504,6 +506,7 @@ input[type="password"].input {
   color: var(--muted); border-radius: 6px; cursor: pointer; padding: 0.1rem 0.45rem;
 }
 .msg-row:hover .msg-menu-btn { opacity: 1; }
+@media (hover: none) { .msg-menu-btn { opacity: .55; } }
 .reactions { display: flex; gap: 4px; margin-top: 0.3rem; flex-wrap: wrap; }
 .reaction-pill {
   display: inline-flex; align-items: center; gap: 0.25rem;
@@ -801,7 +804,7 @@ input[type="password"].input {
 @media (max-width: 1024px) {
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
   .studio-layout { grid-template-columns: 1fr; }
-  .preview-stage { position: static; }
+  .preview-stage { position: static; order: -1; }
 }
 @media (max-width: 768px) {
   .sidebar { display: none; }
@@ -831,7 +834,7 @@ input[type="password"].input {
   .main { padding: 1rem 1rem 5.5rem; }
   .chat-layout { grid-template-columns: 1fr; height: auto; }
   .room-list { max-height: 40vh; }
-  .chat-panel { height: calc(100vh - 14rem); min-height: 420px; }
+  .chat-panel { height: calc(100dvh - 14rem); min-height: 420px; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .msg-body-wrap { max-width: 88%; }
   .toast-stack { left: 1.2rem; right: 1.2rem; max-width: none; }
@@ -1062,4 +1065,17 @@ input[type="password"].input {
 }
 .fx-jackpot-burst {
   animation: jackpot-burst 0.6s ease-out;
+}
+
+/* Dice animations — used by GamblePage Dice component (defined once here, not per-render) */
+@keyframes diceTumble {
+  0% { transform: rotateX(0) rotateY(0) rotateZ(0); }
+  25% { transform: rotateX(180deg) rotateY(90deg) rotateZ(45deg); }
+  50% { transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg); }
+  75% { transform: rotateX(540deg) rotateY(270deg) rotateZ(135deg); }
+  100% { transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg); }
+}
+@keyframes diceSettle {
+  0% { transform: scale(1.2) rotateZ(10deg); }
+  100% { transform: scale(1) rotateZ(0); }
 }

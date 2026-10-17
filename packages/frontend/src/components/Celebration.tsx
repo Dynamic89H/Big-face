@@ -36,8 +36,7 @@ export default function Celebration() {
     const burst = (count = 150) => {
       const cx = canvas.width / 2;
       const cy = canvas.height / 3;
-      for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2;
+      for (let i = 0; i < count; i++) {        const angle = Math.random() * Math.PI * 2;
         const speed = 4 + Math.random() * 10;
         pieces.push({
           x: cx + (Math.random() - 0.5) * 100,
@@ -51,9 +50,17 @@ export default function Celebration() {
           shape: Math.random() > 0.5 ? 'rect' : 'circle',
         });
       }
+      // Restart the loop if it stopped
+      if (!raf) tick();
     };
 
     const tick = () => {
+      // Stop the loop when no pieces remain — saves battery
+      if (pieces.length === 0) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        raf = 0;
+        return;
+      }
       raf = requestAnimationFrame(tick);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       pieces = pieces.filter((p) => p.y < canvas.height + 30);

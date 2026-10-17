@@ -5,6 +5,9 @@ interface ItemVisualProps {
   style: Record<string, unknown>;
   name: string;
   size?: number;
+  /** When true, jewelry renders the full interactive 3D engine. When false (grid view),
+   *  uses a static product image to avoid mounting dozens of WebGL contexts. */
+  interactive?: boolean;
 }
 
 // Slots that render in full 3D — the complete engine lineup.
@@ -49,10 +52,11 @@ function imageFor(slot: string, style: Record<string, unknown>, name: string): s
 }
 
 // Renders a realistic visual preview for avatar studio items.
-// Jewelry renders in full interactive 3D; clothes use realistic product shots.
-export default function ItemVisual({ slot, style, name, size = 100 }: ItemVisualProps) {
-  // Full 3D engine for jewelry — interactive, rotatable.
-  if (ENGINE_3D_SLOTS.includes(slot)) {
+// Jewelry renders in full interactive 3D when `interactive` is true; otherwise uses
+// static product images to avoid exhausting the browser's WebGL context limit (~16).
+export default function ItemVisual({ slot, style, name, size = 100, interactive = false }: ItemVisualProps) {
+  // Full 3D engine for jewelry — interactive, rotatable. Only when explicitly requested.
+  if (interactive && ENGINE_3D_SLOTS.includes(slot)) {
     return (
       <div title={name} style={{ position: 'relative' }}>
         <Engine3D slot={slot} style={style} width={size + 20} height={size + 20} />

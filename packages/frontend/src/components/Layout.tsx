@@ -187,7 +187,7 @@ export default function Layout() {
         </div>
       )}
       <aside className="sidebar">
-        <NavLink to="/chats" className="wordmark">BIG FACE</NavLink>
+        <NavLink to="/home" className="wordmark">BIG FACE</NavLink>
         <nav className="nav">{navLinks('nav-link')}</nav>
         <div className="user-chip">
           <Avatar displayName={user.displayName} profileColor={user.profileColor} online photoUrl={facePhotoOf(user)} />

@@ -8,6 +8,12 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import Avatar from '../components/Avatar';
 import { useActorEngine, ActorSpeech, ACTOR_VOICES } from '../components/ActorEngine';
 
+// Hoisted: stable actors array so the ActorEngine effect doesn't re-run every render
+const GAMBLE_ACTORS = [
+  { id: 'boss', name: 'The Boss', personality: 'street_king' as const, equipped: {}, voice: ACTOR_VOICES.boss },
+  { id: 'diva', name: 'Diva', personality: 'queen' as const, equipped: {}, voice: ACTOR_VOICES.diva },
+];
+
 interface Game {
   id: string; betTokens: number; status: string;
   host: { id: string; displayName: string; profileColor: string };
@@ -24,7 +30,8 @@ const DICE_FACES: Record<number, string> = {
 };
 
 function Dice({ value, rolling }: { value: number; rolling: boolean }) {
-  // Premium CSS 3D dice — looks 3D, runs at 60fps, no WebGL needed
+  // Premium CSS 3D dice — looks 3D, runs at 60fps, no WebGL needed.
+  // Keyframes (diceTumble / diceSettle) live once in theme.css.
   const pipLayouts: Record<number, [number, number][]> = {
     1: [[50, 50]],
     2: [[25, 25], [75, 75]],
@@ -43,19 +50,6 @@ function Dice({ value, rolling }: { value: number; rolling: boolean }) {
           ? 'diceTumble 0.6s ease-in-out infinite'
           : 'diceSettle 0.3s ease-out',
       }}>
-        <style>{`
-          @keyframes diceTumble {
-            0% { transform: rotateX(0) rotateY(0) rotateZ(0); }
-            25% { transform: rotateX(180deg) rotateY(90deg) rotateZ(45deg); }
-            50% { transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg); }
-            75% { transform: rotateX(540deg) rotateY(270deg) rotateZ(135deg); }
-            100% { transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg); }
-          }
-          @keyframes diceSettle {
-            0% { transform: scale(1.2) rotateZ(10deg); }
-            100% { transform: scale(1) rotateZ(0); }
-          }
-        `}</style>
         {/* Dice face */}
         <div style={{
           width: 80, height: 80, borderRadius: 16,
@@ -82,20 +76,18 @@ function Dice({ value, rolling }: { value: number; rolling: boolean }) {
 export default function GamblePage() {
   usePageTitle('Gamble Face');
   const { user } = useAuth();
-  const [tab, setTab] = useState<'story' | 'dice' | 'history'>('dice');
+  const [tab, setTab] = useState<'dice' | 'history'>('dice');
   const [games, setGames] = useState<Game[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [betAmount, setBetAmount] = useState('1000');
   const [creating, setCreating] = useState(false);
   const [result, setResult] = useState<GameResult | null>(null);
 
   // Character Actor Engine — dealers talk trash, celebrate, play mind games
   const { currentLine } = useActorEngine({
-    actors: [
-      { id: 'boss', name: 'The Boss', personality: 'street_king', equipped: {}, voice: ACTOR_VOICES.boss },
-      { id: 'diva', name: 'Diva', personality: 'queen', equipped: {}, voice: ACTOR_VOICES.diva },
-    ],
+    actors: GAMBLE_ACTORS,
     gameState: result ? 'won' : 'waiting',
     winnerId: result ? 'boss' : undefined,
   });
@@ -151,20 +143,31 @@ export default function GamblePage() {
     }
   };
 
-  // Background music toggle.
+  // Background music toggle — preloads audio, shows buffering state.
+  const [musicLoading, setMusicLoading] = useState(false);
   const toggleMusic = () => {
     if (!musicRef.current) {
-      // Casino-style ambient loop.
-      musicRef.current = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_2c8a5d8b9e.mp3');
-      musicRef.current.loop = true;
-      musicRef.current.volume = 0.3;
+      // Casino-style ambient loop. Preloaded so first play isn't silent.
+      const audio = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_2c8a5d8b9e.mp3');
+      audio.loop = true;
+      audio.volume = 0.3;
+      audio.preload = 'auto';
+      audio.addEventListener('canplaythrough', () => setMusicLoading(false), { once: true });
+      audio.addEventListener('error', () => {
+        setMusicLoading(false);
+        setMsg('⚠️ Music failed to load. Check your connection.');
+      }, { once: true });
+      musicRef.current = audio;
     }
     if (musicOn) {
       musicRef.current.pause();
+      setMusicOn(false);
     } else {
-      musicRef.current.play().catch(() => setMsg('⚠️ Could not play music.'));
+      setMusicLoading(true);
+      musicRef.current.play()
+        .then(() => { setMusicOn(true); setMusicLoading(false); })
+        .catch(() => { setMusicLoading(false); setMsg('⚠️ Could not play music.'); });
     }
-    setMusicOn(!musicOn);
   };
 
   useEffect(() => {
@@ -174,6 +177,7 @@ export default function GamblePage() {
   const [hotGames, setHotGames] = useState<any[]>([]);
 
   const load = async () => {
+    setLoadError(null);
     try {
       const [{ games: g }, { games: h }] = await Promise.all([
         gambleApi.list(),
@@ -192,7 +196,7 @@ export default function GamblePage() {
         }
       } catch {}
     } catch {
-      /* ignore */
+      setLoadError('Could not load the tables. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -309,9 +313,7 @@ export default function GamblePage() {
 
   return (
     <div className="page section-gamble" style={{
-      background: 'linear-gradient(135deg, #0a0a2e 0%, #1a1a4e 50%, #0a0a2e 100%)',
       borderRadius: 16, padding: '1.5rem',
-      boxShadow: '0 0 40px rgba(138,43,226,0.3), inset 0 0 60px rgba(0,0,0,0.5)',
       position: 'relative', overflow: 'hidden',
     }}>
       {/* Character speech — actors talk during games */}
@@ -388,7 +390,6 @@ export default function GamblePage() {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         {([
-          ['story', '📖 Story'],
           ['dice', '🎲 Quick Dice'],
           ['history', '📜 History'],
         ] as const).map(([key, label]) => (
@@ -400,14 +401,6 @@ export default function GamblePage() {
         ))}
       </div>
 
-      {tab === 'story' && (
-        <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📖</div>
-          <h3>Story Mode Coming Soon</h3>
-          <p className="form-note">The full story experience is being built. Check back soon!</p>
-        </div>
-      )}
-
       {tab === 'dice' && (
       <>
       {/* Quick dice game (original 1v1) */}
@@ -417,16 +410,17 @@ export default function GamblePage() {
           alt="Probus the Lion - Gamble Face dealer"
           style={{ width: 80, height: 80, borderRadius: '50%', border: '3px solid var(--gold)', objectFit: 'cover', boxShadow: '0 0 20px rgba(201,162,39,0.6)' }}
         />
-        <div style={{ flex: 1 }}>
-          <h1 style={{ margin: 0, animation: 'neonGlow 3s ease-in-out infinite' }}>🎲 Gamble Face</h1>
-          <p className="form-note" style={{ margin: 0 }}>Probus the Lion runs this table 🦁</p>
+        <div className="page-head" style={{ flex: 1, marginBottom: 0 }}>
+          <h1 className="page-title">🎲 Gamble Face</h1>
+          <p className="page-sub">Probus the Lion runs this table 🦁</p>
         </div>
         <button
           className={`btn btn-sm ${musicOn ? '' : 'btn-ghost'}`}
           onClick={toggleMusic}
-          title={musicOn ? 'Mute music' : 'Play background music'}
+          disabled={musicLoading}
+          title={musicLoading ? 'Loading music…' : musicOn ? 'Mute music' : 'Play background music'}
         >
-          {musicOn ? '🔊' : '🔇'}
+          {musicLoading ? '⏳' : musicOn ? '🔊' : '🔇'}
         </button>
       </div>
       <p className="form-note">
@@ -552,7 +546,13 @@ export default function GamblePage() {
       {/* Open games */}
       <h2>🔴 Open Tables</h2>
       {loading && <p>Loading tables…</p>}
-      {!loading && games.length === 0 && (
+      {loadError && !loading && (
+        <div className="error-wrap">
+          <p>😕 {loadError}</p>
+          <button className="btn" onClick={load}>Try again</button>
+        </div>
+      )}
+      {!loading && !loadError && games.length === 0 && (
         <div className="card empty-wrap"><p>No open tables. Start one! 🎲</p></div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.5rem' }}>
@@ -579,6 +579,19 @@ export default function GamblePage() {
       )}
 
       {/* History — win/loss scorecard */}
+      {tab === 'history' && loadError && !loading && (
+        <div className="error-wrap">
+          <p>😕 {loadError}</p>
+          <button className="btn" onClick={load}>Try again</button>
+        </div>
+      )}
+      {tab === 'history' && !loading && !loadError && history.length === 0 && (
+        <div className="card empty-wrap" style={{ textAlign: 'center', padding: '2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎲</div>
+          <h3>No games yet — roll the dice above!</h3>
+          <p className="form-note">Your wins and losses will show up here once you start playing.</p>
+        </div>
+      )}
       {tab === 'history' && history.length > 0 && (
         <>
           <h2>📜 Your Scorecard</h2>
