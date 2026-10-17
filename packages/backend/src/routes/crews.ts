@@ -8,6 +8,41 @@ import { emitToAll } from '../sockets';
 
 const router = Router();
 
+/**
+ * Resolves crew wars past their ends_at: sets status='ended', records the
+ * winner (higher score; ties go to the defender — home advantage), increments
+ * the winner's war-win count, and awards victory XP to winning members.
+ * Called lazily whenever active wars are listed so no separate scheduler is needed.
+ */
+async function resolveExpiredWars(): Promise<void> {
+  const { rows: expired } = await pool.query(
+    `SELECT id, challenger_crew_id, defender_crew_id, challenger_score, defender_score
+     FROM crew_wars WHERE status = 'live' AND ends_at IS NOT NULL AND ends_at <= now()`
+  );
+  for (const w of expired) {
+    const cScore = Number(w.challenger_score);
+    const dScore = Number(w.defender_score);
+    const winnerId = cScore > dScore ? w.challenger_crew_id : w.defender_crew_id;
+    await pool.query(
+      `UPDATE crew_wars SET status = 'ended', winner_crew_id = $2 WHERE id = $1`,
+      [w.id, winnerId]
+    );
+    await pool.query(`UPDATE crews SET wins = wins + 1 WHERE id = $1`, [winnerId]);
+    const { rows: members } = await pool.query(
+      'SELECT user_id FROM crew_members WHERE crew_id = $1', [winnerId]
+    );
+    for (const m of members) {
+      await awardXp(m.user_id, 100, 'crew_war_victory').catch(() => undefined);
+    }
+    emitToAll('crew:war-ended', {
+      warId: w.id,
+      winnerCrewId: winnerId,
+      challengerScore: cScore,
+      defenderScore: dScore,
+    });
+  }
+}
+
 // List crews, ranked by XP.
 router.get(
   '/',
@@ -105,6 +140,13 @@ router.post(
       'INSERT INTO crew_members (crew_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
       [req.params.id, req.user!.id]
     );
+    // Backfill: the joiner's existing XP counts toward the crew total.
+    // (Future gains flow in via awardXp; leave subtracts current xp to keep it balanced.)
+    await pool.query(
+      `UPDATE crews SET total_xp = total_xp + COALESCE((SELECT xp FROM users WHERE id = $1), 0)
+       WHERE id = $2`,
+      [req.user!.id, req.params.id]
+    );
     await awardXp(req.user!.id, 20, 'crew_joined').catch(() => undefined);
     res.json({ ok: true });
   })
@@ -122,6 +164,14 @@ router.post(
     if (rows[0].role === 'leader') {
       throw new HttpError(400, 'Leaders cannot leave — transfer leadership or disband the crew');
     }
+    // Remove the leaver's contribution: their current xp was either backfilled
+    // at join time or accrued incrementally via awardXp — subtracting it now
+    // nets their tenure to zero and prevents join/leave inflation farming.
+    await pool.query(
+      `UPDATE crews SET total_xp = GREATEST(0, total_xp - COALESCE((SELECT xp FROM users WHERE id = $1), 0))
+       WHERE id = $2`,
+      [req.user!.id, rows[0].crew_id]
+    );
     await pool.query('DELETE FROM crew_members WHERE user_id = $1', [req.user!.id]);
     res.json({ ok: true });
   })
@@ -156,6 +206,8 @@ router.get(
   '/wars/active',
   requireAuth,
   asyncHandler(async (_req, res) => {
+    // Resolve any wars past their end time before listing.
+    await resolveExpiredWars().catch(() => undefined);
     const { rows } = await pool.query(
       `SELECT w.*, c1.name AS challenger_name, c1.tag AS challenger_tag,
               c2.name AS defender_name, c2.tag AS defender_tag
